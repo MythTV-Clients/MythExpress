@@ -108,12 +108,16 @@ app.get("/streamstatus", function (req, res) {
         var streams = [ ];
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
-            var sourceFile = stream.SourceFile.replace(/^.*[/]/, "");
+            var sourceFile = stream.SourceFile.split("/").pop();
             if (!!mythtv.byFilename[sourceFile])
                 stream.Recording = mythtv.byFilename[sourceFile];
-            res.render("stream", { layout : false, stream : stream },
+            res.render("stream", { layout : false, stream : stream, MythBackend : mythtv.MythServiceHost(req) },
                        function (err,html) {
-                           streams.push(html);
+                           if (err) {
+                               console.log(err);
+                           } else {
+                               streams.push(html);
+                           }
                        });
         });
 

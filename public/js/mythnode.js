@@ -26,7 +26,7 @@ $(document).ready(function() {
         var result = { };
         parameters.forEach(function (parameter) {
             var value = dataElement.attr("data-" + parameter);
-            if (value.length > 0)
+            if (!!value && value.length > 0)
                 result[parameter] = value;
         });
         return result;
@@ -66,6 +66,7 @@ $(document).ready(function() {
             if (!event) {
                 // ignore state changes from internal history manipulation
                 console.log('empty event');
+                console.log(State);
                 return false;
             }
             console.log(event);
@@ -81,13 +82,15 @@ $(document).ready(function() {
             console.log(State.data);
             $.get(State.url, State.data,
                   function(data, textStatus, jqXHR) {
-                      console.log(State.url);
-                      if (State.url.match(/streamss$/))
-                          console.log(data);
-                      if (data !== $("#Content").html())
+                      console.log('got ' + State.url);
+                      if (data !== $("#Content").html()) {
+                          console.log('replaced');
                           $("#Content").html(data);
+                      }
 
-                      //if ($("#Streams").length) { streamUpdater.play(); }
+                      if ($("#Content .mn-Stream").length > 0 || (State.url.match(/streams$/) && $("#Content").html.length == 0)) {
+                          streamUpdater.play();
+                      }
                   },
                   "HTML");
 
@@ -272,8 +275,11 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     // save initial state so back button has somewhere to go
+    console.log('push state');
+    console.log({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder,
+                  Title : document.title, PathName : window.location.pathname })
     History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },
                       document.title, window.location.pathname);
-    $("#Header .mn-RecGroup:contains('"+currentRecGroup+"')").addClass("mn-Selected");
+    //$("#Header .mn-RecGroup:contains('"+currentRecGroup+"')").addClass("mn-Selected");
 
 });
