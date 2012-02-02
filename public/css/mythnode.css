@@ -1,0 +1,127 @@
+
+:link,:visited,ins {
+    text-decoration:none;
+    color: black !important;
+}
+
+#Header {
+    position: fixed;
+    width: 100%;
+    height: 20px;
+    top: 0;
+    right: 0;
+    //bottom: auto;
+    left: 0;
+    z-index: 5;
+    background-color: #FFFFFF;
+    //border: solid;
+}
+
+#Header div {
+    display: inline;
+    padding-right: 12px;
+}
+
+#Content {
+    position: relative;
+    margin-top: 30px;
+    width: 100%;
+    z-index: 1
+}
+
+//#Content div  {
+//    float: left;
+//}
+
+.mn-Recording, .mn-Folder, .mn-VideoCell {
+    float: left;
+    //display: inline;
+    width: 128px;
+    height: 128px;
+    border: solid;
+    float: left;
+    overflow: hidden;
+    margin: 2px;
+}
+
+.mn-Stream:after {
+    content: " ";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+.mn-StreamPreview  { width: 128; }
+.mn-Show           { width: 40%; }
+.mn-Status         { width: 8em; }
+.mn-Parameters     { width: 12em; }
+.mn-VideoBox       { margin: auto; }
+.mn-Hidden         { display: none !important; }
+.mn-Dimmed         { background-color: grey75; }
+
+.mn-Selected       { border: solid; border-color: red; }
+
+:link,:visited,ins {
+    text-decoration:none;
+    color: black !important;
+}
+
+#Header {
+    position: fixed;
+    width: 100%;
+    height: 20px;
+    top: 0;
+    right: 0;
+    //bottom: auto;
+    left: 0;
+    z-index: 5;
+    background-color: #FFFFFF;
+    //border: solid;
+}
+
+#Header div {
+    display: inline;
+    padding-right: 12px;
+}
+
+#Content {
+    position: relative;
+    margin-top: 30px;
+    width: 100%;
+    z-index: 1
+}
+
+.mn-Recording, .mn-Folder {
+    //display: inline;
+    width: 128px;
+    height: 128px;
+    border: solid;
+    float: left;
+    overflow: hidden;
+    margin: 2px;
+}
+
+.mn-Stream div {
+    float: left;
+}
+
+.mn-Stream:after {
+    content: " ";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+.mn-StreamPreview     { width: 128; }
+.mn-StreamTitles      { width: 60%; vertical-align: middle; }
+.mn-VideoBox          { margin: auto; }
+.mn-Hidden            { display: none !important; }
+
+.mn-Selected          { border: solid; border-color: red; }
+
+#mn-InfoDialog {
+    width: 800px;
+    height: 600px;
+}

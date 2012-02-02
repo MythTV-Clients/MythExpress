@@ -1,0 +1,16 @@
+.mn-Stream.mn-Clickable.mn-Data(id="S" + stream.Id, data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
+  .mn-StreamPreview.mn-Clickable
+    if stream.Recording
+      img(src="http://"+ MythBackend + "/Content/GetPreviewImage?ChanId=" + stream.Recording.Channel.ChanId + "&StartTime=" + stream.Recording.Recording.StartTs + "&Width=128")
+    else
+      img(src="img/static.png")
+  .mn-StreamTitles
+    if stream.Recording
+      p.mn-Title= stream.Recording.Title
+      if stream.Recording.SubTitle
+        p= stream.Recording.SubTitle
+      //-if stream.Recording.Description
+      //-  p= stream.Recording.Description
+    else
+      p.mn-Title No Description
+    p= stream.PercentComplete + "% " + (stream.StatusStr + " " || "")

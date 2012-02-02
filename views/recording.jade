@@ -1,0 +1,6 @@
+if recording.length == 1
+   != partial("episode", { episode : recording[0], ShowTitle : true})
+else
+  .mn-Clickable.mn-Folder.mn-Data
+    img.Folder(src="img/dir.png",alt=recording[0].Title)
+    span.mn-Title= recording[0].Title

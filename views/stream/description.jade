@@ -1,0 +1,13 @@
+.mn-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
+  if stream.Recording
+    p.mn-Title= stream.Recording.Title
+  else
+    p.mn-Title Unknown Title
+  p= stream.SourceWidth + "x" + stream.SourceHeight + " => " + stream.Width + "x" + stream.Height
+  if stream.Recording
+    if stream.Recording.SubTitle
+      p= stream.Recording.SubTitle
+    if stream.Recording.Description
+      p= stream.Recording.Description
+    if stream.Recording.Airdate
+      p= "Airdate: " + stream.Recording.Airdate

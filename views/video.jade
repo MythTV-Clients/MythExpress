@@ -1,0 +1,9 @@
+.mn-VideoCell
+  if video.VideoFolder
+    .mn-Clickable.mn-VideoFolder.mn-Data(data-VideoFolder=video.VideoFolder)
+      img.Folder(src="img/dir.png")
+      span.mn-Title= video.Title
+  else
+    if video.Coverart.length > 0
+       img(src=url.format({ host : MythBackend, pathname : "Content/GetImageFile", query : { StorageGroup : "Coverart", FileName : video.Coverart, Width : 128 } }))
+    span.mn-Title= video.Title
