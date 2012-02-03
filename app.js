@@ -8,6 +8,8 @@ var app = module.exports = express.createServer();
 var http = require('http');
 var mythtv = require('./mythtv')();
 var url = require('url');
+var gzip = require('connect-gzip');
+
 
 // Configuration
 
@@ -17,17 +19,20 @@ app.configure(function(){
     app.use(express.bodyParser());
     app.use(express.methodOverride());
     app.use(app.router);
-    app.use(express.static(__dirname + '/public'));
 });
 
 app.configure('development', function(){
     app.set('view options', { pretty: true });
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+    app.use(express.static(__dirname + '/public'));
 });
 
 app.configure('production', function(){
     app.use(express.errorHandler()); 
+    app.use(gzip.gzip());
+    app.use(gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
 });
+
 
 // Routes
 
