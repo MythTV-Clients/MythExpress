@@ -5,7 +5,6 @@
     "dependencies" : {
         "express" : "2.5.4",
         "jade" : ">= 0.0.1",
-        "connect-gzip" : "0.1.5",
-        "piler" : ">= 0.3.3"
+        "connect-gzip" : "0.1.5"
     }
 }
