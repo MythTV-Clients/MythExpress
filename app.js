@@ -30,15 +30,13 @@ app.configure('development', function(){
 app.configure('production', function(){
     app.use(express.errorHandler()); 
     app.use(gzip.gzip());
-    app.use(gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
 
     // we only minify in production
     var assetManager = require('connect-assetmanager');
-    //var assetHandler = require('connect-assetmanager-handlers');
 
     var assetManagerGroups = {
         'js' : {
-            'route' : new RegExp("^all/js.js$"),
+            'route' : new RegExp("/all/js.js"),
             'path' : __dirname + '/public/js/',
             'dataType' : 'javascript',
             'stale' : true,
@@ -51,7 +49,7 @@ app.configure('production', function(){
             ]
         },
         'css' : {
-            'route' : new RegExp("^all/css.css$"),
+            'route' : new RegExp("/all/css.css"),
             'path' : __dirname + '/public/css/',
             'dataType' : 'css',
             'stale' : true,
@@ -63,9 +61,12 @@ app.configure('production', function(){
         }
     };
 
-    //var assetsManagerMiddleware = assetManager(assetManagerGroups);
-});
+    var assetsManagerMiddleware = assetManager(assetManagerGroups);
 
+    app.use('/',
+            assetsManagerMiddleware,
+            gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
+});
 
 // Routes
 
