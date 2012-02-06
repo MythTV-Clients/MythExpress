@@ -36,7 +36,7 @@ app.configure('production', function(){
 
     var assetManagerGroups = {
         'js' : {
-            'route' : new RegExp("/all/js.js"),
+            'route' : new RegExp("/js/all.js"),
             'path' : __dirname + '/public/js/',
             'dataType' : 'javascript',
             'stale' : true,
@@ -50,7 +50,7 @@ app.configure('production', function(){
             ]
         },
         'css' : {
-            'route' : new RegExp("/all/css.css"),
+            'route' : new RegExp("/css/dark-hive/all.css"),
             'path' : __dirname + '/public/css/',
             'dataType' : 'css',
             'stale' : true,
