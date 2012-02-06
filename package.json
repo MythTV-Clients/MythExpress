@@ -1,10 +1,11 @@
 {
-    "name" : "application-name",
+    "name" : "MythNode",
     "version" : "0.0.2",
     "private" : true,
     "dependencies" : {
         "express" : "2.5.4",
         "jade" : ">= 0.0.1",
-        "connect-gzip" : "0.1.5"
+        "connect-gzip" : "0.1.5",
+        "connect-assetmanager" : ">= 0.0.26"
     }
 }

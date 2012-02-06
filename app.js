@@ -31,6 +31,39 @@ app.configure('production', function(){
     app.use(express.errorHandler()); 
     app.use(gzip.gzip());
     app.use(gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
+
+    // we only minify in production
+    var assetManager = require('connect-assetmanager');
+    //var assetHandler = require('connect-assetmanager-handlers');
+
+    var assetManagerGroups = {
+        'js' : {
+            'route' : new RegExp("/all/js.js$"),
+            'path' : __dirname + '/public/js/',
+            'dataType' : 'javascript',
+            'stale' : true,
+            'files' : [
+                "jquery-1.6.2.min.js",
+                "jquery-ui-1.8.16.custom.min.js",
+                "jquery.history.js",
+                "jquery.timer.js",
+                "mythnode.js"
+            ]
+        },
+        'css' : {
+            'route' : new RegExp("/all/css.css$"),
+            'path' : __dirname + '/public/css/',
+            'dataType' : 'css',
+            'stale' : true,
+            'files' : [
+                "HTML5Reset.css",
+                "overcast/jquery-ui-1.8.16.custom.css",
+                "mythnode.css"
+            ]
+        }
+    };
+
+    //var assetsManagerMiddleware = assetManager(assetManagerGroups);
 });
 
 

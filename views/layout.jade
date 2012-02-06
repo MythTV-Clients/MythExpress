@@ -2,14 +2,18 @@
 html
   head
     title= Title
-    link(rel="stylesheet", href="/css/HTML5Reset.css")
-    link(rel="stylesheet", href="/css/overcast/jquery-ui-1.8.16.custom.css")
-    link(rel='stylesheet', href='/css/mythnode.css')
-    script(type="text/javascript", src="js/jquery-1.6.2.min.js")
-    script(type="text/javascript", src="js/jquery-ui-1.8.16.custom.min.js")
-    script(type="text/javascript", src="js/jquery.history.js")
-    script(type="text/javascript", src="js/jquery.timer.js")
-    script(type="text/javascript", src="js/mythnode.js")
+    if app.settings.env === "production"
+      link(rel="stylesheet", href="all/css.css")
+      script(type="text/javascript", src="all/js.js")
+    else
+      link(rel="stylesheet", href="/css/HTML5Reset.css")
+      link(rel="stylesheet", href="/css/overcast/jquery-ui-1.8.16.custom.css")
+      link(rel='stylesheet', href='/css/mythnode.css')
+      script(type="text/javascript", src="js/jquery-1.6.2.min.js")
+      script(type="text/javascript", src="js/jquery-ui-1.8.16.custom.min.js")
+      script(type="text/javascript", src="js/jquery.history.js")
+      script(type="text/javascript", src="js/jquery.timer.js")
+      script(type="text/javascript", src="js/mythnode.js")
   body
     #Content!= body
     #Header!= partial("header")
