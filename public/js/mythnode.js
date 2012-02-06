@@ -141,17 +141,6 @@ $(document).ready(function() {
         });
     }
 
-    function clearContent() {
-        $("#Content").html("");
-    }
-
-    function updateRecordings(showName) {
-        clearContent();
-        var newTitle = showName === undefined ? currentRecGroup + " recordings" : showName;
-        History.pushState({ RecGroup: currentRecGroup, Title : showName },
-                          newTitle, "/recordings");
-    }
-
 
     var recordingButtons = [
         {
@@ -200,17 +189,20 @@ $(document).ready(function() {
         console.log("Menu click");
         if (target.length > 0) {
             console.log(target);
+            $("#Content").html("");
             if (target.hasClass("mn-RecGroup")) {
                 currentRecGroup = target.text().sanitized();
-                updateRecordings();
+                History.pushState(
+                    { RecGroup: currentRecGroup },
+                    target.text().sanitized() + " Recording Group",
+                    "/recordings");
             } else {
-                clearContent();
                 console.log('load ' + target.attr('href'));
                 History.pushState(
                     { partial : true }, // to differentiate from page refreshes which bring up header too
-                    target.contents(":not(:empty)").first().text().sanitized(),
+                    target.text().sanitized(),
                     target.attr('href'));
-         }
+            }
             return false;
         }
         return true;
@@ -221,7 +213,11 @@ $(document).ready(function() {
         if (target.length > 0) {
 
             if (target.hasClass("mn-Folder")) {
-                updateRecordings(target.dataText(["Title"]).Title);
+                var showTitle = target.dataText(["Title"]).Title;
+                History.pushState(
+                    { RecGroup: currentRecGroup, Title : showTitle },
+                    currentRecGroup + " :: " + showTitle,
+                    "/recordings");
             }
 
             else if (target.hasClass("mn-RecordingPreview")) {
@@ -277,7 +273,7 @@ $(document).ready(function() {
     // save initial state so back button has somewhere to go
     console.log('push state');
     console.log({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder,
-                  Title : document.title, PathName : window.location.pathname })
+                  Title : "Default Recording Group", PathName : window.location.pathname })
     History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },
                       document.title, window.location.pathname);
     //$("#Header .mn-RecGroup:contains('"+currentRecGroup+"')").addClass("mn-Selected");
