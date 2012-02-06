@@ -30,6 +30,7 @@ app.configure('development', function(){
 app.configure('production', function(){
     app.use(express.errorHandler()); 
     app.use(gzip.gzip());
+    app.use(gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
 
     // we only minify in production
     var assetManager = require('connect-assetmanager');
@@ -62,11 +63,7 @@ app.configure('production', function(){
         }
     };
 
-    var assetsManagerMiddleware = assetManager(assetManagerGroups);
-
-    app.use('/',
-            assetsManagerMiddleware,
-            gzip.staticGzip(__dirname + '/public', { maxAge: 18 * 60 * 60 }));
+    app.use(assetManager(assetManagerGroups));
 });
 
 // Routes
