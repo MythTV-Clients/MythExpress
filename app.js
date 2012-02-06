@@ -41,8 +41,8 @@ app.configure('production', function(){
             'dataType' : 'javascript',
             'stale' : true,
             'files' : [
-                "jquery-1.6.2.min.js",
-                "jquery-ui-1.8.16.custom.min.js",
+                "js/jquery-1.7.1.js",
+                "js/jquery-ui-1.8.17.custom.js",
                 "jquery.history.js",
                 "jquery.timer.js",
                 "mythnode.js"
@@ -55,7 +55,7 @@ app.configure('production', function(){
             'stale' : true,
             'files' : [
                 "HTML5Reset.css",
-                "overcast/jquery-ui-1.8.16.custom.css",
+                "dark-hive/jquery-ui-1.8.17.custom.css",
                 "mythnode.css"
             ]
         }
