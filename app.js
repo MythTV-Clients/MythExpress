@@ -41,10 +41,11 @@ app.configure('production', function(){
             'dataType' : 'javascript',
             'stale' : true,
             'files' : [
-                "js/jquery-1.7.1.js",
-                "js/jquery-ui-1.8.17.custom.js",
-                "jquery.history.js",
+                "jquery-1.7.1.js",
+                "jquery-ui-1.8.17.custom.js",
                 "jquery.timer.js",
+                "history.js",
+                "history.adapter.jquery.js",
                 "mythnode.js"
             ]
         },
