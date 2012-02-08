@@ -276,6 +276,5 @@ $(document).ready(function() {
                   Title : "Default Recording Group", PathName : window.location.pathname })
     History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },
                       document.title, window.location.pathname);
-    //$("#Header .mn-RecGroup:contains('"+currentRecGroup+"')").addClass("mn-Selected");
 
 });

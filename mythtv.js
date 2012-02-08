@@ -196,7 +196,7 @@ module.exports = function(args) {
         StopStream : function (StreamId) {
             reqJSON(
                 {
-                    path : "http://core2:6544/Content/StopLiveStream?Id=" + StreamId
+                    path : "/Content/StopLiveStream?Id=" + StreamId
                 },
                 function (reply) {
                     console.log(reply);
@@ -208,7 +208,7 @@ module.exports = function(args) {
         StreamList : function (callback) {
             reqJSON(
                 {
-                    path : "http://core2:6544/Content/GetLiveStreamList"
+                    path : "/Content/GetLiveStreamList"
                 },
                 function (reply) {
                     callback(reply);
@@ -220,7 +220,7 @@ module.exports = function(args) {
         GetLiveStream : function (streamId, callback) {
             reqJSON(
                 {
-                    path : "http://core2:6544/Content/GetLiveStream?Id=" + streamId
+                    path : "/Content/GetLiveStream?Id=" + streamId
                 },
                 function (reply) {
                     callback(reply);
@@ -232,7 +232,7 @@ module.exports = function(args) {
         RemoveLiveStream : function (streamId, callback) {
             reqJSON(
                 {
-                    path : "http://core2:6544/Content/RemoveLiveStream?Id=" + streamId
+                    path : "/Content/RemoveLiveStream?Id=" + streamId
                 },
                 function (reply) {
                     callback(reply);
