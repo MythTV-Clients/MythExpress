@@ -56,8 +56,8 @@ $(document).ready(function() {
         $(window).bind('statechange', function () {
             var State = History.getState();
 
-            $("#Header .mn-Button").removeClass("mn-Selected");
-            if ($('#Header *[href="' + window.location.pathname + '"]').addClass("mn-Selected").length == 0) {
+            $("#Header button").removeClass("mn-Selected");
+            if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mn-Selected").length == 0) {
                 if (State.data.RecGroup) {
                     $("#Header .mn-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mn-Selected");
                 }
@@ -183,30 +183,31 @@ $(document).ready(function() {
     // Ajax
     // ////////////////////////////////////////////////////////////////////////
 
-
-    $("#Header .mn-Button").click(function (ev) {
-        var target = $(ev.target);
-        console.log("Menu click");
-        if (target.length > 0) {
-            console.log(target);
-            $("#Content").html("");
-            if (target.hasClass("mn-RecGroup")) {
-                currentRecGroup = target.text().sanitized();
-                History.pushState(
-                    { RecGroup: currentRecGroup },
-                    target.text().sanitized() + " Recording Group",
-                    "/recordings");
-            } else {
-                console.log('load ' + target.attr('href'));
-                History.pushState(
-                    { partial : true }, // to differentiate from page refreshes which bring up header too
-                    target.text().sanitized(),
-                    target.attr('href'));
+    $("#Header button")
+        .button()
+        .click(function (ev) {
+            var target = $(ev.target.offsetParent);
+            console.log("Menu click");
+            if (target.length > 0) {
+                console.log(target);
+                $("#Content").html("");
+                if (target.hasClass("mn-RecGroup")) {
+                    currentRecGroup = target.text().sanitized();
+                    History.pushState(
+                        { RecGroup: currentRecGroup },
+                        target.text().sanitized() + " Recording Group",
+                        "/recordings");
+                } else {
+                    console.log('load ' + target.attr('data-href'));
+                    History.pushState(
+                        { partial : true }, // to differentiate from page refreshes which bring up header too
+                        target.text().sanitized(),
+                        target.attr('data-href'));
+                }
+                return false;
             }
-            return false;
-        }
-        return true;
-    });
+            return true;
+        });
 
     $("#Content").click(function (ev) {
         var target = $(ev.target).closest(".mn-Clickable");

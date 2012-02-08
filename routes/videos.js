@@ -8,6 +8,8 @@ app.get("/videos", function (req, res) {
 
     var partial = !!req.query.partial || !!req.query.VideoFolder;
 
+    console.log('Video partial : ' + partial);
+
     res.render("videos", {
         layout : !partial,
         url : url,
