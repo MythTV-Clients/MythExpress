@@ -1,4 +1,9 @@
 
+body {
+    background-color: #000000;
+    color: white;
+}
+
 :link,:visited,ins {
     text-decoration: none;
     color: white !important;
@@ -10,11 +15,9 @@
     height: 20px;
     top: 0;
     right: 0;
-    //bottom: auto;
     left: 0;
     z-index: 5;
     background-color: #000000;
-    //border: solid;
 }
 
 #Header div, a {
@@ -34,7 +37,7 @@
     width: 128px;
     height: 128px;
     //border: solid;
-    //border-color: grey21;
+    border-color: grey48;
     text-align: center;
     overflow: hidden;
     margin: 3px;
