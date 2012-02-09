@@ -56,12 +56,12 @@ $(document).ready(function() {
         $(window).bind('statechange', function () {
             var State = History.getState();
 
-            $("#Header button").removeClass("mn-Selected");
-            if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mn-Selected").length == 0) {
-                if (State.data.RecGroup) {
-                    $("#Header .mn-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mn-Selected");
-                }
-            }
+            //$("#Header button").removeClass("mn-Selected");
+            //if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mn-Selected").length == 0) {
+            //    if (State.data.RecGroup) {
+            //        $("#Header .mn-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mn-Selected");
+            //    }
+            //}
 
             if (!event) {
                 // ignore state changes from internal history manipulation
