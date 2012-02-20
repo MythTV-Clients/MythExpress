@@ -217,7 +217,7 @@ $(document).ready(function() {
                 var showTitle = target.dataText(["Title"]).Title;
                 History.pushState(
                     { RecGroup: currentRecGroup, Title : showTitle },
-                    currentRecGroup + " &bull; " + showTitle,
+                    currentRecGroup + " • " + showTitle,
                     "/recordings");
             }
 
