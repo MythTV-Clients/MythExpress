@@ -2,7 +2,11 @@
 body {
     background-color: #000000;
     color: white;
+    font-family: Gill Sans;
 }
+
+// jQuery css override
+.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button { font-family: Gill Sans; }
 
 :link,:visited,ins {
     text-decoration: none;
