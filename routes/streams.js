@@ -13,6 +13,14 @@ app.get("/streams", function (req, res) {
         res.render("stream/index", req.query);
     }
 
+    else if (req.query.Play) {
+        // requesting the raw video
+        res.render("stream/play", {
+            layout : false,
+            FullURL : "http://" + mythtv.MythServiceHost() + "/Content/GetRecording?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs
+        });
+    }
+
     else if (req.query.FileName) {
         // requesting a new stream
         var recording = mythtv.byFilename[req.query.FileName];

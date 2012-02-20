@@ -144,7 +144,7 @@ $(document).ready(function() {
 
     var recordingButtons = [
         {
-            text : "Watch",
+            text : "Stream",
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mn-Data");
@@ -152,12 +152,30 @@ $(document).ready(function() {
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
+        },
+        {
+            text : "Direct Play",
+            click : function () {
+                $(this).dialog("close");
+                var target = $("#InfoDialog").find(".mn-Data");
+                var attributes = target.dataAttrs(["ChanId","StartTs"]);
+                attributes.Play = true;
+                History.pushState(attributes,
+                                  target.dataText(["Title"]).Title,
+                                  "/streams");
+            }
+        },
+        {
+            text : "Close",
+            click : function () {
+                $(this).dialog("close");
+            }
         }
     ];
 
     var streamButtons = [
         {
-            text : "Watch",
+            text : "Stream",
             click : function (ev) {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mn-Data");
@@ -174,6 +192,12 @@ $(document).ready(function() {
                 var parms = $("#InfoDialog").find(".mn-Data").dataAttrs(["StreamId"]);
                 $.get("/deletestream", parms);
                 $("#S" + parms.StreamId).slideUp("slow", function () { $(this).remove(); });
+            }
+        },
+        {
+            text : "Close",
+            click : function () {
+                $(this).dialog("close");
             }
         }
     ];

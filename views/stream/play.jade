@@ -1,1 +1,4 @@
-video.nm-VideoBox(controls,src=FullURL,width=Width,height=Height)
+if typeof(Width) === "undefined"
+  video.nm-VideoBox(controls,src=FullURL)
+else
+  video.nm-VideoBox(controls,src=FullURL,width=Width,height=Height)
