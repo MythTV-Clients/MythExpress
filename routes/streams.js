@@ -17,7 +17,7 @@ app.get("/streams", function (req, res) {
         // requesting the raw video
         res.render("stream/play", {
             layout : false,
-            FullURL : "http://" + mythtv.MythServiceHost() + "/Content/GetRecording?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs
+            FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetRecording?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs
         });
     }
 
