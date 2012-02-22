@@ -9,7 +9,20 @@ var http = require('http');
 var mythtv = require('./mythtv')();
 var url = require('url');
 var gzip = require('connect-gzip');
+var path = require("path");
 
+// Command line arguments
+
+var nopt = require("nopt");
+
+var knownOpts = { "logfile" : path };
+var parsed = nopt(knownOpts, { }, process.argv, 2)
+
+if (parsed.hasOwnProperty("logfile")) {
+    var logfile = require('fs').createWriteStream(parsed.logfile, { 'flags': 'a', 'encoding': "utf8" });
+    process.__defineGetter__('stdout', function() { return logfile; });
+    console.log('Started log');
+}
 
 // Configuration
 
