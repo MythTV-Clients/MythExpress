@@ -158,11 +158,14 @@ $(document).ready(function() {
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mn-Data");
-                var attributes = target.dataAttrs(["ChanId","StartTs"]);
-                attributes.Play = true;
-                History.pushState(attributes,
-                                  target.dataText(["Title"]).Title,
-                                  "/streams");
+                window.open("/watch/file/" + target.dataAttrs(["FileName"]).FileName,
+                            target.dataText(["Title"]).Title,
+                            "_blank");
+                //var attributes = target.dataAttrs(["ChanId","StartTs"]);
+                //attributes.Play = true;
+                //History.pushState(attributes,
+                //                  target.dataText(["Title"]).Title,
+                //                  "/streams");
             }
         },
         {
