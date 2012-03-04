@@ -36,5 +36,5 @@ app.get("/recordings", function (req, res) {
 
 app.get("/recordinginfo", function (req, res) {
     console.log("/recordinginfo " + req.query.FileName);
-    res.partial("recording/description", { recording : mythtv.byFilename[req.query.FileName] });
+    res.partial("info/recording", { recording : mythtv.byFilename[req.query.FileName] });
 });

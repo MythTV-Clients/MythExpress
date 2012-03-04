@@ -161,11 +161,35 @@ $(document).ready(function() {
                 window.open("/watch/file/" + target.dataAttrs(["FileName"]).FileName,
                             target.dataText(["Title"]).Title,
                             "_blank");
-                //var attributes = target.dataAttrs(["ChanId","StartTs"]);
-                //attributes.Play = true;
-                //History.pushState(attributes,
-                //                  target.dataText(["Title"]).Title,
-                //                  "/streams");
+            }
+        },
+        {
+            text : "Close",
+            click : function () {
+                $(this).dialog("close");
+            }
+        }
+    ];
+
+    var videoButtons = [
+        {
+            text : "Stream",
+            click : function () {
+                $(this).dialog("close");
+                var target = $("#InfoDialog").find(".mn-Data");
+                History.pushState(target.dataAttrs(["VideoId"]),
+                                  target.dataText(["Title"]).Title,
+                                  "/streams");
+            }
+        },
+        {
+            text : "Direct Play",
+            click : function () {
+                $(this).dialog("close");
+                var target = $("#InfoDialog").find(".mn-Data");
+                window.open("/watch/video/" + target.dataAttrs(["VideoId"]).VideoId,
+                            "",
+                            "_blank");
             }
         },
         {
@@ -254,18 +278,6 @@ $(document).ready(function() {
                                   "/streams");
             }
 
-            else if (target.hasClass("mn-StreamPreview")) {
-                History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
-                                  target.dataText(["Title"]).Title,
-                                  "/streams");
-            }
-
-            else if (target.hasClass("mn-VideoFolder")) {
-                History.pushState(target.dataAttrs(["VideoFolder"]),
-                                  document.title + " / " + target.dataText(["Title"]).Title,
-                                  "/videos");
-            }
-
             else if (target.hasClass("mn-Recording")) {
                 $("#InfoDialogContent").html("");
                 infoDialog
@@ -275,6 +287,35 @@ $(document).ready(function() {
                       function (info, textStatus, jqXHR) {
                           $("#InfoDialogContent").html(info);
                       });
+            }
+
+            else if (target.hasClass("mn-VideoFolder")) {
+                History.pushState(target.dataAttrs(["VideoFolder"]),
+                                  document.title + " / " + target.dataText(["Title"]).Title,
+                                  "/videos");
+            }
+
+            else if (target.hasClass("mn-VideoCover")) {
+                History.pushState(target.dataAttrs(["VideoId"]),
+                                  target.parent().dataText(["Title"]).Title,
+                                  "/streams");
+            }
+
+            else if (target.hasClass("mn-Video")) {
+                $("#InfoDialogContent").html("");
+                infoDialog
+                    .dialog("option", "buttons", videoButtons)
+                    .dialog("open");
+                $.get("/videoinfo", target.dataAttrs(["VideoId"]),
+                      function (info, textStatus, jqXHR) {
+                          $("#InfoDialogContent").html(info);
+                      });
+            }
+
+            else if (target.hasClass("mn-StreamPreview")) {
+                History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
+                                  target.dataText(["Title"]).Title,
+                                  "/streams");
             }
 
             else if (target.hasClass("mn-Stream")) {

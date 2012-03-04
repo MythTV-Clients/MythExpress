@@ -76,7 +76,11 @@ body {
     float: left;
 }
 
-#mn-InfoDialog {
+#InfoDialog {
     width: 800px;
     height: 600px;
+}
+
+#InfoDialogContent p {
+    margin-bottom: 0.75em;
 }

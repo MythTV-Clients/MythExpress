@@ -179,12 +179,30 @@ module.exports = function(args) {
         StreamRecording : function (fileName, encoding, callback) {
             var recording = byFilename[fileName];
 
-            console.log('Stream');
+            console.log('Stream Recording');
             console.log(encoding);
 
             reqJSON(
                 {
                     path : "/Content/AddRecordingLiveStream?ChanId=" + recording.Channel.ChanId + "&StartTime=" + recording.Recording.StartTs + "&Width=" + encoding.Width + "&Bitrate=" + encoding.Bitrate
+                },
+                function (reply) {
+                    callback(reply);
+                }
+            );
+        },
+
+
+        StreamVideo : function (videoId, encoding, callback) {
+            var video = byVideoId[videoId];
+
+            console.log('Stream Video');
+            console.log("/Content/AddVideoLiveStream?Id=" + video.Id);
+            console.log(encoding);
+
+            reqJSON(
+                {
+                    path : "/Content/AddVideoLiveStream?Id=" + video.Id
                 },
                 function (reply) {
                     callback(reply);

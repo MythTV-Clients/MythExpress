@@ -22,6 +22,6 @@ app.get("/videos", function (req, res) {
 
 
 app.get("/videoinfo", function (req, res) {
-    console.log("/recordinginfo " + req.query.FileName);
-    res.partial("recording/description", { recording : mythtv.byFilename[req.query.FileName] });
+    console.log("/videoinfo " + req.query.VideoId);
+    res.partial("info/video", { video : mythtv.byVideoId[req.query.VideoId] });
 });

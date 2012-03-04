@@ -70,15 +70,22 @@ app.get("/streams", function (req, res) {
             var sourceFile = reply.LiveStreamInfo.SourceFile.replace(/^.*[/]/, "");
 
             res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+        });
+    }
 
-            if (false) {
-                res.render("stream/index", {
-                    layout : false,
-                    FullURL : reply.LiveStreamInfo.FullURL,
-                    Width : reply.LiveStreamInfo.Width,
-                    Height : reply.LiveStreamInfo.Height
-                });
-            }
+    else if (req.query.VideoId) {
+
+        var video = mythtv.byVideoId[req.query.VideoId];
+
+        var encoding = { Width:  640, Bitrate: 1240000 };
+
+        mythtv.StreamVideo(video.Id, encoding, function (reply) {
+            console.log('Streaming reply:');
+            console.log(reply);
+
+            var sourceFile = reply.LiveStreamInfo.SourceFile.replace(/^.*[/]/, "");
+
+            res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
         });
     }
 
