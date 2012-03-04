@@ -8,7 +8,7 @@ $(document).ready(function() {
             });
         });
 
-        $("#Content .mn-Stream").forEach(function (div) {
+        $("#Content .mx-Stream").forEach(function (div) {
             oldDivs[div.attr("id")] = true;
         });
     });

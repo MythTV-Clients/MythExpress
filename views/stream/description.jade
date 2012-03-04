@@ -1,8 +1,8 @@
-.mn-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
+.mx-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
   if stream.Recording
-    p.mn-Title= stream.Recording.Title
+    p.mx-Title= stream.Recording.Title
   else
-    p.mn-Title Unknown Title
+    p.mx-Title Unknown Title
   p= stream.SourceWidth + "x" + stream.SourceHeight + " => " + stream.Width + "x" + stream.Height
   if stream.Recording
     if stream.Recording.SubTitle

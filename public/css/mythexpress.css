@@ -38,7 +38,7 @@ body {
     z-index: 1
 }
 
-.mn-Recording, .mn-Folder, .mn-VideoCell {
+.mx-Recording, .mx-Folder, .mx-VideoCell {
     float: left;
     width: 128px;
     height: 128px;
@@ -49,11 +49,11 @@ body {
     margin: 3px;
 }
 
-.mn-VideoCell {
+.mx-VideoCell {
     height: 224px;
 }
 
-.mn-Stream:after {
+.mx-Stream:after {
     content: " ";
     visibility: hidden;
     display: block;
@@ -61,18 +61,18 @@ body {
     clear: both;
 }
 
-.mn-StreamPreview  { width: 128px; }
-.mn-StreamTitles   { width: 60%; vertical-align: middle; }
-.mn-Show           { width: 40%; }
-.mn-Status         { width: 8em; }
-.mn-Parameters     { width: 12em; }
-.mn-VideoBox       { margin: auto; }
-.mn-Hidden         { display: none !important; }
-.mn-Dimmed         { background-color: grey75; }
+.mx-StreamPreview  { width: 128px; }
+.mx-StreamTitles   { width: 60%; vertical-align: middle; }
+.mx-Show           { width: 40%; }
+.mx-Status         { width: 8em; }
+.mx-Parameters     { width: 12em; }
+.mx-VideoBox       { margin: auto; }
+.mx-Hidden         { display: none !important; }
+.mx-Dimmed         { background-color: grey75; }
 
-.mn-Selected       { border: solid; border-color: red; }
+.mx-Selected       { border: solid; border-color: red; }
 
-.mn-Stream div {
+.mx-Stream div {
     float: left;
 }
 

@@ -1,7 +1,7 @@
-.mn-Clickable.mn-Recording.mn-Data(data-FileName=episode.FileName, data-ChanId=episode.Channel.ChanId, data-StartTs=episode.Recording.StartTs, data-Title=episode.Title)
-  img.mn-Clickable.mn-RecordingPreview(src="http://" + MythBackend + "/Content/GetPreviewImage?ChanId=" + episode.Channel.ChanId + "&StartTime=" + episode.Recording.StartTs + "&Width=128",alt=episode.SubTitle)
+.mx-Clickable.mx-Recording.mx-Data(data-FileName=episode.FileName, data-ChanId=episode.Channel.ChanId, data-StartTs=episode.Recording.StartTs, data-Title=episode.Title)
+  img.mx-Clickable.mx-RecordingPreview(src="http://" + MythBackend + "/Content/GetPreviewImage?ChanId=" + episode.Channel.ChanId + "&StartTime=" + episode.Recording.StartTs + "&Width=128",alt=episode.SubTitle)
   if typeof(ShowTitle) != 'undefined'
-    span.mn-Title= episode.Title
+    span.mx-Title= episode.Title
   else
     if episode.SubTitle.length > 0
       span= episode.SubTitle

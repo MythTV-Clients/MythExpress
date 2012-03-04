@@ -5,7 +5,7 @@ $(document).ready(function() {
     var infoDialog = $("#InfoDialog").dialog({
         autoOpen : false,
         modal : true,
-        dialogClass : "mn-InfoDialog",
+        dialogClass : "mx-InfoDialog",
         width : 800, height : 600
     });
 
@@ -21,7 +21,7 @@ $(document).ready(function() {
     var currentVideoFolder = "/";
 
     jQuery.fn.dataAttrs = function () {
-        var dataElement = $(this[0]).closest(".mn-Data");
+        var dataElement = $(this[0]).closest(".mx-Data");
         var parameters = arguments[0] || [ ];
         var result = { };
         parameters.forEach(function (parameter) {
@@ -37,7 +37,7 @@ $(document).ready(function() {
         var parameters = arguments[0] || [ ];
         var result = { };
         parameters.forEach(function (parameter) {
-            var elem = dataElement.find(".mn-" + parameter);
+            var elem = dataElement.find(".mx-" + parameter);
             var text = elem.contents(":not(:empty)").first().text().sanitized();
             if (text.length == 0)
                 text = elem.text().sanitized();
@@ -56,10 +56,10 @@ $(document).ready(function() {
         $(window).bind('statechange', function () {
             var State = History.getState();
 
-            //$("#Header button").removeClass("mn-Selected");
-            //if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mn-Selected").length == 0) {
+            //$("#Header button").removeClass("mx-Selected");
+            //if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mx-Selected").length == 0) {
             //    if (State.data.RecGroup) {
-            //        $("#Header .mn-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mn-Selected");
+            //        $("#Header .mx-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mx-Selected");
             //    }
             //}
 
@@ -88,7 +88,7 @@ $(document).ready(function() {
                           $("#Content").html(data);
                       }
 
-                      if ($("#Content .mn-Stream").length > 0 || (State.url.match(/streams$/) && $("#Content").html.length == 0)) {
+                      if ($("#Content .mx-Stream").length > 0 || (State.url.match(/streams$/) && $("#Content").html.length == 0)) {
                           streamUpdater.play();
                       }
                   },
@@ -104,7 +104,7 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     function updateStreamStatus() {
-        var streamDiv = $("#Content .mn-Stream");
+        var streamDiv = $("#Content .mx-Stream");
 
         if (streamDiv.length == 0) {
             streamUpdater.pause();
@@ -113,7 +113,7 @@ $(document).ready(function() {
 
         var oldDivs = { };
 
-        $("#Content .mn-Stream").each(function () {
+        $("#Content .mx-Stream").each(function () {
             oldDivs[$(this).attr("id")] = true;
         });
 
@@ -147,7 +147,7 @@ $(document).ready(function() {
             text : "Stream",
             click : function () {
                 $(this).dialog("close");
-                var target = $("#InfoDialog").find(".mn-Data");
+                var target = $("#InfoDialog").find(".mx-Data");
                 History.pushState(target.dataAttrs(["FileName"]),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
@@ -157,7 +157,7 @@ $(document).ready(function() {
             text : "Direct Play",
             click : function () {
                 $(this).dialog("close");
-                var target = $("#InfoDialog").find(".mn-Data");
+                var target = $("#InfoDialog").find(".mx-Data");
                 window.open("/watch/file/" + target.dataAttrs(["FileName"]).FileName,
                             target.dataText(["Title"]).Title,
                             "_blank");
@@ -176,7 +176,7 @@ $(document).ready(function() {
             text : "Stream",
             click : function () {
                 $(this).dialog("close");
-                var target = $("#InfoDialog").find(".mn-Data");
+                var target = $("#InfoDialog").find(".mx-Data");
                 History.pushState(target.dataAttrs(["VideoId"]),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
@@ -186,7 +186,7 @@ $(document).ready(function() {
             text : "Direct Play",
             click : function () {
                 $(this).dialog("close");
-                var target = $("#InfoDialog").find(".mn-Data");
+                var target = $("#InfoDialog").find(".mx-Data");
                 window.open("/watch/video/" + target.dataAttrs(["VideoId"]).VideoId,
                             "",
                             "_blank");
@@ -205,7 +205,7 @@ $(document).ready(function() {
             text : "Stream",
             click : function (ev) {
                 $(this).dialog("close");
-                var target = $("#InfoDialog").find(".mn-Data");
+                var target = $("#InfoDialog").find(".mx-Data");
                 console.log(target);
                 History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
                                   target.dataText(["Title"]).Title,
@@ -216,7 +216,7 @@ $(document).ready(function() {
             text : "Delete",
             click : function () {
                 $(this).dialog("close");
-                var parms = $("#InfoDialog").find(".mn-Data").dataAttrs(["StreamId"]);
+                var parms = $("#InfoDialog").find(".mx-Data").dataAttrs(["StreamId"]);
                 $.get("/deletestream", parms);
                 $("#S" + parms.StreamId).slideUp("slow", function () { $(this).remove(); });
             }
@@ -242,7 +242,7 @@ $(document).ready(function() {
             if (target.length > 0) {
                 console.log(target);
                 $("#Content").html("");
-                if (target.hasClass("mn-RecGroup")) {
+                if (target.hasClass("mx-RecGroup")) {
                     currentRecGroup = target.text().sanitized();
                     History.pushState(
                         { RecGroup: currentRecGroup },
@@ -261,10 +261,10 @@ $(document).ready(function() {
         });
 
     $("#Content").click(function (ev) {
-        var target = $(ev.target).closest(".mn-Clickable");
+        var target = $(ev.target).closest(".mx-Clickable");
         if (target.length > 0) {
 
-            if (target.hasClass("mn-Folder")) {
+            if (target.hasClass("mx-Folder")) {
                 var showTitle = target.dataText(["Title"]).Title;
                 History.pushState(
                     { RecGroup: currentRecGroup, Title : showTitle },
@@ -272,13 +272,13 @@ $(document).ready(function() {
                     "/recordings");
             }
 
-            else if (target.hasClass("mn-RecordingPreview")) {
+            else if (target.hasClass("mx-RecordingPreview")) {
                 History.pushState(target.dataAttrs(["FileName"]),
                                   target.dataAttrs(["Title"]).Title,
                                   "/streams");
             }
 
-            else if (target.hasClass("mn-Recording")) {
+            else if (target.hasClass("mx-Recording")) {
                 $("#InfoDialogContent").html("");
                 infoDialog
                     .dialog("option", "buttons", recordingButtons)
@@ -289,19 +289,19 @@ $(document).ready(function() {
                       });
             }
 
-            else if (target.hasClass("mn-VideoFolder")) {
+            else if (target.hasClass("mx-VideoFolder")) {
                 History.pushState(target.dataAttrs(["VideoFolder"]),
                                   document.title + " / " + target.dataText(["Title"]).Title,
                                   "/videos");
             }
 
-            else if (target.hasClass("mn-VideoCover")) {
+            else if (target.hasClass("mx-VideoCover")) {
                 History.pushState(target.dataAttrs(["VideoId"]),
                                   target.parent().dataText(["Title"]).Title,
                                   "/streams");
             }
 
-            else if (target.hasClass("mn-Video")) {
+            else if (target.hasClass("mx-Video")) {
                 $("#InfoDialogContent").html("");
                 infoDialog
                     .dialog("option", "buttons", videoButtons)
@@ -312,13 +312,13 @@ $(document).ready(function() {
                       });
             }
 
-            else if (target.hasClass("mn-StreamPreview")) {
+            else if (target.hasClass("mx-StreamPreview")) {
                 History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
 
-            else if (target.hasClass("mn-Stream")) {
+            else if (target.hasClass("mx-Stream")) {
                 $("#InfoDialogContent").html("");
                 infoDialog
                     .dialog("option", "buttons", streamButtons)
