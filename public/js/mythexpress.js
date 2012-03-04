@@ -1,7 +1,5 @@
 $(document).ready(function() {
 
-    var streamUpdater = new $.timer(updateStreamStatus, 5000, true);
-
     var infoDialog = $("#InfoDialog").dialog({
         autoOpen : false,
         modal : true,
@@ -89,7 +87,7 @@ $(document).ready(function() {
                       }
 
                       if ($("#Content .mx-Stream").length > 0 || (State.url.match(/streams$/) && $("#Content").html.length == 0)) {
-                          streamUpdater.play();
+                          setTimeout(updateStreamStatus, 5000);
                       }
                   },
                   "HTML");
@@ -104,10 +102,7 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     function updateStreamStatus() {
-        var streamDiv = $("#Content .mx-Stream");
-
-        if (streamDiv.length == 0) {
-            streamUpdater.pause();
+        if ($("#Content .mx-Stream").length == 0) {
             return;
         }
 
@@ -138,6 +133,8 @@ $(document).ready(function() {
                 //$("#" + divId).slideUp("slow", function () { $(this).remove(); });
                 $("#" + divId).remove();
             });
+
+            setTimeout(updateStreamStatus, 5000);
         });
     }
 
