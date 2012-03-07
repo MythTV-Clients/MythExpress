@@ -57,7 +57,6 @@ app.configure('production', function(){
             'files' : [
                 "jquery-1.7.1.js",
                 "jquery-ui-1.8.17.custom.js",
-                "jquery.timer.js",
                 "history.js",
                 "history.adapter.jquery.js",
                 "mythnode.js"
