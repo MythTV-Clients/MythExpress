@@ -1,4 +1,4 @@
-.mx-Stream.mx-Clickable.mx-Data(id="S" + stream.Id, data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
+.mx-Stream.mx-Clickable.mx-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
   .mx-StreamPreview.mx-Clickable
     if stream.Recording
       img(src="http://"+ MythBackend + "/Content/GetPreviewImage?ChanId=" + stream.Recording.Channel.ChanId + "&StartTime=" + stream.Recording.Recording.StartTs + "&Width=128")

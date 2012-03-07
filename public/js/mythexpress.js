@@ -1,5 +1,11 @@
 $(document).ready(function() {
 
+    if (typeof console === 'undefined') {
+        console = { };
+        if (typeof console.log === 'undefined')
+            console.log = function () { }
+    }
+
     var infoDialog = $("#InfoDialog").dialog({
         autoOpen : false,
         modal : true,
@@ -54,43 +60,33 @@ $(document).ready(function() {
         $(window).bind('statechange', function () {
             var State = History.getState();
 
-            //$("#Header button").removeClass("mx-Selected");
-            //if ($('#Header *[data-href="' + window.location.pathname + '"]').addClass("mx-Selected").length == 0) {
-            //    if (State.data.RecGroup) {
-            //        $("#Header .mx-RecGroup:contains('"+State.data.RecGroup+"')").addClass("mx-Selected");
-            //    }
-            //}
-
             if (!event) {
-                // ignore state changes from internal history manipulation
-                console.log('empty event');
-                console.log(State);
+                // kludge to ignore state changes from internal
+                // history manipulation but still act like we've
+                // loaded the view the usual way
+                if ($("#Content .mx-StreamList").length > 0) {
+                    setTimeout(updateStreamStatus, 5000);
+                }
                 return false;
             }
-            console.log(event);
+
             if (State.data.historyInit) {
-                console.log('squelched');
                 var newData = State.data;
                 delete newData.historyInit;
                 History.replaceState(newData, State.title, State.url);
                 return false;
             }
-            console.log('State Change');
-            console.log(State.url);
-            console.log(State.data);
+
             $.get(State.url, State.data,
                   function(data, textStatus, jqXHR) {
-                      console.log('got ' + State.url);
                       if (data !== $("#Content").html()) {
-                          console.log('replaced');
                           $("#Content").html(data);
                       }
 
-                      if ($("#Content .mx-Stream").length > 0 || (State.url.match(/streams$/) && $("#Content").html.length == 0)) {
+                      if ($("#Content .mx-StreamList").length > 0) {
                           setTimeout(updateStreamStatus, 5000);
                       }
-                  },
-                  "HTML");
+                  });
 
             event.preventDefault();
             return false;
@@ -102,39 +98,39 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     function updateStreamStatus() {
-        if ($("#Content .mx-Stream").length == 0) {
+        if ($("#Content .mx-StreamList").length == 0) {
+            // there's an empty streamlist div acting as a sentinal.
+            // its absence indicates we've moved way from the stream list
             return;
         }
 
         var oldDivs = { };
 
         $("#Content .mx-Stream").each(function () {
-            oldDivs[$(this).attr("id")] = true;
+            oldDivs[$(this).attr("data-streamid")] = true;
         });
 
         $.get("/streamstatus", function (newDivs, textStatus, jqXHR) {
-            newDivs.forEach(function (html) {
-                var newDiv = $(html), divId = newDiv.attr("id");
-                var oldDiv = $("#" + divId);
-                if (oldDiv.length == 1) {
-                    if (oldDiv.html() !== newDiv.html()) {
-                        //console.log('replace ' + divId);
-                        oldDiv.replaceWith(newDiv);
+            if ($("#Content .mx-StreamList").length > 0) {
+                newDivs.forEach(function (html) {
+                    var newDiv = $(html), divId = newDiv.attr("data-streamid");
+                    var oldDiv = $("#Content div[data-streamid = " + divId + "]");
+                    if (oldDiv.length == 1) {
+                        if (oldDiv.html() !== newDiv.html()) {
+                            oldDiv.replaceWith(newDiv);
+                        }
+                    } else {
+                        newDiv.hide().prependTo('#Content').slideDown(1000);
                     }
-                } else {
-                    //console.log('add ' + divId);
-                    $("#Content").prepend(newDiv).fadeIn("slow");
-                }
-                delete oldDivs[divId];
-            });
+                    delete oldDivs[divId];
+                });
 
-            Object.keys(oldDivs).forEach(function (divId) {
-                //console.log('remove ' + divId);
-                //$("#" + divId).slideUp("slow", function () { $(this).remove(); });
-                $("#" + divId).remove();
-            });
+                Object.keys(oldDivs).forEach(function (divId) {
+                    $("#Content div[data-streamid = " + divId + "]").slideUp("slow", function () { $(this).remove(); });
+                });
 
-            setTimeout(updateStreamStatus, 5000);
+                setTimeout(updateStreamStatus, 5000);
+            }
         });
     }
 
@@ -203,7 +199,6 @@ $(document).ready(function() {
             click : function (ev) {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                console.log(target);
                 History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
@@ -235,9 +230,7 @@ $(document).ready(function() {
         .button()
         .click(function (ev) {
             var target = $(ev.target.offsetParent);
-            console.log("Menu click");
             if (target.length > 0) {
-                console.log(target);
                 $("#Content").html("");
                 if (target.hasClass("mx-RecGroup")) {
                     currentRecGroup = target.text().sanitized();
@@ -246,7 +239,6 @@ $(document).ready(function() {
                         target.text().sanitized() + " Recording Group",
                         "/recordings");
                 } else {
-                    console.log('load ' + target.attr('data-href'));
                     History.pushState(
                         { partial : true }, // to differentiate from page refreshes which bring up header too
                         target.text().sanitized(),
@@ -337,9 +329,6 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     // save initial state so back button has somewhere to go
-    console.log('push state');
-    console.log({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder,
-                  Title : "Default Recording Group", PathName : window.location.pathname })
     History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },
                       document.title, window.location.pathname);
 
