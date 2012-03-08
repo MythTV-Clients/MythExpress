@@ -59,18 +59,18 @@ app.configure('production', function(){
                 "jquery-ui-1.8.17.custom.js",
                 "history.js",
                 "history.adapter.jquery.js",
-                "mythnode.js"
+                "mythexpress.js"
             ]
         },
         'css' : {
-            'route' : new RegExp("/css/dark-hive/all.css"),
+            'route' : new RegExp("/css/all.css"),
             'path' : __dirname + '/public/css/',
             'dataType' : 'css',
             'stale' : true,
             'files' : [
                 "HTML5Reset.css",
                 "dark-hive/jquery-ui-1.8.17.custom.css",
-                "mythnode.css"
+                "mythexpress.css"
             ]
         }
     };
