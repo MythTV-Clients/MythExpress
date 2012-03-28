@@ -25,8 +25,8 @@ module.exports = function(args) {
     var byVideoId = [ ];
 
 
-    if (process.env["MYTHNODE_HOST"]) {
-        backend.host = process.env["MYTHNODE_HOST"];
+    if (process.env["MX_HOST"]) {
+        backend.host = process.env["MX_HOST"];
         backend.customHost = true;
     }
     if (!!args && args.host) {
