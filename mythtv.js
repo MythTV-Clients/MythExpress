@@ -140,6 +140,7 @@ module.exports = function(args) {
             byVideoFolder["/"] = { Title : "Videos", List : [ ] };
             videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
                 byVideoId[video.Id] = video;
+                byFilename[video.FileName] = video;
                 var curPath = "";
                 var curList = byVideoFolder["/"];
                 path.dirname(video.FileName).split(/[/]/).forEach(function (folder) {

@@ -1,16 +1,11 @@
 .mx-Stream.mx-Clickable.mx-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
   .mx-StreamPreview.mx-Clickable
-    if stream.Recording
-      img(src="http://"+ MythBackend + "/Content/GetPreviewImage?ChanId=" + stream.Recording.Channel.ChanId + "&StartTime=" + stream.Recording.Recording.StartTs + "&Width=128")
-    else
-      img(src="img/static.png")
+    img(src=stream.Image || "img/static.png")
   .mx-StreamTitles
-    if stream.Recording
-      p.mx-Title= stream.Recording.Title
-      if stream.Recording.SubTitle
-        p= stream.Recording.SubTitle
-      //-if stream.Recording.Description
-      //-  p= stream.Recording.Description
+    if stream.Info
+      p.mx-Title= stream.Info.Title
+      if stream.Info.SubTitle
+        p= stream.Info.SubTitle
     else
       p.mx-Title No Description
     p= stream.PercentComplete + "% " + (stream.StatusStr + " " || "")

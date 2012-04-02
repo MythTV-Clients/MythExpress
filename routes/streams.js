@@ -2,6 +2,28 @@
 // Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_2) AppleWebKit/534.52.7 (KHTML, like Gecko) Version/5.1.2 Safari/534.52.7
 // Mozilla/5.0 (iPad; CPU OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3
 
+function normalizeMetadata(req, stream) {
+    // metadata comes with relative filepaths while streamdata comes
+    // with full paths so we peel folders off the front until we get
+    // a hit... or not
+    for (var fileParts = stream.SourceFile.split("/");
+         fileParts.length > 0 && !mythtv.byFilename[fileParts.join("/")];
+         fileParts.shift())
+    { }
+    var sourceFile = fileParts.join("/");
+    if (!!mythtv.byFilename[sourceFile]) {
+        stream.Info = mythtv.byFilename[sourceFile];
+        if (!!stream.Info.StartTime) {
+            stream.Image = "http://"+ mythtv.MythServiceHost(req) + "/Content/GetPreviewImage?ChanId="
+                + stream.Info.Channel.ChanId + "&StartTime=" + stream.Info.Recording.StartTs + "&Width=128"
+        } else {
+            if (!!stream.Info.Coverart)
+                stream.Image = "http://"+ mythtv.MythServiceHost(req)
+                + "/Content/GetImageFile?StorageGroup=Coverart&FileName=" + stream.Info.Coverart + "&Width=128";
+        }
+    }
+}
+
 app.get("/streams", function (req, res) {
 
     console.log("/streams");
@@ -96,9 +118,7 @@ app.get("/streams", function (req, res) {
             //console.log(reply.LiveStreamInfoList.LiveStreamInfos[0]);
 
             reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
-                var sourceFile = stream.SourceFile.replace(/^.*[/]/, "");
-                if (!!mythtv.byFilename[sourceFile])
-                    stream.Recording = mythtv.byFilename[sourceFile];
+                normalizeMetadata(req, stream);
             });
 
             res.render("streams", {
@@ -123,9 +143,7 @@ app.get("/streamstatus", function (req, res) {
         var streams = [ ];
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
-            var sourceFile = stream.SourceFile.split("/").pop();
-            if (!!mythtv.byFilename[sourceFile])
-                stream.Recording = mythtv.byFilename[sourceFile];
+            normalizeMetadata(req, stream);
             res.render("stream", { layout : false, stream : stream, MythBackend : mythtv.MythServiceHost(req) },
                        function (err,html) {
                            if (err) {
