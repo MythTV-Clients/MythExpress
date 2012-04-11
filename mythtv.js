@@ -235,6 +235,17 @@ module.exports = function(args) {
             );
         },
 
+        FilteredStreamList : function (fileName, callback) {
+            reqJSON(
+                {
+                    path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName
+                },
+                function (reply) {
+                    callback(reply);
+                }
+            );
+        },
+
 
         GetLiveStream : function (streamId, callback) {
             reqJSON(

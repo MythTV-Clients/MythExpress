@@ -25,20 +25,35 @@ function normalizeMetadata(req, stream) {
 }
 
 
-function renderPlayerControl(req, res, streamId, waitForSegments) {
+function renderPlayerControl(req, res, stream) {
+    normalizeMetadata(req, stream);
+    res.partial("stream/play", {
+        FullURL : stream.FullURL,
+        Width : stream.Width,
+        Height : stream.Height,
+        Info : stream.Info
+    });
+}
+
+
+function renderPlayerForStream(req, res, streamId, waitForSegments) {
     mythtv.GetLiveStream(streamId, function(reply) {
         var stream = reply.LiveStreamInfo;
         if (waitForSegments && Number(stream.SegmentCount) < 3) {
             res.partial("stream/empty");
         } else {
-            console.log(stream);
-            normalizeMetadata(req, stream);
-            res.partial("stream/play", {
-                FullURL : stream.FullURL,
-                Width : stream.Width,
-                Height : stream.Height,
-                Info : stream.Info
-            });
+            renderPlayerControl(req, res, stream);
+        }
+    });
+}
+
+
+function renderIfStreamExists(req, res, fileName, noStreamCallback) {
+    mythtv.FilteredStreamList(fileName, function(reply) {
+        if (reply.LiveStreamInfoList.LiveStreamInfos.length == 0) {
+            noStreamCallback();
+        } else {
+            renderPlayerControl(req, res, reply.LiveStreamInfoList.LiveStreamInfos[0]);
         }
     });
 }
@@ -50,58 +65,58 @@ app.get("/streams", function(req, res) {
     console.log(req.query);
 
     if (req.query.StreamId) {
-        renderPlayerControl(req, res, req.query.StreamId);
+        renderPlayerForStream(req, res, req.query.StreamId);
     }
 
     else if (req.query.FileName) {
-        // requesting a new stream
-        var recording = mythtv.byFilename[req.query.FileName];
-        var props = mythtv.DecodeVideoProps(recording);
+        renderIfStreamExists(req, res, req.query.FileName, function() {
+            // requesting a new stream
+            var recording = mythtv.byFilename[req.query.FileName];
+            var props = mythtv.DecodeVideoProps(recording);
 
-        var encoding = { Width:  640, Bitrate: 1240000 };
+            var encoding = { Width:  640, Bitrate: 1240000 };
 
-        // there must be a better way!
-        if (req.headers['user-agent'].match(/iPad/)) {
-            if (props.HDTV || props.Widescreen) {
-                if (props["720p"])
-                    encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
-                if (props["1080p"])
-                    encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
-            } else {
-                encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
-                if (props["720p"])
-                    encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
-                if (props["1080p"])
-                    encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+            // there must be a better way!
+            if (req.headers['user-agent'].match(/iPad/)) {
+                if (props.HDTV || props.Widescreen) {
+                    if (props["720p"])
+                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
+                    if (props["1080p"])
+                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
+                } else {
+                    encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
+                    if (props["720p"])
+                        encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
+                    if (props["1080p"])
+                        encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+                }
             }
-        }
 
-        else {
-            if (props.HDTV || props.Widescreen) {
-                if (props["720p"])
-                    encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
-                if (props["1080p"])
-                    encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
-            } else {
-                encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
-                if (props["720p"])
-                    encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
-                if (props["1080p"])
-                    encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+            else {
+                if (props.HDTV || props.Widescreen) {
+                    if (props["720p"])
+                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
+                    if (props["1080p"])
+                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
+                } else {
+                    encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
+                    if (props["720p"])
+                        encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
+                    if (props["1080p"])
+                        encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+                }
             }
-        }
 
-        console.log('encoding parameters from props ' + recording.VideoProps);
-        console.log(props);
-        console.log(encoding);
+            console.log('encoding parameters from props ' + recording.VideoProps);
+            console.log(props);
+            console.log(encoding);
 
-        mythtv.StreamRecording(req.query.FileName, encoding, function(reply) {
-            console.log('Streaming reply:');
-            console.log(reply);
+            mythtv.StreamRecording(req.query.FileName, encoding, function(reply) {
+                console.log('Streaming reply:');
+                console.log(reply);
 
-            var sourceFile = reply.LiveStreamInfo.SourceFile.replace(/^.*[/]/, "");
-
-            res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+            });
         });
     }
 
@@ -109,24 +124,21 @@ app.get("/streams", function(req, res) {
 
         var video = mythtv.byVideoId[req.query.VideoId];
 
-        var encoding = { Width:  640, Bitrate: 1240000 };
+        renderIfStreamExists(req, res, video.FileName, function() {
+            var encoding = { Width:  640, Bitrate: 1240000 };
 
-        mythtv.StreamVideo(video.Id, encoding, function(reply) {
-            console.log('Streaming reply:');
-            console.log(reply);
+            mythtv.StreamVideo(video.Id, encoding, function(reply) {
+                console.log('Streaming reply:');
+                console.log(reply);
 
-            var sourceFile = reply.LiveStreamInfo.SourceFile.replace(/^.*[/]/, "");
-
-            res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+            });
         });
     }
 
     else {
 
         mythtv.StreamList(function(reply) {
-            //console.log('Streamlist reply:');
-            //console.log(reply.LiveStreamInfoList.LiveStreamInfos[0]);
-
             reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
                 normalizeMetadata(req, stream);
             });
@@ -147,9 +159,6 @@ app.get("/streams", function(req, res) {
 
 app.get("/streamstatus", function(req, res) {
     mythtv.StreamList(function(reply) {
-        //console.log('Streamlist reply:');
-        //console.log(reply.LiveStreamInfoList.LiveStreamInfos[0]);
-
         var streams = [ ];
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
@@ -170,7 +179,7 @@ app.get("/streamstatus", function(req, res) {
 
 
 app.get("/streamplayer", function(req, res) {
-    renderPlayerControl(req, res, req.query.StreamId, true);
+    renderPlayerForStream(req, res, req.query.StreamId, true);
     // true = delay video control until enough segments are encoded
 });
 
@@ -187,9 +196,7 @@ app.get("/streaminfo", function(req, res) {
 
 
 app.get("/deletestream", function(req, res) {
-    console.log("/deletestream " + req.query.StreamId);
     mythtv.RemoveLiveStream(req.query.StreamId, function(reply) {
-        console.log(reply);
         res.partial("stream/empty");
     });
 });
