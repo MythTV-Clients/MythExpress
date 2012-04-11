@@ -1,4 +1,11 @@
 if typeof(Width) === "undefined"
-  video.nm-VideoBox(controls,src=FullURL)
+  video.nm-VideoBox(controls,autoplay,src=FullURL)
 else
-  video.nm-VideoBox(controls,src=FullURL,width=Width,height=Height)
+  video.nm-VideoBox(controls,autoplay,src=FullURL,width=Width,height=Height)
+
+if Info
+  .mx-TextColumn.mx-TextBubble
+    p= Info.SubTitle
+    p= Info.Description
+    if Info.Airdate
+      p= "Airdate: " + Info.Airdate

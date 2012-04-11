@@ -24,23 +24,33 @@ function normalizeMetadata(req, stream) {
     }
 }
 
-app.get("/streams", function (req, res) {
+
+function renderPlayerControl(req, res, streamId, waitForSegments) {
+    mythtv.GetLiveStream(streamId, function(reply) {
+        var stream = reply.LiveStreamInfo;
+        if (waitForSegments && Number(stream.SegmentCount) < 3) {
+            res.partial("stream/empty");
+        } else {
+            console.log(stream);
+            normalizeMetadata(req, stream);
+            res.partial("stream/play", {
+                FullURL : stream.FullURL,
+                Width : stream.Width,
+                Height : stream.Height,
+                Info : stream.Info
+            });
+        }
+    });
+}
+
+
+app.get("/streams", function(req, res) {
 
     console.log("/streams");
     console.log(req.query);
 
-    if (req.query.FullURL) {
-        // request to see an in-progress stream
-        req.query.layout = false;
-        res.render("stream/index", req.query);
-    }
-
-    else if (req.query.Play) {
-        // requesting the raw video
-        res.render("stream/play", {
-            layout : false,
-            FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetRecording?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs
-        });
+    if (req.query.StreamId) {
+        renderPlayerControl(req, res, req.query.StreamId);
     }
 
     else if (req.query.FileName) {
@@ -85,7 +95,7 @@ app.get("/streams", function (req, res) {
         console.log(props);
         console.log(encoding);
 
-        mythtv.StreamRecording(req.query.FileName, encoding, function (reply) {
+        mythtv.StreamRecording(req.query.FileName, encoding, function(reply) {
             console.log('Streaming reply:');
             console.log(reply);
 
@@ -101,7 +111,7 @@ app.get("/streams", function (req, res) {
 
         var encoding = { Width:  640, Bitrate: 1240000 };
 
-        mythtv.StreamVideo(video.Id, encoding, function (reply) {
+        mythtv.StreamVideo(video.Id, encoding, function(reply) {
             console.log('Streaming reply:');
             console.log(reply);
 
@@ -113,7 +123,7 @@ app.get("/streams", function (req, res) {
 
     else {
 
-        mythtv.StreamList(function (reply) {
+        mythtv.StreamList(function(reply) {
             //console.log('Streamlist reply:');
             //console.log(reply.LiveStreamInfoList.LiveStreamInfos[0]);
 
@@ -135,8 +145,8 @@ app.get("/streams", function (req, res) {
 });
 
 
-app.get("/streamstatus", function (req, res) {
-    mythtv.StreamList(function (reply) {
+app.get("/streamstatus", function(req, res) {
+    mythtv.StreamList(function(reply) {
         //console.log('Streamlist reply:');
         //console.log(reply.LiveStreamInfoList.LiveStreamInfos[0]);
 
@@ -145,7 +155,7 @@ app.get("/streamstatus", function (req, res) {
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
             normalizeMetadata(req, stream);
             res.render("stream", { layout : false, stream : stream, MythBackend : mythtv.MythServiceHost(req) },
-                       function (err,html) {
+                       function(err,html) {
                            if (err) {
                                console.log(err);
                            } else {
@@ -159,39 +169,26 @@ app.get("/streamstatus", function (req, res) {
 });
 
 
-app.get("/streamplayer", function (req, res) {
-    //console.log("/streamplayer " + req.query.StreamId);
-    mythtv.GetLiveStream(req.query.StreamId, function (reply) {
-        //console.log(reply);
-        if (Number(reply.LiveStreamInfo.SegmentCount) > 2) {
-            res.partial("stream/play", {
-                FullURL : reply.LiveStreamInfo.FullURL,
-                Width : reply.LiveStreamInfo.Width,
-                Height : reply.LiveStreamInfo.Height
-            });
-        } else {
-            res.partial("stream/empty");
-        }
-    });
+app.get("/streamplayer", function(req, res) {
+    renderPlayerControl(req, res, req.query.StreamId, true);
+    // true = delay video control until enough segments are encoded
 });
 
 
-app.get("/streaminfo", function (req, res) {
+app.get("/streaminfo", function(req, res) {
     console.log("/streaminfo " + req.query.StreamId);
-    mythtv.GetLiveStream(req.query.StreamId, function (reply) {
+    mythtv.GetLiveStream(req.query.StreamId, function(reply) {
         console.log(reply);
         var stream = reply.LiveStreamInfo;
-        var sourceFile = stream.SourceFile.replace(/^.*[/]/, "");
-        if (!!mythtv.byFilename[sourceFile])
-            stream.Recording = mythtv.byFilename[sourceFile];
+        normalizeMetadata(req, stream);
         res.partial("stream/description", { stream : stream });
     });
 });
 
 
-app.get("/deletestream", function (req, res) {
+app.get("/deletestream", function(req, res) {
     console.log("/deletestream " + req.query.StreamId);
-    mythtv.RemoveLiveStream(req.query.StreamId, function (reply) {
+    mythtv.RemoveLiveStream(req.query.StreamId, function(reply) {
         console.log(reply);
         res.partial("stream/empty");
     });

@@ -1,13 +1,13 @@
-.mx-Data(data-StreamId=stream.Id,data-FullURL=stream.FullURL, data-Width=stream.Width, data-Height=stream.Height)
-  if stream.Recording
-    p.mx-Title= stream.Recording.Title
+.mx-Data(data-StreamId=stream.Id, data-data-Title=stream.Info.Title)
+  if stream.Info
+    p.mx-Title= stream.Info.Title
   else
     p.mx-Title Unknown Title
   p= stream.SourceWidth + "x" + stream.SourceHeight + " => " + stream.Width + "x" + stream.Height
-  if stream.Recording
-    if stream.Recording.SubTitle
-      p= stream.Recording.SubTitle
-    if stream.Recording.Description
-      p= stream.Recording.Description
-    if stream.Recording.Airdate
-      p= "Airdate: " + stream.Recording.Airdate
+  if stream.Info
+    if stream.Info.SubTitle
+      p= stream.Info.SubTitle
+    if stream.Info.Description
+      p= stream.Info.Description
+    if stream.Info.Airdate
+      p= "Airdate: " + stream.Info.Airdate

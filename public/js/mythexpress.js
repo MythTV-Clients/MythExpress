@@ -199,7 +199,7 @@ $(document).ready(function() {
             click : function (ev) {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
+                History.pushState(target.dataAttrs(["StreamId"]),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -302,8 +302,8 @@ $(document).ready(function() {
             }
 
             else if (target.hasClass("mx-StreamPreview")) {
-                History.pushState(target.dataAttrs(["FullURL","Width","Height"]),
-                                  target.dataText(["Title"]).Title,
+                History.pushState(target.dataAttrs(["StreamId"]),
+                                  target.parent().dataText(["Title"]).Title,
                                   "/streams");
             }
 
