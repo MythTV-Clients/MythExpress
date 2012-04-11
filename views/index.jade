@@ -70,10 +70,6 @@
 
     p
 
-      | Streams hang around until they’re manually deleted.
-
-    p
-
       |  After navigating into a folder use the back button to
       | return up the hierarchy.
 
@@ -97,5 +93,12 @@
       li
 
         | Sometimes the display logic gets out of whack. Just refresh.
+
+      li
+
+        | MythExpress doesn’t reflect server activity after its
+        | initial startup – new recordings and deletes of old
+        | ones don’t show up. I’m waiting for an http events
+        | interface so I don’t have to poll to get updates.
 
     p There is no doubt more which could be added to this list.
