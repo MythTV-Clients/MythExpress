@@ -1,4 +1,4 @@
-.mx-Data(data-StreamId=stream.Id, data-data-Title=stream.Info.Title)
+.mx-Data(data-StreamId=stream.Id, data-data-Title=(!!stream.Info ? stream.Info.Title : "No Description"))
   if stream.Info
     p.mx-Title= stream.Info.Title
   else
