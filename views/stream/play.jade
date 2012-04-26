@@ -3,19 +3,22 @@ if typeof(Width) === "undefined"
 else
   video.nm-VideoBox(controls,autoplay,src=FullURL,width=Width,height=Height,data-W=Width,data-H=Height)
 
-.mx-VideoControl
-  span.mx-Clickable.mx-Shrink= " -"
-  span.mx-Clickable.mx-Original= " 0"
-  span.mx-Clickable.mx-Enlarge= " +"
-  span.mx-Clickable.mx-Zoom= " ]"
-  span.mx-Clickable.mx-Rev300= " -5"
-  span.mx-Clickable.mx-Rev5= " <5"
-  span.mx-Clickable.mx-Fwd30= " >30"
-  span.mx-Clickable.mx-Fwd300= " +5"
-
 if Info
   .mx-TextColumn.mx-TextBubble
     p= Info.SubTitle
     p= Info.Description
     if Info.Airdate
       p= "Airdate: " + Info.Airdate
+
+.mx-TextColumn.mx-ControlBubble
+  div
+    button.mx-Clickable.mx-Rev300 -5m
+    button.mx-Clickable.mx-Rev30 -30s
+    button.mx-Clickable.mx-Rev5 -5s
+    button.mx-Clickable.mx-Fwd30 +30s
+    button.mx-Clickable.mx-Fwd300 +5m
+  div
+    button.mx-Clickable.mx-Shrink Shink
+    button.mx-Clickable.mx-Original Normal
+    button.mx-Clickable.mx-Zoom Zoom
+    button.mx-Clickable.mx-Max Max

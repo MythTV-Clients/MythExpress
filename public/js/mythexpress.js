@@ -55,8 +55,8 @@ $(document).ready(function() {
         var res = { };
         res.vid = $("#Content .nm-VideoBox");
         if (res.vid.length == 1) {
-            res.W = res.vid.attr("width");
-            res.H = res.vid.attr("height");
+            res.W = Number(res.vid.attr("width"));
+            res.H = Number(res.vid.attr("height"));
             res.baseW = Number(res.vid.attr("data-W"));
             res.baseH = Number(res.vid.attr("data-H"));
         }
@@ -97,6 +97,11 @@ $(document).ready(function() {
 
                       if ($("#Content .mx-StreamList").length > 0) {
                           setTimeout(updateStreamStatus, 5000);
+                      }
+
+                      var videoControls = $("#Content .mx-ControlBubble button");
+                      if (videoControls.length > 0) {
+                          videoControls.button();
                       }
                   });
 
@@ -346,7 +351,7 @@ $(document).ready(function() {
                 }
             }
 
-            else if (target.hasClass("mx-Enlarge")) {
+            else if (target.hasClass("mx-Zoom")) {
                 var box = getVideoParameters();
                 if (box.baseW) {
                     box.vid.attr("width", box.W + box.baseW / 2);
@@ -354,7 +359,7 @@ $(document).ready(function() {
                 }
             }
 
-            else if (target.hasClass("mx-Zoom")) {
+            else if (target.hasClass("mx-Max")) {
                 var box = getVideoParameters();
                 if (box.baseW) {
                     var ratio = document.width / box.baseW;
@@ -374,6 +379,13 @@ $(document).ready(function() {
                 var vid = $("#Content .nm-VideoBox");
                 if (vid.length == 1) {
                     vid[0].currentTime = vid[0].currentTime - 5;
+                }
+            }
+
+            else if (target.hasClass("mx-Rev30")) {
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    vid[0].currentTime = vid[0].currentTime - 30;
                 }
             }
 
