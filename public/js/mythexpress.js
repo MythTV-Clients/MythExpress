@@ -51,6 +51,18 @@ $(document).ready(function() {
         return result;
     }
 
+    function getVideoParameters() {
+        var res = { };
+        res.vid = $("#Content .nm-VideoBox");
+        if (res.vid.length == 1) {
+            res.W = res.vid.attr("width");
+            res.H = res.vid.attr("height");
+            res.baseW = Number(res.vid.attr("data-W"));
+            res.baseH = Number(res.vid.attr("data-H"));
+        }
+        return res;
+    }
+
     // ////////////////////////////////////////////////////////////////////////
     // History management
     // ////////////////////////////////////////////////////////////////////////
@@ -316,6 +328,67 @@ $(document).ready(function() {
                       function (info, textStatus, jqXHR) {
                           $("#InfoDialogContent").html(info);
                       });
+            }
+
+            else if (target.hasClass("mx-Shrink")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.W - box.baseW / 2);
+                    box.vid.attr("height", box.H - box.baseH / 2);
+                }
+            }
+
+            else if (target.hasClass("mx-Original")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.baseW);
+                    box.vid.attr("height", box.baseH);
+                }
+            }
+
+            else if (target.hasClass("mx-Enlarge")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.W + box.baseW / 2);
+                    box.vid.attr("height", box.H + box.baseH / 2);
+                }
+            }
+
+            else if (target.hasClass("mx-Zoom")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    var ratio = document.width / box.baseW;
+                    box.vid.attr("width", document.width);
+                    box.vid.attr("height", box.baseH * ratio);
+                }
+            }
+
+            else if (target.hasClass("mx-Rev300")) {
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    vid[0].currentTime = vid[0].currentTime - 300;
+                }
+            }
+
+            else if (target.hasClass("mx-Rev5")) {
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    vid[0].currentTime = vid[0].currentTime - 5;
+                }
+            }
+
+            else if (target.hasClass("mx-Fwd30")) {
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    vid[0].currentTime = vid[0].currentTime + 30;
+                }
+            }
+
+            else if (target.hasClass("mx-Fwd300")) {
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    vid[0].currentTime = vid[0].currentTime + 300;
+                }
             }
 
             return false;

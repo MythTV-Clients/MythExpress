@@ -1,7 +1,17 @@
 if typeof(Width) === "undefined"
   video.nm-VideoBox(controls,autoplay,src=FullURL)
 else
-  video.nm-VideoBox(controls,autoplay,src=FullURL,width=Width,height=Height)
+  video.nm-VideoBox(controls,autoplay,src=FullURL,width=Width,height=Height,data-W=Width,data-H=Height)
+
+.mx-VideoControl
+  span.mx-Clickable.mx-Shrink= " -"
+  span.mx-Clickable.mx-Original= " 0"
+  span.mx-Clickable.mx-Enlarge= " +"
+  span.mx-Clickable.mx-Zoom= " ]"
+  span.mx-Clickable.mx-Rev300= " -5"
+  span.mx-Clickable.mx-Rev5= " <5"
+  span.mx-Clickable.mx-Fwd30= " >30"
+  span.mx-Clickable.mx-Fwd300= " +5"
 
 if Info
   .mx-TextColumn.mx-TextBubble

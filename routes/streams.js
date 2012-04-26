@@ -74,38 +74,41 @@ app.get("/streams", function(req, res) {
             var recording = mythtv.byFilename[req.query.FileName];
             var props = mythtv.DecodeVideoProps(recording);
 
-            var encoding = { Width:  640, Bitrate: 1240000 };
+            //var encoding = { Width:  960, Bitrate: 1480000 };
+            var encoding = { Width:  800, Bitrate: 1360000 };
 
+            //var encoding = { Width:  640, Bitrate: 1240000 };
+            //
             // there must be a better way!
-            if (req.headers['user-agent'].match(/iPad/)) {
-                if (props.HDTV || props.Widescreen) {
-                    if (props["720p"])
-                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
-                    if (props["1080p"])
-                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
-                } else {
-                    encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
-                    if (props["720p"])
-                        encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
-                    if (props["1080p"])
-                        encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
-                }
-            }
+            // if (req.headers['user-agent'].match(/iPad/)) {
+            //     if (props.HDTV || props.Widescreen) {
+            //         if (props["720p"])
+            //             encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
+            //         if (props["1080p"])
+            //             encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
+            //     } else {
+            //         encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
+            //         if (props["720p"])
+            //             encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
+            //         if (props["1080p"])
+            //             encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+            //     }
+            // }
 
-            else {
-                if (props.HDTV || props.Widescreen) {
-                    if (props["720p"])
-                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
-                    if (props["1080p"])
-                        encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
-                } else {
-                    encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
-                    if (props["720p"])
-                        encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
-                    if (props["1080p"])
-                        encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
-                }
-            }
+            // else {
+            //     if (props.HDTV || props.Widescreen) {
+            //         if (props["720p"])
+            //             encoding = { Aspect: "16:9", Width: 1280, Bitrate: 1500000 };
+            //         if (props["1080p"])
+            //             encoding = { Aspect: "16:9", Width: 1280, Bitrate: 4500000 };
+            //     } else {
+            //         encoding = { Aspect: "4:3",  Width:  640, Bitrate: 1240000 };
+            //         if (props["720p"])
+            //             encoding = { Aspect: "4:3", Width: 960, Bitrate: 2500000 };
+            //         if (props["1080p"])
+            //             encoding = { Aspect: "4:3", Width: 1280, Bitrate: 4500000 };
+            //     }
+            // }
 
             console.log('encoding parameters from props ' + recording.VideoProps);
             console.log(props);
