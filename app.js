@@ -63,7 +63,7 @@ app.configure('production', function(){
             ]
         },
         'css' : {
-            'route' : new RegExp("/css/all.css"),
+            'route' : new RegExp("/css/dark-hive/all.css"),
             'path' : __dirname + '/public/css/',
             'dataType' : 'css',
             'stale' : true,
