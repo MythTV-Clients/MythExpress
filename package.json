@@ -1,12 +1,13 @@
 {
     "name" : "MythExpress",
-    "version" : "0.0.2",
+    "version" : "0.0.3",
     "private" : true,
     "dependencies" : {
         "express" : "2.5.4",
         "jade" : ">= 0.0.1",
         "connect-gzip" : "0.1.5",
         "connect-assetmanager" : ">= 0.0.26",
-        "nopt" : ">=1.0.10"
+        "nopt" : ">=1.0.10",
+        "socket.io" : ">=0.9.6"
     }
 }

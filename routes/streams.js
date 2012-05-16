@@ -75,7 +75,8 @@ app.get("/streams", function(req, res) {
             var props = mythtv.DecodeVideoProps(recording);
 
             //var encoding = { Width:  960, Bitrate: 1480000 };
-            var encoding = { Width:  800, Bitrate: 1360000 };
+            //var encoding = { Width:  800, Bitrate: 1360000 };
+            var encoding = { Width:  720, Bitrate: 1360000 };
 
             //var encoding = { Width:  640, Bitrate: 1240000 };
             //

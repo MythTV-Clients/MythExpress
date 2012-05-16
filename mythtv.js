@@ -1,6 +1,31 @@
 
 var http = require('http');
 var path = require('path');
+var net = require('net');
+
+var mythProtocolTokens = {
+    64 : "8675309J",
+    65 : "D2BB94C2",
+    66 : "0C0FFEE0",
+    67 : "0G0G0G0",
+    68 : "90094EAD",
+    69 : "63835135",
+    70 : "53153836",
+    71 : "05e82186",
+    72 : "D78EFD6F",
+    73 : "D7FE8D6F",
+    74 : "SingingPotato",
+    "Latest" : 74
+};
+
+function mythCommand(args) {
+    var cmd = "";
+    args.forEach(function (arg) {
+        cmd = cmd + " " + arg;
+    });
+    //console.log((cmd.length-1 + "        ").substr(0,8) + cmd.substr(1));
+    return (cmd.length-1 + "        ").substr(0,8) + cmd.substr(1);
+}
 
 module.exports = function(args) {
 
@@ -157,14 +182,167 @@ module.exports = function(args) {
                     }
                 });
                                                                     curList.List.push(video);
-            });
+                                                                   });
         Object.keys(byVideoFolder).forEach(function (path) {
             byVideoFolder[path].List.sort(videoCompare);
         });
         console.log(Object.keys(byVideoFolder).length + " video folders");
     });
 
+var BE = {
 
+    protocolVersion : mythProtocolTokens.Latest,
+
+    connect : function(callback) {
+        var socket = net.connect(process.env["MX_PROTOCOL"] || 6543, backend.host, function() {
+            socket.write(mythCommand(["MYTH_PROTO_VERSION", BE.protocolVersion, mythProtocolTokens[BE.protocolVersion]]));
+        });
+
+        var inPrefix = true;
+        var needed = 8;
+        var incoming = "";
+
+        socket.on('data', function(data) {
+
+            console.log('[' + data.toString() + ']');
+            incoming = incoming + data.toString();
+
+            while (incoming.length >= needed) {
+
+                var message = incoming.substr(0, needed);
+                incoming = incoming.substr(needed);
+
+                if (inPrefix) {
+                    inPrefix = false;
+                    needed = Number(message);
+                } else {
+
+                    inPrefix = true;
+                    needed = 8;
+
+                    var response = message.split(/\[\]:\[\]/);
+
+                    if (false && response.length > 1 &&
+                        !(response[1].substr(0,17) === "UPDATE_FILE_SIZE " ||
+                          response[1].substr(0,30) === "SYSTEM_EVENT CLIENT_CONNECTED " ||
+                          response[1].substr(0,33) === "SYSTEM_EVENT CLIENT_DISCONNECTED "
+                         ))
+                        console.log(response);
+                    //console.log(message);
+
+                    if (response[0] === "BACKEND_MESSAGE") {
+                        if (!(response[1].substr(0,17) === "UPDATE_FILE_SIZE " ||
+                              response[1].substr(0,30) === "SYSTEM_EVENT CLIENT_CONNECTED " ||
+                              response[1].substr(0,33) === "SYSTEM_EVENT CLIENT_DISCONNECTED "))
+                        {
+                            response.shift();
+                            callback(response);
+                        }
+                    }
+
+                    else if (response[0] === "ACCEPT") {
+                        socket.write(mythCommand(["ANN", "Monitor", "MythExpress", 1]));
+                    }
+
+                    else if (response[0] === "REJECT") {
+                        BE.protocolVersion = Number(response[1]);
+                        if (mythProtocolTokens[BE.protocolVersion]) {
+                            BE.connect(callback);
+                        } else {
+                            console.log("Unknown protocol version '" + BE.protocolVersion + "'");
+                        }
+                    }
+
+                }
+            }
+
+        });
+    },
+
+    pullProgramInfo : function (message) {
+        program = { };
+
+        program.title = message.shift();
+        program.subtitle = message.shift();
+        program.description = message.shift();
+        if (this.protocolVersion >= 67) {
+            program.season = message.shift();
+            program.episode = message.shift();
+        }
+        program.category = message.shift();
+        program.chanid = message.shift();
+        program.channum = message.shift();
+        program.callsign = message.shift();
+        program.channame = message.shift();
+        program.filename = message.shift();
+        program.filesize = message.shift();
+        program.starttime = message.shift();
+        program.endtime = message.shift();
+        program.findid = message.shift();
+        program.hostname = message.shift();
+        program.sourceid = message.shift();
+        program.cardid = message.shift();
+        program.inputid = message.shift();
+        program.recpriority = message.shift();
+        program.recstatus = message.shift();
+        program.recordid = message.shift();
+        program.rectype = message.shift();
+        program.dupin = message.shift();
+        program.dupmethod = message.shift();
+        program.recstartts = message.shift();
+        program.recendts = message.shift();
+        program.programflags = message.shift();
+        program.recgroup = message.shift();
+        program.outputfilters = message.shift();
+        program.seriesid = message.shift();
+        program.programid = message.shift();
+        if (this.protocolVersion >= 67) {
+            program.inetref = message.shift();
+        }
+        program.lastmodified = message.shift();
+        program.stars = message.shift();
+        program.airdate = message.shift();
+        program.playgroup = message.shift();
+        program.recpriority2 = message.shift();
+        program.parentid = message.shift();
+        program.storagegroup = message.shift();
+        program.audio_props = message.shift();
+        program.video_props = message.shift();
+        program.subtitle_type = message.shift();
+        program.year = message.shift();
+
+        return program;
+    }
+};
+
+BE.connect(function(message) {
+    if (message[0].substr(0,13) === "SYSTEM_EVENT ") {
+        var args = message[0].split(/ /);
+        args.shift();
+        var event = { };
+        event.name = args.shift();
+        while (args.length > 0) {
+            var data = args.shift();
+            event[data.toLowerCase()] = args.shift();
+        }
+        console.log('System event:');
+        console.log(event);
+    }
+
+    else {
+        if (message[0].substring(0,22) === "RECORDING_LIST_CHANGE ") {
+            var changeType = message.shift().substring(22);
+            var program = BE.pullProgramInfo(message);
+            console.log('program change: ' + changeType);
+            console.log(program);
+        }
+
+        else {
+            console.log('Non system event:');
+            console.log(message);
+        }
+    }
+});
 
     return {
 
