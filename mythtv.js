@@ -39,8 +39,6 @@ module.exports = function(args) {
                     'accept': 'application/json' }
     };
 
-    var programList = [ ];    // all programs as returned by myth + a sequence number (array pos) added during load
-
     var byRecGroup = { "All" : [ ], "Default" : [ ] };
     var byFilename = { };
     var sortedTitles = [ ];
@@ -104,7 +102,45 @@ module.exports = function(args) {
         req.end();
     };
 
-
+    var recordingListChange = function (change, program) {
+        if (change[0] === "ADD") {
+            var chanId = change[1];
+            var startTs = change[2];
+            console.log('add new recording ' + chanId + ' ' + startTs);
+        }
+        else if (change[0] === "UPDATE") {
+            if (byFilename.hasOwnProperty(program.FileName)) {
+                var oldProg = byFilename[program.FileName];
+                if (program.Recording.RecGroup === "Deleted") {
+                    delete byFilename[program.FileName];
+                    ["All", oldProg.Recording.RecGroup].forEach(function (recGroup) {
+                        var episodes = byRecGroup[recGroup][oldProg.Title];
+                        for (var found = false, i = 0; !found && i < episodes.length; i++) {
+                            if (episodes[i].FileName === oldProg.FileName) {
+                                found = true;
+                                episodes.remove(i);
+                            }
+                        }
+                        if (episodes.length == 0) {
+                            delete byRecGroup[recGroup][oldProg.Title];
+                        }
+                    });
+                    console.log('update -> delete ' + oldProg.StartTime + ' ' + oldProg.Title);
+                    //console.log(program);
+                } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
+                    console.log('update');
+                    console.log(program);
+                }
+            }
+        }
+        else if (change[0] === "DELETE") {
+            // already handled with update's change to recgroup = Deleted
+        }
+        else {
+            console.log('unhandled program change: ' + change);
+            console.log(program);
+        }
+    };
 
     reqJSON(
         {
@@ -112,26 +148,19 @@ module.exports = function(args) {
         },
         function (pl) {
             var progTitles = { };
-            programList.length = 0;
             pl.ProgramList.Programs.forEach(function (prog) {
-                prog.seq = programList.length;
-                programList.push(prog);
-
                 progTitles[prog.Title] = true;
 
                 byFilename[prog.FileName] = prog;
 
-                if (!byRecGroup[prog.Recording.RecGroup])
-                    byRecGroup[prog.Recording.RecGroup] = { };
-
-                var recGroup = byRecGroup[prog.Recording.RecGroup];
-                if (!recGroup[prog.Title])
-                    recGroup[prog.Title] = [ ];
-                recGroup[prog.Title].push(prog);
-
-                if (!byRecGroup.All[prog.Title])
-                    byRecGroup.All[prog.Title] = [ ];
-                byRecGroup.All[prog.Title].push(prog);
+                ["All", prog.Recording.RecGroup].forEach(function (recGroup) {
+                    if (!byRecGroup[recGroup])
+                        byRecGroup[recGroup] = { };
+                    var groupRecordings = byRecGroup[recGroup];
+                    if (!groupRecordings[prog.Title])
+                        groupRecordings[prog.Title] = [ ];
+                    groupRecordings[prog.Title].push(prog);
+                });
             });
 
             sortedTitles.length = 0;
@@ -189,6 +218,10 @@ module.exports = function(args) {
         console.log(Object.keys(byVideoFolder).length + " video folders");
     });
 
+var deleteRecording = function(info) {
+};
+
+
 var BE = {
 
     protocolVersion : mythProtocolTokens.Latest,
@@ -204,7 +237,7 @@ var BE = {
 
         socket.on('data', function(data) {
 
-            console.log('[' + data.toString() + ']');
+            //console.log('[' + data.toString() + ']');
             incoming = incoming + data.toString();
 
             while (incoming.length >= needed) {
@@ -231,13 +264,8 @@ var BE = {
                     //console.log(message);
 
                     if (response[0] === "BACKEND_MESSAGE") {
-                        if (!(response[1].substr(0,17) === "UPDATE_FILE_SIZE " ||
-                              response[1].substr(0,30) === "SYSTEM_EVENT CLIENT_CONNECTED " ||
-                              response[1].substr(0,33) === "SYSTEM_EVENT CLIENT_DISCONNECTED "))
-                        {
-                            response.shift();
-                            callback(response);
-                        }
+                        response.shift();
+                        callback(response);
                     }
 
                     else if (response[0] === "ACCEPT") {
@@ -260,56 +288,56 @@ var BE = {
     },
 
     pullProgramInfo : function (message) {
-        program = { };
+        program = { Channel : { }, Recording : { } };
 
-        program.title = message.shift();
-        program.subtitle = message.shift();
-        program.description = message.shift();
+        program.Title = message.shift();
+        program.SubTitle = message.shift();
+        program.Description = message.shift();
         if (this.protocolVersion >= 67) {
-            program.season = message.shift();
-            program.episode = message.shift();
+            program.Season = message.shift();
+            program.Episode = message.shift();
         }
-        program.category = message.shift();
-        program.chanid = message.shift();
-        program.channum = message.shift();
-        program.callsign = message.shift();
-        program.channame = message.shift();
-        program.filename = message.shift();
-        program.filesize = message.shift();
-        program.starttime = message.shift();
-        program.endtime = message.shift();
-        program.findid = message.shift();
-        program.hostname = message.shift();
-        program.sourceid = message.shift();
-        program.cardid = message.shift();
-        program.inputid = message.shift();
-        program.recpriority = message.shift();
-        program.recstatus = message.shift();
-        program.recordid = message.shift();
-        program.rectype = message.shift();
-        program.dupin = message.shift();
-        program.dupmethod = message.shift();
-        program.recstartts = message.shift();
-        program.recendts = message.shift();
-        program.programflags = message.shift();
-        program.recgroup = message.shift();
-        program.outputfilters = message.shift();
-        program.seriesid = message.shift();
-        program.programid = message.shift();
+        program.Category = message.shift();
+        program.Channel.ChanId = message.shift();
+        program.Channel.ChanNum = message.shift();
+        program.Channel.CallSign = message.shift();
+        program.Channel.ChanName = message.shift();
+        program.FileName = message.shift();
+        program.FileSize = message.shift();
+        program.StartTime = message.shift();
+        program.EndTime = message.shift();
+        program.FindId = message.shift();
+        program.HostName = message.shift();
+        program.SourceId = message.shift();
+        program.CardId = message.shift();
+        program.Channel.InputId = message.shift();
+        program.Recording.Priority = message.shift();
+        program.Recording.Status = message.shift();
+        program.Recording.RecordId = message.shift();
+        program.Recording.RecType = message.shift();
+        program.Recording.DupInType = message.shift();
+        program.Recording.DupMethod = message.shift();
+        program.Recording.StartTs = message.shift();
+        program.Recording.EndTs = message.shift();
+        program.ProgramFlags = message.shift();
+        program.Recording.RecGroup = message.shift();
+        program.OutputFilters = message.shift();
+        program.SeriesId = message.shift();
+        program.ProgramId = message.shift();
         if (this.protocolVersion >= 67) {
-            program.inetref = message.shift();
+            program.Inetref = message.shift();
         }
-        program.lastmodified = message.shift();
-        program.stars = message.shift();
-        program.airdate = message.shift();
-        program.playgroup = message.shift();
-        program.recpriority2 = message.shift();
-        program.parentid = message.shift();
-        program.storagegroup = message.shift();
-        program.audio_props = message.shift();
-        program.video_props = message.shift();
-        program.subtitle_type = message.shift();
-        program.year = message.shift();
+        program.LastModified = message.shift();
+        program.Stars = message.shift();
+        program.Airdate = message.shift();
+        program.PlayGroup = message.shift();
+        program.Recording.Priority2 = message.shift();
+        program.ParentId = message.shift();
+        program.StorageGroup = message.shift();
+        program.AudioProps = message.shift();
+        program.VideoProps = message.shift();
+        program.SubProps = message.shift();
+        program.Year = message.shift();
 
         return program;
     }
@@ -325,17 +353,45 @@ BE.connect(function(message) {
             var data = args.shift();
             event[data.toLowerCase()] = args.shift();
         }
-        console.log('System event:');
-        console.log(event);
+
+        if (event.name === "CLIENT_CONNECTED" ||
+            event.name === "CLIENT_DISCONNECTED" ||
+            event.name === "SCHEDULER_RAN" ||
+            event.name === "SCHEDULE_CHANGE" ||
+            event.name === "REC_PENDING" ||
+            event.name === "REC_STARTED" ||
+            event.name === "REC_FINISHED" ||
+            event.name === "REC_EXPIRED" ||
+            event.name === "REC_DELETED") {
+            // do nothing
+        }
+
+        else {
+            console.log('System event:');
+            console.log(event);
+        }
+    }
+
+    else if (message[0].substr(0,20) === "SYSTEM_EVENT_RESULT ") {
     }
 
     else {
-        if (message[0].substring(0,22) === "RECORDING_LIST_CHANGE ") {
-            var changeType = message.shift().substring(22);
+        var head = message[0].split(/[ ]/);
+        var msgType = head[0];
+        if (msgType === "RECORDING_LIST_CHANGE") {
+            var change = message.shift().substring(22).split(/[ ]/);
+            var changeType = change[0];
             var program = BE.pullProgramInfo(message);
-            console.log('program change: ' + changeType);
-            console.log(program);
+            recordingListChange(change,program);
         }
+
+        else if (msgType === "UPDATE_FILE_SIZE" ||
+                 msgType === "ASK_RECORDING" ||
+                 msgType === "COMMFLAG_START" ||
+                 msgType === "COMMFLAG_UPDATE" ||
+                 msgType === "SCHEDULE_CHANGE") {
+        }
+
 
         else {
             console.log('Non system event:');

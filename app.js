@@ -11,6 +11,14 @@ var url = require('url');
 var gzip = require('connect-gzip');
 var path = require("path");
 
+// Array Remove - By John Resig (MIT Licensed)
+// http://ejohn.org/blog/javascript-array-remove/
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 // Command line arguments
 
 var nopt = require("nopt");
