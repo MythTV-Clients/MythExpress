@@ -102,6 +102,30 @@ module.exports = function(args) {
         req.end();
     };
 
+    var addRecordingToRecGroup = function (recording, recGroup) {
+        if (!byRecGroup[recGroup])
+            byRecGroup[recGroup] = { };
+        var groupRecordings = byRecGroup[recGroup];
+        if (!groupRecordings[recording.Title])
+            groupRecordings[recording.Title] = [ ];
+        groupRecordings[recording.Title].push(recording);
+    };
+
+    var delRecordingFromRecGroup = function (recording, recGroup) {
+        if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
+            var episodes = byRecGroup[recGroup][recording.Title];
+            for (var found = false, i = 0; !found && i < episodes.length; i++) {
+                if (episodes[i].FileName === recording.FileName) {
+                    found = true;
+                    episodes.remove(i);
+                }
+            }
+            if (episodes.length == 0) {
+                delete byRecGroup[recGroup][recording.Title];
+            }
+        }
+    };
+
     var recordingListChange = function (change, program) {
         if (change[0] === "ADD") {
             var chanId = change[1];
@@ -113,23 +137,17 @@ module.exports = function(args) {
                 var oldProg = byFilename[program.FileName];
                 if (program.Recording.RecGroup === "Deleted") {
                     delete byFilename[program.FileName];
-                    ["All", oldProg.Recording.RecGroup].forEach(function (recGroup) {
-                        var episodes = byRecGroup[recGroup][oldProg.Title];
-                        for (var found = false, i = 0; !found && i < episodes.length; i++) {
-                            if (episodes[i].FileName === oldProg.FileName) {
-                                found = true;
-                                episodes.remove(i);
-                            }
-                        }
-                        if (episodes.length == 0) {
-                            delete byRecGroup[recGroup][oldProg.Title];
-                        }
-                    });
+                    delRecordingFromRecGroup(oldProg, "All");
+                    delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
                     console.log('update -> delete ' + oldProg.StartTime + ' ' + oldProg.Title);
                     //console.log(program);
                 } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
-                    console.log('update');
-                    console.log(program);
+                    delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
+                    oldProg.Recording.RecGroup = program.Recording.RecGroup;
+                    addRecordingToRecGroup(oldProg, program.Recording.RecGroup);
+                    console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
+                                ' -> ' + program.Recording.RecGroup);
+                    // console.log(program);
                 }
             }
         }
@@ -153,14 +171,8 @@ module.exports = function(args) {
 
                 byFilename[prog.FileName] = prog;
 
-                ["All", prog.Recording.RecGroup].forEach(function (recGroup) {
-                    if (!byRecGroup[recGroup])
-                        byRecGroup[recGroup] = { };
-                    var groupRecordings = byRecGroup[recGroup];
-                    if (!groupRecordings[prog.Title])
-                        groupRecordings[prog.Title] = [ ];
-                    groupRecordings[prog.Title].push(prog);
-                });
+                addRecordingToRecGroup(prog, "All");
+                addRecordingToRecGroup(prog, prog.Recording.RecGroup);
             });
 
             sortedTitles.length = 0;
