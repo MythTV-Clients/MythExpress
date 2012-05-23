@@ -80,6 +80,10 @@ module.exports = function(args) {
         return t1 === t2 ? 0 : (t1 < t2 ? -1 : 1);
     };
 
+    var toUTCString = function (localTs) {
+        return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
+    };
+
     var reqJSON = function (options, callback) {
         var allOptions = { };
         Object.keys(backend).forEach(function (option) {
@@ -191,6 +195,28 @@ module.exports = function(args) {
         }
     };
 
+    var retrieveAndAddRecording = function (chanId, startTs) {
+        console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+        reqJSON(
+            {
+                path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
+            },
+            function (response) {
+                var recording = response.Program;
+                var startingTitleCount = sortedTitles.length;
+
+                console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
+                newRecording(recording);
+
+                if (sortedTitles.length > startingTitleCount)
+                    sortedTitles.sort(titleCompare);
+
+                var title = recording.Title;
+                byRecGroup["All"][title].sort(episodeCompare);
+                byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
+            });
+    };
+
     var recordingListChange = function (change, program) {
         if (change[0] === "ADD") {
             var chanId = change[1];
@@ -198,28 +224,9 @@ module.exports = function(args) {
 
             // event time is local, services time is UTC
             var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
-            startTs = startDate.getUTCFullYear() + "-" + ("0" + (startDate.getUTCMonth()+1)).substr(-2) + "-" + ("0" + startDate.getUTCDate()).substr(-2) + "T" + ("0" + startDate.getUTCHours()).substr(-2) + ":" + ("0" + startDate.getUTCMinutes()).substr(-2) + ":" + ("0" + startDate.getUTCSeconds()).substr(-2)
+            startTs = toUTCString(startDate);
 
-            //console.log(change);
-            console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
-            reqJSON(
-                {
-                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
-                },
-                function (response) {
-                    var recording = response.Program;
-                    var startingTitleCount = sortedTitles.length;
-
-                    console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
-                    newRecording(recording);
-
-                    if (sortedTitles.length > startingTitleCount)
-                        sortedTitles.sort(titleCompare);
-
-                    var title = recording.Title;
-                    byRecGroup["All"][title].sort(episodeCompare);
-                    byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
-                });
+            retrieveAndAddRecording(chanId, startTs)
         }
 
         else if (change[0] === "UPDATE") {
@@ -238,6 +245,12 @@ module.exports = function(args) {
                     console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
                                 ' -> ' + program.Recording.RecGroup);
                     // console.log(program);
+                }
+            } else {
+                if (program.Recording.RecGroup !== "Deleted") {
+                    var unixStartTs = new Date(program.Recording.StartTs*1000);
+                    var startTs = toUTCString(unixStartTs);
+                    retrieveAndAddRecording(program.Channel.ChanId, startTs)
                 }
             }
         }
