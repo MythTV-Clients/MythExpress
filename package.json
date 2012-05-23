@@ -1,6 +1,6 @@
 {
     "name" : "MythExpress",
-    "version" : "0.0.3",
+    "version" : "0.1.0",
     "private" : true,
     "dependencies" : {
         "express" : "2.5.4",
@@ -8,6 +8,6 @@
         "connect-gzip" : "0.1.5",
         "connect-assetmanager" : ">= 0.0.26",
         "nopt" : ">=1.0.10",
-        "socket.io" : ">=0.9.6"
+        "ws" : ">=0.4.15"
     }
 }

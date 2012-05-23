@@ -105,14 +105,58 @@ module.exports = function(args) {
         req.end();
     };
 
+    var eventSocket = {
+
+        recChange : { },
+        recGroupsChanged : false,
+
+        recordingChange : function (change) {
+            if (!change.title)
+                change.title = "*";
+            if (!this.recChange[change.group])
+                this.recChange[change.group] = { };
+            this.recChange[change.group][change.title] = true;
+        },
+
+        videoChange : function (change) {
+        },
+
+        recGroupChange : function () {
+            this.recGroupsChanged = true;
+        },
+
+        sendChanges : function () {
+            var rc = this.recChange;
+            var grpList = [ ];
+            for (var grp in this.recChange) {
+                var titleList = [ ];
+                for (var title in this.recChange[grp]) {
+                    console.log({ Recordings : true, Group : grp, Title : title});
+                    titleList.push(title);
+                }
+                titleList.forEach(function (title) { delete rc[grp][title]; });
+            }
+            grpList.forEach(function (grp) { delete rc[grp]; });
+            if (this.recGroupsChanged) {
+                console.log({ RecordingGroups : true })
+                this.recGroupsChanged = false;
+            }
+        }
+    };
+
     var addRecordingToRecGroup = function (recording, recGroup) {
         if (!byRecGroup[recGroup]) {
             byRecGroup[recGroup] = { };
             recGroups.push(recGroup);
+            eventSocket.recGroupChange();
         }
         var groupRecordings = byRecGroup[recGroup];
-        if (!groupRecordings[recording.Title])
+        if (!groupRecordings[recording.Title]) {
             groupRecordings[recording.Title] = [ ];
+            eventSocket.recordingChange({ group : recGroup});
+        } else {
+            eventSocket.recordingChange({ group : recGroup, title : recording.Title});
+        }
         groupRecordings[recording.Title].push(recording);
     };
 
@@ -139,6 +183,10 @@ module.exports = function(args) {
             }
             if (episodes.length == 0) {
                 delete byRecGroup[recGroup][recording.Title];
+                if (byRecGroup[recGroup].length == 0) {
+                    delete byRecGroup[recGroup];
+                    eventSocket.recGroupChange();
+                }
             }
         }
     };
@@ -152,7 +200,7 @@ module.exports = function(args) {
             var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
             startTs = startDate.getUTCFullYear() + "-" + ("0" + (startDate.getUTCMonth()+1)).substr(-2) + "-" + ("0" + startDate.getUTCDate()).substr(-2) + "T" + ("0" + startDate.getUTCHours()).substr(-2) + ":" + ("0" + startDate.getUTCMinutes()).substr(-2) + ":" + ("0" + startDate.getUTCSeconds()).substr(-2)
 
-            console.log(change);
+            //console.log(change);
             console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
             reqJSON(
                 {
@@ -162,6 +210,7 @@ module.exports = function(args) {
                     var recording = response.Program;
                     var startingTitleCount = sortedTitles.length;
 
+                    console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
                     newRecording(recording);
 
                     if (sortedTitles.length > startingTitleCount)
@@ -223,14 +272,15 @@ module.exports = function(args) {
 
             sortedTitles.sort(titleCompare);
 
-            console.log('myth data loaded');
-
             recGroups.forEach(function (recGroup) {
                 console.log('    ' + recGroup + ' ' + Object.keys(byRecGroup[recGroup]).length);
                 Object.keys(byRecGroup[recGroup]).forEach(function (title) {
                     byRecGroup[recGroup][title].sort(episodeCompare);
                 });
             });
+
+            console.log('myth data loaded');
+            eventSocket.sendChanges();
         });
 
 
@@ -266,6 +316,7 @@ module.exports = function(args) {
             byVideoFolder[path].List.sort(videoCompare);
         });
         console.log(Object.keys(byVideoFolder).length + " video folders");
+        eventSocket.sendChanges();
     });
 
 var deleteRecording = function(info) {
@@ -334,6 +385,8 @@ var BE = {
 
                 }
             }
+
+            eventSocket.sendChanges();
 
         });
 
