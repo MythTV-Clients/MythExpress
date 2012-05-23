@@ -42,7 +42,8 @@ module.exports = function(args) {
     var byRecGroup = { "All" : [ ], "Default" : [ ] };
     var byFilename = { };
     var sortedTitles = [ ];
-    var recGroups = [ ];
+    var progTitles = { };
+    var recGroups = [ "All", "Default" ];
 
     var byVideoFolder = { };
     var byVideoId = [ ];
@@ -92,10 +93,12 @@ module.exports = function(args) {
             reply.setEncoding('utf8');
             reply.on('data', function (chunk) {
                 response += chunk;
+                //response += chunk.substr(0, chunk.length-2);
             });
 
             reply.on('end', function() {
                 callback(JSON.parse(response.replace(/[\r\n]/g,'')));
+                //callback(JSON.parse(response));
                 response = undefined;
             })
         });
@@ -103,12 +106,26 @@ module.exports = function(args) {
     };
 
     var addRecordingToRecGroup = function (recording, recGroup) {
-        if (!byRecGroup[recGroup])
+        if (!byRecGroup[recGroup]) {
             byRecGroup[recGroup] = { };
+            recGroups.push(recGroup);
+        }
         var groupRecordings = byRecGroup[recGroup];
         if (!groupRecordings[recording.Title])
             groupRecordings[recording.Title] = [ ];
         groupRecordings[recording.Title].push(recording);
+    };
+
+    var newRecording = function (recording) {
+        if (!progTitles.hasOwnProperty(recording.Title)) {
+            progTitles[recording.Title] = true;
+            sortedTitles.push(recording.Title);
+        }
+
+        byFilename[recording.FileName] = recording;
+
+        addRecordingToRecGroup(recording, "All");
+        addRecordingToRecGroup(recording, recording.Recording.RecGroup);
     };
 
     var delRecordingFromRecGroup = function (recording, recGroup) {
@@ -130,8 +147,32 @@ module.exports = function(args) {
         if (change[0] === "ADD") {
             var chanId = change[1];
             var startTs = change[2];
-            console.log('add new recording ' + chanId + ' ' + startTs);
+
+            // event time is local, services time is UTC
+            var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
+            startTs = startDate.getUTCFullYear() + "-" + ("0" + (startDate.getUTCMonth()+1)).substr(-2) + "-" + ("0" + startDate.getUTCDate()).substr(-2) + "T" + ("0" + startDate.getUTCHours()).substr(-2) + ":" + ("0" + startDate.getUTCMinutes()).substr(-2) + ":" + ("0" + startDate.getUTCSeconds()).substr(-2)
+
+            console.log(change);
+            console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+            reqJSON(
+                {
+                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
+                },
+                function (response) {
+                    var recording = response.Program;
+                    var startingTitleCount = sortedTitles.length;
+
+                    newRecording(recording);
+
+                    if (sortedTitles.length > startingTitleCount)
+                        sortedTitles.sort(titleCompare);
+
+                    var title = recording.Title;
+                    byRecGroup["All"][title].sort(episodeCompare);
+                    byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
+                });
         }
+
         else if (change[0] === "UPDATE") {
             if (byFilename.hasOwnProperty(program.FileName)) {
                 var oldProg = byFilename[program.FileName];
@@ -151,6 +192,7 @@ module.exports = function(args) {
                 }
             }
         }
+
         else if (change[0] === "DELETE") {
             // already handled with update's change to recgroup = Deleted
         }
@@ -165,28 +207,24 @@ module.exports = function(args) {
             path : '/Dvr/GetRecordedList'
         },
         function (pl) {
-            var progTitles = { };
+            progTitles.length = 0;
+            sortedTitles.length = 0;
+
+            recGroups.length = 0;
+            recGroups.push("All");
+            recGroups.push("Default");
+            byRecGroup.length = 0;
+            byRecGroup["All"] = [ ];
+            byRecGroup["Default"] = [ ];
+
             pl.ProgramList.Programs.forEach(function (prog) {
-                progTitles[prog.Title] = true;
-
-                byFilename[prog.FileName] = prog;
-
-                addRecordingToRecGroup(prog, "All");
-                addRecordingToRecGroup(prog, prog.Recording.RecGroup);
+                newRecording(prog);
             });
 
-            sortedTitles.length = 0;
-            for (var title in progTitles) {
-                sortedTitles.push(title);
-            }
             sortedTitles.sort(titleCompare);
 
             console.log('myth data loaded');
 
-            recGroups.length = 0;
-            Object.keys(byRecGroup).forEach(function (group) {
-                recGroups.push(group);
-            });
             recGroups.forEach(function (recGroup) {
                 console.log('    ' + recGroup + ' ' + Object.keys(byRecGroup[recGroup]).length);
                 Object.keys(byRecGroup[recGroup]).forEach(function (title) {
@@ -266,6 +304,7 @@ var BE = {
                     needed = 8;
 
                     var response = message.split(/\[\]:\[\]/);
+                    //console.log(response);
 
                     if (false && response.length > 1 &&
                         !(response[1].substr(0,17) === "UPDATE_FILE_SIZE " ||
@@ -296,6 +335,10 @@ var BE = {
                 }
             }
 
+        });
+
+        socket.on('close', function (hadError) {
+            console.log('socket closed (withError: ' + hadError + ')');
         });
     },
 
@@ -375,6 +418,8 @@ BE.connect(function(message) {
             event.name === "REC_FINISHED" ||
             event.name === "REC_EXPIRED" ||
             event.name === "REC_DELETED") {
+            console.log('Ignored System event:');
+            console.log(event);
             // do nothing
         }
 
