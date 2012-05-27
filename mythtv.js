@@ -105,200 +105,218 @@ module.exports = function(args) {
         req.end();
     };
 
-    var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
-    wss.clients = [ ];
-    wss.on('connection', function(ws) {
-        console.log('new client (' + wss.clients.length + ')');
-        ws.isAlive = true;
-        ws.on('close', function () {
-            ws.isAlive = false;
-            console.log('ws client closed');
+
+    // ////////////////////////////////////////////////////////////////////////
+    // events to the browser
+    // ////////////////////////////////////////////////////////////////////////
+
+    var eventSocket = (function () {
+
+        var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
+        wss.clients = [ ];
+        wss.on('connection', function(ws) {
+            console.log('new client (' + wss.clients.length + ')');
+            ws.isAlive = true;
+            ws.on('close', function () {
+                ws.isAlive = false;
+                console.log('ws client closed');
+            });
+            wss.clients.push(ws);
         });
-        wss.clients.push(ws);
-    });
-    wss.blast = function(msg) {
-        var msgStr = JSON.stringify(msg);
-        console.log('blast ' + msgStr);
-        wss.clients.forEach(function (webSocket) {
-            if (webSocket.isAlive) {
-                webSocket.send(msgStr);
-            }
-        });
-    };
-
-    var eventSocket = {
-
-        recChange : { },
-        recGroupsChanged : false,
-
-        recordingChange : function (change) {
-            if (!change.title)
-                change.title = "*";
-            if (!this.recChange[change.group])
-                this.recChange[change.group] = { };
-            this.recChange[change.group][change.title] = true;
-        },
-
-        videoChange : function (change) {
-        },
-
-        recGroupChange : function (grp) {
-            console.log('logged a recording group change: ' + grp);
-            this.recGroupsChanged = true;
-        },
-
-        sendChanges : function () {
-            var rc = this.recChange;
-            var grpList = [ ];
-            for (var grp in this.recChange) {
-                var titleList = [ ];
-                for (var title in this.recChange[grp]) {
-                    //console.log({ Recordings : true, Group : grp, Title : title});
-                    wss.blast({ Recordings : true, Group : grp, Title : title});
-                    titleList.push(title);
+        wss.blast = function(msg) {
+            var msgStr = JSON.stringify(msg);
+            console.log('blast ' + msgStr);
+            wss.clients.forEach(function (webSocket) {
+                if (webSocket.isAlive) {
+                    webSocket.send(msgStr);
                 }
-                titleList.forEach(function (title) { delete rc[grp][title]; });
+            });
+        };
+
+        var recChange = { };
+        var vidChange = false;
+        var recGroupsChanged = false;
+
+        return {
+            recordingChange : function (change) {
+                if (!change.title)
+                    change.title = "*";
+                if (!recChange[change.group])
+                    recChange[change.group] = { };
+                recChange[change.group][change.title] = true;
+            },
+
+            videoChange : function () {
+                vidChange = true;
+            },
+
+            recGroupChange : function (grp) {
+                console.log('logged a recording group change: ' + grp);
+                recGroupsChanged = true;
+            },
+
+            sendChanges : function () {
+                var rc = recChange;
+                var grpList = [ ];
+                for (var grp in recChange) {
+                    var titleList = [ ];
+                    for (var title in recChange[grp]) {
+                        wss.blast({ Recordings : true, Group : grp, Title : title});
+                        titleList.push(title);
+                    }
+                    titleList.forEach(function (title) { delete rc[grp][title]; });
+                }
+                grpList.slice(2).forEach(function (grp) { if (rc[grp].length == 0) delete rc[grp]; });
+
+                if (vidChange) {
+                    wss.blast({ Videos : true });
+                    vidChange = false;
+                }
+
+                if (recGroupsChanged) {
+                    wss.blast({ RecordingGroups : true })
+                    recGroupsChanged = false;
+                }
             }
-            grpList.forEach(function (grp) { delete rc[grp]; });
-            if (this.recGroupsChanged) {
-                //console.log({ RecordingGroups : true })
-                wss.blast({ RecordingGroups : true })
-                this.recGroupsChanged = false;
-            }
-        }
-    };
+        };
+    })();
+
+
+    // ////////////////////////////////////////////////////////////////////////
+    // data model maintenance
+    // ////////////////////////////////////////////////////////////////////////
 
     var mythMessageHandler = (function () {
 
-    var addRecordingToRecGroup = function (recording, recGroup) {
-        if (!byRecGroup[recGroup]) {
-            byRecGroup[recGroup] = { };
-            recGroups.push(recGroup);
-            eventSocket.recGroupChange(recGroup);
-        }
-        var groupRecordings = byRecGroup[recGroup];
-        if (!groupRecordings[recording.Title]) {
-            groupRecordings[recording.Title] = [ ];
-            eventSocket.recordingChange({ group : recGroup});
-        } else {
-            eventSocket.recordingChange({ group : recGroup, title : recording.Title});
-        }
-        groupRecordings[recording.Title].push(recording);
-    };
-
-    var newRecording = function (recording) {
-        if (!progTitles.hasOwnProperty(recording.Title)) {
-            progTitles[recording.Title] = true;
-            sortedTitles.push(recording.Title);
-        }
-
-        byFilename[recording.FileName] = recording;
-
-        addRecordingToRecGroup(recording, "All");
-        addRecordingToRecGroup(recording, recording.Recording.RecGroup);
-    };
-
-    var delRecordingFromRecGroup = function (recording, recGroup) {
-        if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
-            var episodes = byRecGroup[recGroup][recording.Title];
-            for (var found = false, i = 0; !found && i < episodes.length; i++) {
-                if (episodes[i].FileName === recording.FileName) {
-                    found = true;
-                    episodes.remove(i);
-                }
+        var addRecordingToRecGroup = function (recording, recGroup) {
+            if (!byRecGroup[recGroup]) {
+                byRecGroup[recGroup] = { };
+                recGroups.push(recGroup);
+                eventSocket.recGroupChange(recGroup);
             }
-            eventSocket.recordingChange({ group : recGroup, title : recording.Title});
-            if (episodes.length == 0) {
-                console.log('that was the last episode');
-                delete byRecGroup[recGroup][recording.Title];
-                eventSocket.recordingChange({ group : recGroup });
-                if (Object.keys(byRecGroup[recGroup]).length == 0) {
-                    console.log('delete rec group ' + recGroup);
-                    delete byRecGroup[recGroup];
-                    eventSocket.recGroupChange(recGroup);
-                }
-            }
-        }
-    };
-
-    // new update events can come before we've processed the GetRecorded request
-    var pendingRetrieves = { };
-
-    var retrieveAndAddRecording = function (chanId, startTs) {
-        if (!pendingRetrieves.hasOwnProperty(chanId + startTs)) {
-            pendingRetrieves[chanId + startTs] = true;
-            console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
-            reqJSON(
-                {
-                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
-                },
-                function (response) {
-                    var recording = response.Program;
-                    var startingTitleCount = sortedTitles.length;
-
-                    console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
-                    newRecording(recording);
-
-                    if (sortedTitles.length > startingTitleCount)
-                        sortedTitles.sort(titleCompare);
-
-                    var title = recording.Title;
-                    byRecGroup["All"][title].sort(episodeCompare);
-                    byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
-
-                    delete pendingRetrieves[chanId + startTs];
-                });
-        }
-    };
-
-    var recordingListChange = function (change, program) {
-        if (change[0] === "ADD") {
-            var chanId = change[1];
-            var startTs = change[2];
-
-            // event time is local, services time is UTC
-            var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
-            startTs = toUTCString(startDate);
-
-            retrieveAndAddRecording(chanId, startTs)
-        }
-
-        else if (change[0] === "UPDATE") {
-            if (byFilename.hasOwnProperty(program.FileName)) {
-                var oldProg = byFilename[program.FileName];
-                if (program.Recording.RecGroup === "Deleted") {
-                    delete byFilename[program.FileName];
-                    delRecordingFromRecGroup(oldProg, "All");
-                    delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
-                    console.log('update -> delete ' + oldProg.StartTime + ' ' + oldProg.Title);
-                    //console.log(program);
-                } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
-                    delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
-                    oldProg.Recording.RecGroup = program.Recording.RecGroup;
-                    addRecordingToRecGroup(oldProg, program.Recording.RecGroup);
-                    console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
-                                ' -> ' + program.Recording.RecGroup);
-                    // console.log(program);
-                }
+            var groupRecordings = byRecGroup[recGroup];
+            if (!groupRecordings[recording.Title]) {
+                groupRecordings[recording.Title] = [ ];
+                eventSocket.recordingChange({ group : recGroup});
             } else {
-                if (program.Recording.RecGroup !== "Deleted") {
-                    var unixStartTs = new Date(program.Recording.StartTs*1000);
-                    var startTs = toUTCString(unixStartTs);
-                    retrieveAndAddRecording(program.Channel.ChanId, startTs)
+                eventSocket.recordingChange({ group : recGroup, title : recording.Title});
+            }
+            groupRecordings[recording.Title].push(recording);
+        };
+
+        var newRecording = function (recording) {
+            if (!progTitles.hasOwnProperty(recording.Title)) {
+                progTitles[recording.Title] = true;
+                sortedTitles.push(recording.Title);
+            }
+
+            byFilename[recording.FileName] = recording;
+
+            addRecordingToRecGroup(recording, "All");
+            addRecordingToRecGroup(recording, recording.Recording.RecGroup);
+        };
+
+        var delRecordingFromRecGroup = function (recording, recGroup) {
+            if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
+                var episodes = byRecGroup[recGroup][recording.Title];
+                for (var found = false, i = 0; !found && i < episodes.length; i++) {
+                    if (episodes[i].FileName === recording.FileName) {
+                        found = true;
+                        episodes.remove(i);
+                    }
+                }
+                eventSocket.recordingChange({ group : recGroup, title : recording.Title});
+                if (episodes.length == 0) {
+                    console.log('that was the last episode');
+                    delete byRecGroup[recGroup][recording.Title];
+                    eventSocket.recordingChange({ group : recGroup });
+                    if (Object.keys(byRecGroup[recGroup]).length == 0) {
+                        console.log('delete rec group ' + recGroup);
+                        delete byRecGroup[recGroup];
+                        eventSocket.recGroupChange(recGroup);
+                    }
                 }
             }
-        }
+        };
 
-        else if (change[0] === "DELETE") {
-            // already handled with update's change to recgroup = Deleted
-        }
-        else {
-            console.log('unhandled program change: ' + change);
-            console.log(program);
-        }
-    };
+        // new update events can come before we've processed the GetRecorded request
+        var pendingRetrieves = { };
 
-        function init(protocolVersion) {
+        var retrieveAndAddRecording = function (chanId, startTs) {
+            if (!pendingRetrieves.hasOwnProperty(chanId + startTs)) {
+                pendingRetrieves[chanId + startTs] = true;
+                console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+                reqJSON(
+                    {
+                        path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
+                    },
+                    function (response) {
+                        var recording = response.Program;
+                        var startingTitleCount = sortedTitles.length;
+
+                        console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
+                        newRecording(recording);
+
+                        if (sortedTitles.length > startingTitleCount)
+                            sortedTitles.sort(titleCompare);
+
+                        var title = recording.Title;
+                        byRecGroup["All"][title].sort(episodeCompare);
+                        byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
+
+                        delete pendingRetrieves[chanId + startTs];
+                    });
+            }
+        };
+
+        var recordingListChange = function (change, program) {
+            if (change[0] === "ADD") {
+                var chanId = change[1];
+                var startTs = change[2];
+
+                // event time is local, services time is UTC
+                var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
+                startTs = toUTCString(startDate);
+
+                retrieveAndAddRecording(chanId, startTs)
+            }
+
+            else if (change[0] === "UPDATE") {
+                if (byFilename.hasOwnProperty(program.FileName)) {
+                    var oldProg = byFilename[program.FileName];
+                    if (program.Recording.RecGroup === "Deleted") {
+                        delete byFilename[program.FileName];
+                        delRecordingFromRecGroup(oldProg, "All");
+                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
+                        console.log('update -> delete ' + oldProg.StartTime + ' ' + oldProg.Title);
+                        //console.log(program);
+                    } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
+                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
+                        oldProg.Recording.RecGroup = program.Recording.RecGroup;
+                        addRecordingToRecGroup(oldProg, program.Recording.RecGroup);
+                        console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
+                                    ' -> ' + program.Recording.RecGroup);
+                        // console.log(program);
+                    }
+                } else {
+                    if (program.Recording.RecGroup !== "Deleted") {
+                        var unixStartTs = new Date(program.Recording.StartTs*1000);
+                        var startTs = toUTCString(unixStartTs);
+                        retrieveAndAddRecording(program.Channel.ChanId, startTs)
+                    }
+                }
+            }
+
+            else if (change[0] === "DELETE") {
+                // already handled with update's change to recgroup = Deleted
+            }
+            else {
+                console.log('unhandled program change: ' + change);
+                console.log(program);
+            }
+        };
+
+        function init (protocolVersion) {
 
             progTitles.length = 0;
             sortedTitles.length = 0;
@@ -344,7 +362,6 @@ module.exports = function(args) {
                     eventSocket.sendChanges();
                 });
 
-
             Object.keys(byVideoFolder).forEach(function (folder) {
                 delete byVideoFolder[folder];
             });
@@ -378,7 +395,7 @@ module.exports = function(args) {
                     Object.keys(byVideoFolder).forEach(function (path) {
                         byVideoFolder[path].List.sort(videoCompare);
                     });
-                    console.log(Object.keys(byVideoFolder).length + " video folders");
+                    eventSocket.videoChange();
                     eventSocket.sendChanges();
                 });
         }
@@ -514,6 +531,10 @@ module.exports = function(args) {
     })();
 
 
+    // ////////////////////////////////////////////////////////////////////////
+    // events from the backend
+    // ////////////////////////////////////////////////////////////////////////
+
     var BE = (function (mythMessageHandler) {
 
         function mythCommand(args) {
@@ -634,6 +655,10 @@ module.exports = function(args) {
 
     })(mythMessageHandler);
 
+
+    // ////////////////////////////////////////////////////////////////////////
+    // what routes see
+    // ////////////////////////////////////////////////////////////////////////
 
     return {
 
