@@ -67,6 +67,24 @@ $(document).ready(function() {
     // History management
     // ////////////////////////////////////////////////////////////////////////
 
+    function loadCurrentView(State) {
+        $.get(State.url, State.data,
+              function(data, textStatus, jqXHR) {
+                  if (data !== $("#Content").html()) {
+                      $("#Content").html(data);
+                  }
+
+                  if ($("#Content .mx-StreamList").length > 0) {
+                      setTimeout(updateStreamStatus, 5000);
+                  }
+
+                  var videoControls = $("#Content .mx-ControlBubble button");
+                  if (videoControls.length > 0) {
+                      videoControls.button();
+                  }
+              });
+    }
+
     var History = window.History; // Note capital H for the History.js object
     if (History.enabled) {
         $(window).bind('statechange', function () {
@@ -89,21 +107,7 @@ $(document).ready(function() {
                 return false;
             }
 
-            $.get(State.url, State.data,
-                  function(data, textStatus, jqXHR) {
-                      if (data !== $("#Content").html()) {
-                          $("#Content").html(data);
-                      }
-
-                      if ($("#Content .mx-StreamList").length > 0) {
-                          setTimeout(updateStreamStatus, 5000);
-                      }
-
-                      var videoControls = $("#Content .mx-ControlBubble button");
-                      if (videoControls.length > 0) {
-                          videoControls.button();
-                      }
-                  });
+            loadCurrentView(State);
 
             event.preventDefault();
             return false;
@@ -407,6 +411,44 @@ $(document).ready(function() {
         }
         return true;
     });
+
+
+    // ////////////////////////////////////////////////////////////////////////
+    // WebSocket updates
+    // ////////////////////////////////////////////////////////////////////////
+
+    function applyUpdate(event) {
+        var State = History.getState();
+        if (event.Recordings && State.cleanUrl.substr(-11) === "/recordings" && event.Group === State.data.RecGroup) {
+            var insideTitle = State.data.hasOwnProperty("Title");
+            if ((insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
+                loadCurrentView(State);
+            }
+        }
+    }
+
+    var webSocket = (function () {
+        var wsSetup = function () {
+            if (WebSocket) {
+                var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
+                if (!ws) {
+                    console.log('web socket unavailable, retry in 6 seconds');
+                    setTimeout(function () { webSocket(); }, 6000);
+                }
+                ws.onmessage = function (msg) {
+                    console.log(new Date());
+                    console.log(msg.data);
+                    applyUpdate($.parseJSON(msg.data));
+                };
+                ws.onclose = function () {
+                    console.log('web socket closed, retry in 6 seconds');
+                    setTimeout(function () { webSocket(); }, 6000);
+                };
+            }
+        };
+        wsSetup();
+        return wsSetup;
+    })();
 
 
     // ////////////////////////////////////////////////////////////////////////

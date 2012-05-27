@@ -2,6 +2,8 @@
 var http = require('http');
 var path = require('path');
 var net = require('net');
+var WebSocketServer = require('ws').Server;
+var fs = require('fs');
 
 var mythProtocolTokens = {
     64 : "8675309J",
@@ -17,15 +19,8 @@ var mythProtocolTokens = {
     74 : "SingingPotato",
     "Latest" : 74
 };
+var mythProtocolVersion = mythProtocolTokens.Latest;
 
-function mythCommand(args) {
-    var cmd = "";
-    args.forEach(function (arg) {
-        cmd = cmd + " " + arg;
-    });
-    //console.log((cmd.length-1 + "        ").substr(0,8) + cmd.substr(1));
-    return (cmd.length-1 + "        ").substr(0,8) + cmd.substr(1);
-}
 
 module.exports = function(args) {
 
@@ -109,6 +104,27 @@ module.exports = function(args) {
         req.end();
     };
 
+    var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
+    wss.clients = [ ];
+    wss.on('connection', function(ws) {
+        console.log('new client (' + wss.clients.length + ')');
+        ws.isAlive = true;
+        ws.on('close', function () {
+            ws.isAlive = false;
+            console.log('ws client closed');
+        });
+        wss.clients.push(ws);
+    });
+    wss.blast = function(msg) {
+        var msgStr = JSON.stringify(msg);
+        console.log('blast ' + msgStr);
+        wss.clients.forEach(function (webSocket) {
+            if (webSocket.isAlive) {
+                webSocket.send(msgStr);
+            }
+        });
+    };
+
     var eventSocket = {
 
         recChange : { },
@@ -125,7 +141,8 @@ module.exports = function(args) {
         videoChange : function (change) {
         },
 
-        recGroupChange : function () {
+        recGroupChange : function (grp) {
+            console.log('logged a recording group change: ' + grp);
             this.recGroupsChanged = true;
         },
 
@@ -135,14 +152,16 @@ module.exports = function(args) {
             for (var grp in this.recChange) {
                 var titleList = [ ];
                 for (var title in this.recChange[grp]) {
-                    console.log({ Recordings : true, Group : grp, Title : title});
+                    //console.log({ Recordings : true, Group : grp, Title : title});
+                    wss.blast({ Recordings : true, Group : grp, Title : title});
                     titleList.push(title);
                 }
                 titleList.forEach(function (title) { delete rc[grp][title]; });
             }
             grpList.forEach(function (grp) { delete rc[grp]; });
             if (this.recGroupsChanged) {
-                console.log({ RecordingGroups : true })
+                //console.log({ RecordingGroups : true })
+                wss.blast({ RecordingGroups : true })
                 this.recGroupsChanged = false;
             }
         }
@@ -152,7 +171,7 @@ module.exports = function(args) {
         if (!byRecGroup[recGroup]) {
             byRecGroup[recGroup] = { };
             recGroups.push(recGroup);
-            eventSocket.recGroupChange();
+            eventSocket.recGroupChange(recGroup);
         }
         var groupRecordings = byRecGroup[recGroup];
         if (!groupRecordings[recording.Title]) {
@@ -185,36 +204,48 @@ module.exports = function(args) {
                     episodes.remove(i);
                 }
             }
+            eventSocket.recordingChange({ group : recGroup, title : recording.Title});
             if (episodes.length == 0) {
+                console.log('that was the last episode');
                 delete byRecGroup[recGroup][recording.Title];
-                if (byRecGroup[recGroup].length == 0) {
+                eventSocket.recordingChange({ group : recGroup });
+                if (Object.keys(byRecGroup[recGroup]).length == 0) {
+                    console.log('delete rec group ' + recGroup);
                     delete byRecGroup[recGroup];
-                    eventSocket.recGroupChange();
+                    eventSocket.recGroupChange(recGroup);
                 }
             }
         }
     };
 
+    // new update events can come before we've processed the GetRecorded request
+    var pendingRetrieves = { };
+
     var retrieveAndAddRecording = function (chanId, startTs) {
-        console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
-        reqJSON(
-            {
-                path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
-            },
-            function (response) {
-                var recording = response.Program;
-                var startingTitleCount = sortedTitles.length;
+        if (!pendingRetrieves.hasOwnProperty(chanId + startTs)) {
+            pendingRetrieves[chanId + startTs] = true;
+            console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+            reqJSON(
+                {
+                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
+                },
+                function (response) {
+                    var recording = response.Program;
+                    var startingTitleCount = sortedTitles.length;
 
-                console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
-                newRecording(recording);
+                    console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
+                    newRecording(recording);
 
-                if (sortedTitles.length > startingTitleCount)
-                    sortedTitles.sort(titleCompare);
+                    if (sortedTitles.length > startingTitleCount)
+                        sortedTitles.sort(titleCompare);
 
-                var title = recording.Title;
-                byRecGroup["All"][title].sort(episodeCompare);
-                byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
-            });
+                    var title = recording.Title;
+                    byRecGroup["All"][title].sort(episodeCompare);
+                    byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
+
+                    delete pendingRetrieves[chanId + startTs];
+                });
+        }
     };
 
     var recordingListChange = function (change, program) {
@@ -336,132 +367,183 @@ var deleteRecording = function(info) {
 };
 
 
-var BE = {
+var BE = (function () {
 
-    protocolVersion : mythProtocolTokens.Latest,
-
-    connect : function(callback) {
-        var socket = net.connect(process.env["MX_PROTOCOL"] || 6543, backend.host, function() {
-            socket.write(mythCommand(["MYTH_PROTO_VERSION", BE.protocolVersion, mythProtocolTokens[BE.protocolVersion]]));
-        });
-
-        var inPrefix = true;
-        var needed = 8;
-        var incoming = "";
-
-        socket.on('data', function(data) {
-
-            //console.log('[' + data.toString() + ']');
-            incoming = incoming + data.toString();
-
-            while (incoming.length >= needed) {
-
-                var message = incoming.substr(0, needed);
-                incoming = incoming.substr(needed);
-
-                if (inPrefix) {
-                    inPrefix = false;
-                    needed = Number(message);
-                } else {
-
-                    inPrefix = true;
-                    needed = 8;
-
-                    var response = message.split(/\[\]:\[\]/);
-                    //console.log(response);
-
-                    if (false && response.length > 1 &&
-                        !(response[1].substr(0,17) === "UPDATE_FILE_SIZE " ||
-                          response[1].substr(0,30) === "SYSTEM_EVENT CLIENT_CONNECTED " ||
-                          response[1].substr(0,33) === "SYSTEM_EVENT CLIENT_DISCONNECTED "
-                         ))
-                        console.log(response);
-                    //console.log(message);
-
-                    if (response[0] === "BACKEND_MESSAGE") {
-                        response.shift();
-                        callback(response);
-                    }
-
-                    else if (response[0] === "ACCEPT") {
-                        socket.write(mythCommand(["ANN", "Monitor", "MythExpress", 1]));
-                    }
-
-                    else if (response[0] === "REJECT") {
-                        BE.protocolVersion = Number(response[1]);
-                        if (mythProtocolTokens[BE.protocolVersion]) {
-                            BE.connect(callback);
-                        } else {
-                            console.log("Unknown protocol version '" + BE.protocolVersion + "'");
-                        }
-                    }
-
-                }
-            }
-
-            eventSocket.sendChanges();
-
-        });
-
-        socket.on('close', function (hadError) {
-            console.log('socket closed (withError: ' + hadError + ')');
-        });
-    },
-
-    pullProgramInfo : function (message) {
-        program = { Channel : { }, Recording : { } };
-
-        program.Title = message.shift();
-        program.SubTitle = message.shift();
-        program.Description = message.shift();
-        if (this.protocolVersion >= 67) {
-            program.Season = message.shift();
-            program.Episode = message.shift();
-        }
-        program.Category = message.shift();
-        program.Channel.ChanId = message.shift();
-        program.Channel.ChanNum = message.shift();
-        program.Channel.CallSign = message.shift();
-        program.Channel.ChanName = message.shift();
-        program.FileName = message.shift();
-        program.FileSize = message.shift();
-        program.StartTime = message.shift();
-        program.EndTime = message.shift();
-        program.FindId = message.shift();
-        program.HostName = message.shift();
-        program.SourceId = message.shift();
-        program.CardId = message.shift();
-        program.Channel.InputId = message.shift();
-        program.Recording.Priority = message.shift();
-        program.Recording.Status = message.shift();
-        program.Recording.RecordId = message.shift();
-        program.Recording.RecType = message.shift();
-        program.Recording.DupInType = message.shift();
-        program.Recording.DupMethod = message.shift();
-        program.Recording.StartTs = message.shift();
-        program.Recording.EndTs = message.shift();
-        program.ProgramFlags = message.shift();
-        program.Recording.RecGroup = message.shift();
-        program.OutputFilters = message.shift();
-        program.SeriesId = message.shift();
-        program.ProgramId = message.shift();
-        if (this.protocolVersion >= 67) {
-            program.Inetref = message.shift();
-        }
-        program.LastModified = message.shift();
-        program.Stars = message.shift();
-        program.Airdate = message.shift();
-        program.PlayGroup = message.shift();
-        program.Recording.Priority2 = message.shift();
-        program.ParentId = message.shift();
-        program.StorageGroup = message.shift();
-        program.AudioProps = message.shift();
-        program.VideoProps = message.shift();
-        program.SubProps = message.shift();
-        program.Year = message.shift();
-
-        return program;
+    function mythCommand(args) {
+        var cmd = args.join(' ');
+        var buf = new Buffer(cmd);
+        var len = new Buffer((cmd.length + "        ").substr(0,8));
+        var cmdBuf = new Buffer(8 + buf.length);
+        len.copy(cmdBuf);
+        buf.copy(cmdBuf, 8);
+        return cmdBuf;
     }
+
+    var socket = new net.Socket();
+    var messageHandler;
+
+    var heartbeatSeconds = 6;
+    var lastConnect = new Date();
+    var connectPending = false;
+
+    function makeConnection() {
+        socket.connect(process.env["MX_PROTOCOL"] || 6543, backend.host);
+        lastConnect = new Date();
+        connectPending = false;
+        console.log('open myth events connection ' + lastConnect.toString());
+    }
+
+    var doConnect = function() {
+        if (!connectPending) {
+            connectPending = true;
+            var msecToWait = (heartbeatSeconds * 1000) - ((new Date()).valueOf() - lastConnect.valueOf());
+            if (msecToWait < 0) msecToWait = 0;
+            setTimeout(makeConnection, msecToWait);
+        }
+    };
+
+    var inPrefix = true;
+    var needed = 8;
+
+    var incomingLen = 0;
+    var incoming = new Buffer(65535);
+
+    socket.on('timeout', function () {
+        console.log('myth event socket timeout/refresh');
+        socket.write(mythCommand(["OK"]));
+    });
+
+    socket.on('close', function (hadError) {
+        console.log('socket closed (withError: ' + hadError + ')');
+        doConnect();
+    });
+
+    socket.on('end', function () {
+        console.log('myth event socket end');
+        doConnect();
+    });
+
+    socket.on('error', function (err) {
+        console.log('myth event socket error');
+        console.log(err);
+    });
+
+    socket.on('data', function(data) {
+
+        data.copy(incoming, incomingLen);
+        incomingLen += data.length;
+
+        while (incomingLen >= needed) {
+
+            var message = incoming.slice(0, needed).toString('utf8');
+            if (needed < incomingLen)
+                incoming.copy(incoming, 0, needed, incomingLen);
+            incomingLen -= needed;
+
+            if (inPrefix) {
+                inPrefix = false;
+                needed = Number(message);
+            } else {
+
+                inPrefix = true;
+                needed = 8;
+
+                var response = message.split(/\[\]:\[\]/);
+
+                if (response[0] === "BACKEND_MESSAGE") {
+                    response.shift();
+                    messageHandler(response);
+                }
+
+                else if (response[0] === "ACCEPT") {
+                    socket.write(mythCommand(["ANN", "Monitor", "MythExpress", 1]));
+                }
+
+                else if (response[0] === "REJECT") {
+                    mythProtocolVersion = Number(response[1]);
+                    if (mythProtocolTokens[mythProtocolVersion]) {
+                        doConnect();
+                    } else {
+                        console.log("Unknown protocol version '" + mythProtocolVersion + "'");
+                    }
+                }
+
+            }
+        }
+
+        eventSocket.sendChanges();
+
+    });
+
+    socket.on('connect', function () {
+        console.log('myth event socket connect');
+
+        socket.setKeepAlive(true, heartbeatSeconds * 1000);
+        socket.write(mythCommand(["MYTH_PROTO_VERSION", mythProtocolVersion, mythProtocolTokens[mythProtocolVersion]]));
+
+    });
+
+    return {
+        connect : function(callback) {
+            messageHandler = callback;
+            doConnect();
+        }
+    };
+})();
+
+var pullProgramInfo = function (message) {
+    program = { Channel : { }, Recording : { } };
+
+    program.Title = message.shift();
+    program.SubTitle = message.shift();
+    program.Description = message.shift();
+    if (mythProtocolVersion >= 67) {
+        program.Season = message.shift();
+        program.Episode = message.shift();
+    }
+    program.Category = message.shift();
+    program.Channel.ChanId = message.shift();
+    program.Channel.ChanNum = message.shift();
+    program.Channel.CallSign = message.shift();
+    program.Channel.ChanName = message.shift();
+    program.FileName = message.shift();
+    program.FileSize = message.shift();
+    program.StartTime = message.shift();
+    program.EndTime = message.shift();
+    program.FindId = message.shift();
+    program.HostName = message.shift();
+    program.SourceId = message.shift();
+    program.CardId = message.shift();
+    program.Channel.InputId = message.shift();
+    program.Recording.Priority = message.shift();
+    program.Recording.Status = message.shift();
+    program.Recording.RecordId = message.shift();
+    program.Recording.RecType = message.shift();
+    program.Recording.DupInType = message.shift();
+    program.Recording.DupMethod = message.shift();
+    program.Recording.StartTs = message.shift();
+    program.Recording.EndTs = message.shift();
+    program.ProgramFlags = message.shift();
+    program.Recording.RecGroup = message.shift();
+    program.OutputFilters = message.shift();
+    program.SeriesId = message.shift();
+    program.ProgramId = message.shift();
+    if (mythProtocolVersion >= 67) {
+        program.Inetref = message.shift();
+    }
+    program.LastModified = message.shift();
+    program.Stars = message.shift();
+    program.Airdate = message.shift();
+    program.PlayGroup = message.shift();
+    program.Recording.Priority2 = message.shift();
+    program.ParentId = message.shift();
+    program.StorageGroup = message.shift();
+    program.AudioProps = message.shift();
+    program.VideoProps = message.shift();
+    program.SubProps = message.shift();
+    program.Year = message.shift();
+
+    return program;
 };
 
 BE.connect(function(message) {
@@ -482,7 +564,7 @@ BE.connect(function(message) {
             event.name === "REC_PENDING" ||
             event.name === "REC_STARTED" ||
             event.name === "REC_FINISHED" ||
-            event.name === "REC_EXPIRED" ||
+            //event.name === "REC_EXPIRED" ||
             event.name === "REC_DELETED") {
             console.log('Ignored System event:');
             console.log(event);
@@ -504,7 +586,9 @@ BE.connect(function(message) {
         if (msgType === "RECORDING_LIST_CHANGE") {
             var change = message.shift().substring(22).split(/[ ]/);
             var changeType = change[0];
-            var program = BE.pullProgramInfo(message);
+            var program = pullProgramInfo(message);
+            console.log(change);
+            console.log(program);
             recordingListChange(change,program);
         }
 
