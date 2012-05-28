@@ -37,6 +37,7 @@ module.exports = function(args) {
 
     var byRecGroup = { "All" : [ ], "Default" : [ ] };
     var byFilename = { };
+    var byChanId = { };
     var sortedTitles = [ ];
     var progTitles = { };
     var recGroups = [ "All", "Default" ];
@@ -79,6 +80,19 @@ module.exports = function(args) {
     var toUTCString = function (localTs) {
         return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
     };
+
+    function localFromUTCString(utcString) {
+        var utc = new Date();
+
+        utc.setUTCFullYear(Number(utcString.substr(0,4)));
+        utc.setUTCMonth(Number(utcString.substr(5,2))-1);
+        utc.setUTCDate(Number(utcString.substr(8,2)));
+        utc.setUTCHours(Number(utcString.substr(11,2)));
+        utc.setUTCMinutes(Number(utcString.substr(14,2)));
+        utc.setUTCSeconds(Number(utcString.substr(17,2)));
+
+        return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
+    }
 
     var reqJSON = function (options, callback) {
         var allOptions = { };
@@ -212,6 +226,9 @@ module.exports = function(args) {
 
             byFilename[recording.FileName] = recording;
 
+            var chanKey = recording.Channel.ChanId + ' ' + localFromUTCString(recording.Recording.StartTs);
+            byChanId[chanKey] = recording.FileName;
+
             addRecordingToRecGroup(recording, "All");
             addRecordingToRecGroup(recording, recording.Recording.RecGroup);
         };
@@ -269,6 +286,25 @@ module.exports = function(args) {
             }
         };
 
+        function deleteFromView(program) {
+            // program has been expired or moved to Deleted group
+            delete byFilename[program.FileName];
+            delRecordingFromRecGroup(program, "All");
+            delRecordingFromRecGroup(program, program.Recording.RecGroup);
+            console.log('deleteFromView ' + program.StartTime + ' ' + program.Title);
+            //console.log(program);
+        }
+
+        function deleteByChanId(chanKey) {
+            if (byChanId.hasOwnProperty(chanKey)) {
+                var fileName = byChanId[chanKey];
+                if (byFilename.hasOwnProperty(fileName)) {
+                    deleteFromView(byFilename[fileName]);
+                }
+                delete byChanId[chanKey];
+            }
+        }
+
         var recordingListChange = function (change, program) {
             if (change[0] === "ADD") {
                 var chanId = change[1];
@@ -285,11 +321,7 @@ module.exports = function(args) {
                 if (byFilename.hasOwnProperty(program.FileName)) {
                     var oldProg = byFilename[program.FileName];
                     if (program.Recording.RecGroup === "Deleted") {
-                        delete byFilename[program.FileName];
-                        delRecordingFromRecGroup(oldProg, "All");
-                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
-                        console.log('update -> delete ' + oldProg.StartTime + ' ' + oldProg.Title);
-                        //console.log(program);
+                        deleteFromView(oldProg);
                     } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
                         delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
                         oldProg.Recording.RecGroup = program.Recording.RecGroup;
@@ -308,8 +340,13 @@ module.exports = function(args) {
             }
 
             else if (change[0] === "DELETE") {
-                // already handled with update's change to recgroup = Deleted
+                // deletes are typically handled with update's
+                // change to recgroup = Deleted but here we handle
+                // other delete paths such as expiry.
+                var chanId = change[1], startTs = change[2];
+                deleteByChanId(chanId + ' ' + startTs);
             }
+
             else {
                 console.log('unhandled program change: ' + change);
                 console.log(program);
@@ -321,8 +358,11 @@ module.exports = function(args) {
             progTitles.length = 0;
             sortedTitles.length = 0;
 
+            recGroups.slice(3).forEach(function (groupName) {
+                delete byRecGroup[groupName];
+            });
+
             recGroups.length = 2;
-            byRecGroup.length = 2;
             byRecGroup["All"].length = 0;
             byRecGroup["Default"].length = 0;
 
@@ -473,14 +513,18 @@ module.exports = function(args) {
                     event[data.toLowerCase()] = args.shift();
                 }
 
-                if (event.name === "CLIENT_CONNECTED" ||
+                if (event.name === "REC_EXPIRED") {
+                    console.log(event);
+                    deleteByChanId(event.chanid + ' ' + event.starttime);
+                }
+
+                else if (event.name === "CLIENT_CONNECTED" ||
                     event.name === "CLIENT_DISCONNECTED" ||
                     event.name === "SCHEDULER_RAN" ||
                     event.name === "SCHEDULE_CHANGE" ||
                     event.name === "REC_PENDING" ||
                     event.name === "REC_STARTED" ||
                     event.name === "REC_FINISHED" ||
-                    //event.name === "REC_EXPIRED" ||
                     event.name === "REC_DELETED") {
                     console.log('Ignored System event:');
                     console.log(event);
