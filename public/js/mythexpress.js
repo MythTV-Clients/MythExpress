@@ -419,9 +419,9 @@ $(document).ready(function() {
 
     function applyUpdate(event) {
         var State = History.getState();
-        if (event.Recordings && State.cleanUrl.substr(-11) === "/recordings" && event.Group === State.data.RecGroup) {
+        if (event.Recordings && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.RecGroup)) {
             var insideTitle = State.data.hasOwnProperty("Title");
-            if ((insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
+            if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
             }
         }

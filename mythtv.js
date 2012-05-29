@@ -148,16 +148,27 @@ module.exports = function(args) {
         };
 
         var recChange = { };
+        var inReset = false;
+        var recsReset = false;
+
         var vidChange = false;
         var recGroupsChanged = false;
 
         return {
+            resettingRecordings : function (startingReset) {
+                if (inReset && !startingReset)
+                    recsReset = true;
+                inReset = startingReset;
+            },
+
             recordingChange : function (change) {
-                if (!change.title)
-                    change.title = "*";
-                if (!recChange[change.group])
-                    recChange[change.group] = { };
-                recChange[change.group][change.title] = true;
+                if (!inReset) {
+                    if (!change.title)
+                        change.title = "*";
+                    if (!recChange[change.group])
+                        recChange[change.group] = { };
+                    recChange[change.group][change.title] = true;
+                }
             },
 
             videoChange : function () {
@@ -170,26 +181,33 @@ module.exports = function(args) {
             },
 
             sendChanges : function () {
-                var rc = recChange;
-                var grpList = [ ];
-                for (var grp in recChange) {
-                    var titleList = [ ];
-                    for (var title in recChange[grp]) {
-                        wss.blast({ Recordings : true, Group : grp, Title : title});
-                        titleList.push(title);
+                if (!inReset) {
+                    if (recsReset) {
+                        wss.blast({ Recordings : true, Reset : true });
+                        recsReset = false;
+                    } else {
+                        var rc = recChange;
+                        var grpList = [ ];
+                        for (var grp in recChange) {
+                            var titleList = [ ];
+                            for (var title in recChange[grp]) {
+                                wss.blast({ Recordings : true, Group : grp, Title : title});
+                                titleList.push(title);
+                            }
+                            titleList.forEach(function (title) { delete rc[grp][title]; });
+                        }
+                        grpList.slice(2).forEach(function (grp) { if (rc[grp].length == 0) delete rc[grp]; });
                     }
-                    titleList.forEach(function (title) { delete rc[grp][title]; });
+
+                    if (recGroupsChanged) {
+                        wss.blast({ RecordingGroups : true })
+                        recGroupsChanged = false;
+                    }
                 }
-                grpList.slice(2).forEach(function (grp) { if (rc[grp].length == 0) delete rc[grp]; });
 
                 if (vidChange) {
                     wss.blast({ Videos : true });
                     vidChange = false;
-                }
-
-                if (recGroupsChanged) {
-                    wss.blast({ RecordingGroups : true })
-                    recGroupsChanged = false;
                 }
             }
         };
@@ -355,30 +373,41 @@ module.exports = function(args) {
 
         function init (protocolVersion) {
 
-            progTitles.length = 0;
+            sortedTitles.forEach(function (title) {
+                delete progTitles[title];
+            });
             sortedTitles.length = 0;
 
-            recGroups.slice(3).forEach(function (groupName) {
+            recGroups.forEach(function (groupName) {
                 delete byRecGroup[groupName];
             });
 
             recGroups.length = 2;
-            byRecGroup["All"].length = 0;
-            byRecGroup["Default"].length = 0;
+            byRecGroup["All"] = [ ];
+            byRecGroup["Default"] = [ ];
+
+            eventSocket.recGroupChange("All");
+            eventSocket.recGroupChange("Default");
 
             Object.keys(byFilename).forEach(function (fileName) {
                 delete byFilename[fileName];
             });
 
-            Object.keys(progTitles).forEach(function (title) {
-                delete progTitles[title];
+            Object.keys(byVideoFolder).forEach(function (folder) {
+                delete byVideoFolder[folder];
             });
+            byVideoId.length = 0;
+
+            console.log('byRecGroup len: ' + Object.keys(byRecGroup).length);
+            console.log('byFilename len: ' + Object.keys(byFilename).length);
 
             reqJSON(
                 {
                     path : '/Dvr/GetRecordedList'
                 },
                 function (pl) {
+                    eventSocket.resettingRecordings(true);
+
                     pl.ProgramList.Programs.forEach(function (prog) {
                         newRecording(prog);
                     });
@@ -399,6 +428,7 @@ module.exports = function(args) {
                         });
                     });
 
+                    eventSocket.resettingRecordings(false);
                     eventSocket.sendChanges();
                 });
 
@@ -706,6 +736,7 @@ module.exports = function(args) {
 
     return {
 
+        init : mythMessageHandler.init,
         byRecGroup : byRecGroup,
         byFilename : byFilename,
         sortedTitles : sortedTitles,
