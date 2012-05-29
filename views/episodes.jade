@@ -1,1 +1,4 @@
-!= partial('episode', Recordings)
+if Recordings
+  != partial('episode', Recordings)
+else
+  .mx-TextBubble.mx-TextColumn.mx-InfoMessage All episodes have been removed

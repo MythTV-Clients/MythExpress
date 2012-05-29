@@ -1,1 +1,4 @@
-!= partial('video', Videos)
+if Videos && Videos.length > 0
+  != partial('video', Videos)
+else
+  .mx-TextBubble.mx-TextColumn.mx-InfoMessage No videos are present

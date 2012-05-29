@@ -1,1 +1,4 @@
-!= partial('recording', Recordings)
+if Recordings && Recordings.length > 0
+  != partial('recording', Recordings)
+else
+  .mx-TextBubble.mx-TextColumn.mx-InfoMessage No recordings are present

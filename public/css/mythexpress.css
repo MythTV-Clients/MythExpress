@@ -90,6 +90,7 @@ body {
                     margin: 1%; margin-right: 0em;
                     padding: 1em;
                     border-radius: 15px; background: #333; }
+.mx-InfoMessage   { font-size: 1.3em; text-align: center; }
 .mx-TextBubble h1 { font-weight: bold; font-size: 1.3em; margin-bottom: .75em; }
 .mx-TextBubble p  { margin-top: .5em; margin-bottom: .5em; line-height: 1.3em;}
 .mx-TextBubble li { margin-top: .25em; margin-bottom: .25em; line-height: 1.2em; margin-left: 1.5em;}
