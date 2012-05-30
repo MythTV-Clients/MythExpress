@@ -6,7 +6,6 @@
 var express = require('express');
 var app = module.exports = express.createServer();
 var http = require('http');
-var mythtv = require('./mythtv')();
 var url = require('url');
 var gzip = require('connect-gzip');
 var path = require("path");
@@ -85,6 +84,17 @@ app.configure('production', function(){
 
     app.use(assetManager(assetManagerGroups));
 });
+
+
+// MythTV
+
+var mythArgs = { };
+if (process.env["MX_AFFINITY"]) {
+    mythArgs.affinity = process.env["MX_AFFINITY"];
+}
+
+var mythtv = require('./mythtv')(mythArgs);
+
 
 // Routes
 

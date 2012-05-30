@@ -436,7 +436,6 @@ $(document).ready(function() {
                     setTimeout(function () { webSocket(); }, 6000);
                 }
                 ws.onmessage = function (msg) {
-                    console.log(new Date());
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
                 };

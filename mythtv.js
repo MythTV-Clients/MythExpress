@@ -4,6 +4,7 @@ var path = require('path');
 var net = require('net');
 var WebSocketServer = require('ws').Server;
 var fs = require('fs');
+var mdns = require('mdns');
 
 var mythProtocolTokens = {
     64 : "8675309J",
@@ -19,11 +20,40 @@ var mythProtocolTokens = {
     74 : "SingingPotato",
     "Latest" : 74
 };
-var mythProtocolVersion = mythProtocolTokens.Latest;
 
 var slashPattern = new RegExp("[/]");
 
+
+function filterIPv4(addressList) {
+    var ip4 = [ ];
+    addressList.forEach(function (address) {
+        if (address.match(/^[.0-9]+$/))
+            ip4.push(address);
+    });
+    return ip4;
+}
+
+function hostFromService(service) {
+    var parts = service.name.split(/[ ]/);
+    return parts[parts.length - 1];
+}
+
+
 module.exports = function(args) {
+
+    var myth = {
+        connected : false,
+        connectPending : false,
+        isUp : false,
+        bonjourService : undefined
+    };
+
+    var frontends = {
+        byHost : { },
+        byName : { }
+    };
+
+    var backendProtocol = mythProtocolTokens.Latest;
 
     var backend = {
         host : "127.0.0.1",
@@ -111,7 +141,12 @@ module.exports = function(args) {
             });
 
             reply.on('end', function() {
-                callback(JSON.parse(response.replace(/[\r\n]/g,'')));
+                try {
+                    callback(JSON.parse(response.replace(/[\r\n]/g,'')));
+                } catch (err) {
+                    console.log(err);
+                    callback({ });
+                }
                 //callback(JSON.parse(response));
                 response = undefined;
             })
@@ -127,29 +162,35 @@ module.exports = function(args) {
     var eventSocket = (function () {
 
         var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
-        wss.clients = [ ];
+        wssClients = [ ];
         wss.on('connection', function(ws) {
-            console.log('new client (' + wss.clients.length + ')');
+            console.log('new client (' + wssClients.length + ')');
             ws.isAlive = true;
             ws.on('close', function () {
                 ws.isAlive = false;
                 console.log('ws client closed');
             });
-            wss.clients.push(ws);
+            wssClients.push(ws);
         });
-        wss.blast = function(msg) {
+        function blast(msg) {
             var msgStr = JSON.stringify(msg);
             console.log('blast ' + msgStr);
-            wss.clients.forEach(function (webSocket) {
+            var closed = [ ];
+            wssClients.forEach(function (webSocket, idx) {
                 if (webSocket.isAlive) {
                     webSocket.send(msgStr);
+                } else {
+                    closed.unshift(idx);
                 }
             });
-        };
+            closed.forEach(function (clientIdx) {
+                wssClients.remove(clientIdx);
+            });
+        }
 
         var recChange = { };
         var inReset = false;
-        var recsReset = false;
+        var recordingsWereReset = false;
 
         var vidChange = false;
         var recGroupsChanged = false;
@@ -157,7 +198,7 @@ module.exports = function(args) {
         return {
             resettingRecordings : function (startingReset) {
                 if (inReset && !startingReset)
-                    recsReset = true;
+                    recordingsWereReset = true;
                 inReset = startingReset;
             },
 
@@ -180,18 +221,22 @@ module.exports = function(args) {
                 recGroupsChanged = true;
             },
 
+            frontendChange : function () {
+                blast({ Frontends : true });
+            },
+
             sendChanges : function () {
                 if (!inReset) {
-                    if (recsReset) {
-                        wss.blast({ Recordings : true, Reset : true });
-                        recsReset = false;
+                    if (recordingsWereReset) {
+                        blast({ Recordings : true, Reset : true });
+                        recordingsWereReset = false;
                     } else {
                         var rc = recChange;
                         var grpList = [ ];
                         for (var grp in recChange) {
                             var titleList = [ ];
                             for (var title in recChange[grp]) {
-                                wss.blast({ Recordings : true, Group : grp, Title : title});
+                                blast({ Recordings : true, Group : grp, Title : title});
                                 titleList.push(title);
                             }
                             titleList.forEach(function (title) { delete rc[grp][title]; });
@@ -200,13 +245,13 @@ module.exports = function(args) {
                     }
 
                     if (recGroupsChanged) {
-                        wss.blast({ RecordingGroups : true })
+                        blast({ RecordingGroups : true })
                         recGroupsChanged = false;
                     }
                 }
 
                 if (vidChange) {
-                    wss.blast({ Videos : true });
+                    blast({ Videos : true });
                     vidChange = false;
                 }
             }
@@ -230,9 +275,8 @@ module.exports = function(args) {
             if (!groupRecordings[recording.Title]) {
                 groupRecordings[recording.Title] = [ ];
                 eventSocket.recordingChange({ group : recGroup});
-            } else {
-                eventSocket.recordingChange({ group : recGroup, title : recording.Title});
             }
+            eventSocket.recordingChange({ group : recGroup, title : recording.Title});
             groupRecordings[recording.Title].push(recording);
         };
 
@@ -286,6 +330,8 @@ module.exports = function(args) {
                         path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
                     },
                     function (response) {
+                        console.log('new recording');
+                        console.log(response);
                         var recording = response.Program;
                         var startingTitleCount = sortedTitles.length;
 
@@ -300,6 +346,7 @@ module.exports = function(args) {
                         byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
 
                         delete pendingRetrieves[chanId + startTs];
+                        eventSocket.sendChanges();
                     });
             }
         };
@@ -371,7 +418,7 @@ module.exports = function(args) {
             }
         };
 
-        function init (protocolVersion) {
+        function init () {
 
             sortedTitles.forEach(function (title) {
                 delete progTitles[title];
@@ -397,9 +444,6 @@ module.exports = function(args) {
                 delete byVideoFolder[folder];
             });
             byVideoId.length = 0;
-
-            console.log('byRecGroup len: ' + Object.keys(byRecGroup).length);
-            console.log('byFilename len: ' + Object.keys(byFilename).length);
 
             reqJSON(
                 {
@@ -480,7 +524,7 @@ module.exports = function(args) {
             program.Title = message.shift();
             program.SubTitle = message.shift();
             program.Description = message.shift();
-            if (mythProtocolVersion >= 67) {
+            if (backendProtocol >= 67) {
                 program.Season = message.shift();
                 program.Episode = message.shift();
             }
@@ -513,7 +557,7 @@ module.exports = function(args) {
             program.OutputFilters = message.shift();
             program.SeriesId = message.shift();
             program.ProgramId = message.shift();
-            if (mythProtocolVersion >= 67) {
+            if (backendProtocol >= 67) {
                 program.Inetref = message.shift();
             }
             program.LastModified = message.shift();
@@ -609,7 +653,7 @@ module.exports = function(args) {
     // events from the backend
     // ////////////////////////////////////////////////////////////////////////
 
-    var BE = (function (mythMessageHandler) {
+    function backendConnect(mythMessageHandler) {
 
         function mythCommand(args) {
             var cmd = args.join(' ');
@@ -625,23 +669,21 @@ module.exports = function(args) {
 
         var heartbeatSeconds = 6;
         var lastConnect = new Date();
-        var connectPending = false;
 
         function makeConnection() {
-            socket.connect(process.env["MX_PROTOCOL"] || 6543, backend.host);
+            console.log('open myth events connection ' + backend.host + ' ' + lastConnect.toString());
+            socket.connect(6543, backend.host);
             lastConnect = new Date();
-            connectPending = false;
-            console.log('open myth events connection ' + lastConnect.toString());
         }
 
-        var doConnect = function() {
-            if (!connectPending) {
-                connectPending = true;
+        function doConnect() {
+            if (myth.isUp && !myth.connectPending) {
+                myth.connectPending = true;
                 var msecToWait = (heartbeatSeconds * 1000) - ((new Date()).valueOf() - lastConnect.valueOf());
                 if (msecToWait < 0) msecToWait = 0;
                 setTimeout(makeConnection, msecToWait);
             }
-        };
+        }
 
         var inPrefix = true;
         var needed = 8;
@@ -655,11 +697,13 @@ module.exports = function(args) {
         });
 
         socket.on('close', function (hadError) {
+            myth.connected = false;
             console.log('socket closed (withError: ' + hadError + ')');
             doConnect();
         });
 
         socket.on('end', function () {
+            myth.connected = false;
             console.log('myth event socket end');
             doConnect();
         });
@@ -667,6 +711,11 @@ module.exports = function(args) {
         socket.on('error', function (err) {
             console.log('myth event socket error');
             console.log(err);
+            if (err.errno === 'ETIMEDOUT') {
+                // probably the myth host is down
+                myth.connected = false;
+                myth.bonjourService.restart();
+            }
         });
 
         socket.on('data', function(data) {
@@ -697,16 +746,16 @@ module.exports = function(args) {
                     }
 
                     else if (response[0] === "ACCEPT") {
-                        socket.write(mythCommand(["ANN", "Monitor", "MythExpress", 1]));
-                        mythMessageHandler.init(mythProtocolVersion);
+                        socket.write(mythCommand(["ANN", "Monitor", "MythExpress.EventListener", 1]));
+                        mythMessageHandler.init();
                     }
 
                     else if (response[0] === "REJECT") {
-                        mythProtocolVersion = Number(response[1]);
-                        if (mythProtocolTokens[mythProtocolVersion]) {
+                        backendProtocol = Number(response[1]);
+                        if (mythProtocolTokens[backendProtocol]) {
                             doConnect();
                         } else {
-                            console.log("Unknown protocol version '" + mythProtocolVersion + "'");
+                            console.log("Unknown protocol version '" + backendProtocol + "'");
                         }
                     }
 
@@ -718,16 +767,95 @@ module.exports = function(args) {
         });
 
         socket.on('connect', function () {
+            myth.connectPending = false;
+            myth.connected = true;
+
             console.log('myth event socket connect');
 
             socket.setKeepAlive(true, heartbeatSeconds * 1000);
-            socket.write(mythCommand(["MYTH_PROTO_VERSION", mythProtocolVersion, mythProtocolTokens[mythProtocolVersion]]));
+            socket.write(mythCommand(["MYTH_PROTO_VERSION", backendProtocol, mythProtocolTokens[backendProtocol]]));
 
         });
 
         doConnect();
 
-    })(mythMessageHandler);
+    }
+
+
+    // ////////////////////////////////////////////////////////////////////////
+    // Bonjour
+    // ////////////////////////////////////////////////////////////////////////
+
+    myth.bonjourService = (function () {
+        var backendBrowser = mdns.createBrowser(mdns.tcp('mythbackend'));
+
+        backendBrowser.on('serviceUp', function(service) {
+            //console.log("mythtv up: ", service.name);
+            if (!myth.connected) {
+                if (myth.affinity && myth.affinity !== service.host)
+                    return;
+                myth.isUp = true;
+                var addr = filterIPv4(service.addresses);
+                console.log('IPv4s ' + addr);
+                if (addr.length > 0) {
+                    myth.bonjour = service;
+                    myth.up = true;
+                    backend.host = addr[0];
+                    console.log('     address ' + backend.host);
+                    backendConnect(mythMessageHandler);
+                }
+            }
+        });
+
+        backendBrowser.on('serviceDown', function(service) {
+            //console.log("mythtv down: ", service.name);
+            if (myth.connected) {
+                myth.isUp = service.name === myth.bonjour.name;
+            }
+        });
+
+        backendBrowser.start();
+
+        var frontendBrowser = mdns.createBrowser(mdns.tcp('mythfrontend'));
+
+        frontendBrowser.on('serviceUp', function(service) {
+            console.log("frontend up: ", service);
+            var addr = filterIPv4(service.addresses);
+            if (addr.length > 0) {
+                service.shortHost = hostFromService(service);
+                frontends.byName[service.name] = service;
+                frontends.byHost[service.shortHost] = { fullname : service.name, address : addr[0] };
+                eventSocket.frontendChange();
+            }
+        });
+
+        frontendBrowser.on('serviceDown', function(service) {
+            //console.log("frontend down: ", service);
+            if (frontends.byName.hasOwnProperty(service.name)) {
+                var serv = frontends.byName[service.name];
+                delete frontends.byHost[serv.shortHost];
+                delete frontends.byName[serv.name];
+                eventSocket.frontendChange();
+            }
+        });
+
+        frontendBrowser.start();
+
+        return {
+            restart : function () {
+                myth.up = true;
+                Object(frontends.byName).keys().forEach(function (name) {
+                    delete frontends.byHost[frontends.byName[name].shortHost];
+                    delete frontends.byName[name];
+                });
+
+                backendBrowser.stop();
+                backendBrowser.start();
+                backendBrowser.stop();
+                backendBrowser.start();
+            }
+        };
+    })();
 
 
     // ////////////////////////////////////////////////////////////////////////
