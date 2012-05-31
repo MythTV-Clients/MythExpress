@@ -46,12 +46,12 @@ function toUTCString(localTs) {
 function localFromUTCString(utcString) {
     var utc = new Date();
 
-    utc.setUTCFullYear(Number(utcString.substr(0,4)));
-    utc.setUTCMonth(Number(utcString.substr(5,2))-1);
-    utc.setUTCDate(Number(utcString.substr(8,2)));
-    utc.setUTCHours(Number(utcString.substr(11,2)));
-    utc.setUTCMinutes(Number(utcString.substr(14,2)));
-    utc.setUTCSeconds(Number(utcString.substr(17,2)));
+    utc.setUTCFullYear(Number(utcString.substr(0,4)),
+                       Number(utcString.substr(5,2))-1,
+                       Number(utcString.substr(8,2)));
+    utc.setUTCHours(Number(utcString.substr(11,2)),
+                    Number(utcString.substr(14,2)),
+                    Number(utcString.substr(17,2)));
 
     return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
 }
@@ -876,7 +876,11 @@ module.exports = function(args) {
                         var reply = "";
                         socket.on('data', function (data) {
                             reply = reply + data.toString();
-                            if (reply.match(/OK/) || reply.match(/ERROR/)) {
+                            if (reply.match(/OK/)) {
+                                socket.end("exit\n");
+                            } else if (reply.match(/ERROR/)) {
+                                console.log(message);
+                                console.log(reply);
                                 socket.end("exit\n");
                             } else if (reply.match(/[#]/)) {
                                 reply = "";
