@@ -10,7 +10,10 @@ $(document).ready(function() {
         autoOpen : false,
         modal : true,
         dialogClass : "mx-InfoDialog",
-        width : 800, height : 600
+        width : 800, height : 600,
+        open : function (event, ui) {
+            $("#InfoDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
+        }
     });
 
     // ////////////////////////////////////////////////////////////////////////
@@ -242,6 +245,48 @@ $(document).ready(function() {
         }
     ];
 
+    // manage list of frontends we can throw to
+
+    var feList = [ ];
+    var processingFEChange = false;
+
+    function throwTo(host) {
+        var target;
+        if (target = $("#InfoDialogContent p[data-FileName]").attr("data-FileName")) {
+            $.get("/frontend/play", { Host : host, FileName : target });
+        } else if (target = $("#InfoDialogContent p[data-VideoId]").attr("data-VideoId")) {
+            $.get("/frontend/play", { Host : host, VideoId : target });
+        }
+        $("#InfoDialog").dialog("close");
+    }
+
+    function processFrontendChange(event) {
+        if (feList.length > 0) {
+            recordingButtons = recordingButtons.slice(feList.length);
+            videoButtons = videoButtons.slice(feList.length);
+        }
+        var newFEs = event.Frontends;
+        if (newFEs.length > 0) {
+            // reverse sort FEs because we prepend to the button list
+            newFEs.sort(function (f1,f2) { return f1.toLowerCase() > f2.toLowerCase() ? -1 : 1; });
+            newFEs.forEach(function (fe) {
+                recordingButtons.unshift({
+                    text : fe,
+                    click : function () { throwTo(fe); }
+                });
+                videoButtons.unshift({
+                    text : fe,
+                    click : function () { throwTo(fe); }
+                });
+            });
+        }
+        feList = newFEs;
+    }
+
+    $.get("/frontend/list", function (newFEs) {
+        processFrontendChange({ Frontends : newFEs });
+    });
+
 
     // ////////////////////////////////////////////////////////////////////////
     // Ajax
@@ -419,11 +464,13 @@ $(document).ready(function() {
 
     function applyUpdate(event) {
         var State = History.getState();
-        if (event.Recordings && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.RecGroup)) {
+        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.RecGroup)) {
             var insideTitle = State.data.hasOwnProperty("Title");
             if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
             }
+        } else if (event.hasOwnProperty("Frontends")) {
+            processFrontendChange(event);
         }
     }
 

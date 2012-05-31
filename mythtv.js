@@ -7,18 +7,19 @@ var fs = require('fs');
 var mdns = require('mdns');
 
 var mythProtocolTokens = {
-    64 : "8675309J",
-    65 : "D2BB94C2",
-    66 : "0C0FFEE0",
-    67 : "0G0G0G0",
-    68 : "90094EAD",
-    69 : "63835135",
-    70 : "53153836",
-    71 : "05e82186",
-    72 : "D78EFD6F",
-    73 : "D7FE8D6F",
-    74 : "SingingPotato",
-    "Latest" : 74
+    "64" : "8675309J",
+    "65" : "D2BB94C2",
+    "66" : "0C0FFEE0",
+    "67" : "0G0G0G0",
+    "68" : "90094EAD",
+    "69" : "63835135",
+    "70" : "53153836",
+    "71" : "05e82186",
+    "72" : "D78EFD6F",
+    "73" : "D7FE8D6F",
+    "74" : "SingingPotato",
+    "75" : "SweetRock",
+    "Latest" : "75"
 };
 
 var slashPattern = new RegExp("[/]");
@@ -36,6 +37,23 @@ function filterIPv4(addressList) {
 function hostFromService(service) {
     var parts = service.name.split(/[ ]/);
     return parts[parts.length - 1];
+}
+
+function toUTCString(localTs) {
+    return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
+}
+
+function localFromUTCString(utcString) {
+    var utc = new Date();
+
+    utc.setUTCFullYear(Number(utcString.substr(0,4)));
+    utc.setUTCMonth(Number(utcString.substr(5,2))-1);
+    utc.setUTCDate(Number(utcString.substr(8,2)));
+    utc.setUTCHours(Number(utcString.substr(11,2)));
+    utc.setUTCMinutes(Number(utcString.substr(14,2)));
+    utc.setUTCSeconds(Number(utcString.substr(17,2)));
+
+    return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
 }
 
 
@@ -107,23 +125,6 @@ module.exports = function(args) {
         return t1 === t2 ? 0 : (t1 < t2 ? -1 : 1);
     };
 
-    var toUTCString = function (localTs) {
-        return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
-    };
-
-    function localFromUTCString(utcString) {
-        var utc = new Date();
-
-        utc.setUTCFullYear(Number(utcString.substr(0,4)));
-        utc.setUTCMonth(Number(utcString.substr(5,2))-1);
-        utc.setUTCDate(Number(utcString.substr(8,2)));
-        utc.setUTCHours(Number(utcString.substr(11,2)));
-        utc.setUTCMinutes(Number(utcString.substr(14,2)));
-        utc.setUTCSeconds(Number(utcString.substr(17,2)));
-
-        return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
-    }
-
     var reqJSON = function (options, callback) {
         var allOptions = { };
         Object.keys(backend).forEach(function (option) {
@@ -172,6 +173,7 @@ module.exports = function(args) {
             });
             wssClients.push(ws);
         });
+
         function blast(msg) {
             var msgStr = JSON.stringify(msg);
             console.log('blast ' + msgStr);
@@ -222,7 +224,7 @@ module.exports = function(args) {
             },
 
             frontendChange : function () {
-                blast({ Frontends : true });
+                blast({ Frontends : Object.keys(frontends.byHost) });
             },
 
             sendChanges : function () {
@@ -524,7 +526,7 @@ module.exports = function(args) {
             program.Title = message.shift();
             program.SubTitle = message.shift();
             program.Description = message.shift();
-            if (backendProtocol >= 67) {
+            if (backendProtocol >= "67") {
                 program.Season = message.shift();
                 program.Episode = message.shift();
             }
@@ -557,7 +559,7 @@ module.exports = function(args) {
             program.OutputFilters = message.shift();
             program.SeriesId = message.shift();
             program.ProgramId = message.shift();
-            if (backendProtocol >= 67) {
+            if (backendProtocol >= "67") {
                 program.Inetref = message.shift();
             }
             program.LastModified = message.shift();
@@ -751,7 +753,7 @@ module.exports = function(args) {
                     }
 
                     else if (response[0] === "REJECT") {
-                        backendProtocol = Number(response[1]);
+                        backendProtocol = response[1];
                         if (mythProtocolTokens[backendProtocol]) {
                             doConnect();
                         } else {
@@ -796,12 +798,11 @@ module.exports = function(args) {
                     return;
                 myth.isUp = true;
                 var addr = filterIPv4(service.addresses);
-                console.log('IPv4s ' + addr);
                 if (addr.length > 0) {
                     myth.bonjour = service;
                     myth.up = true;
                     backend.host = addr[0];
-                    console.log('     address ' + backend.host);
+                    console.log(service.name + ': ' + backend.host);
                     backendConnect(mythMessageHandler);
                 }
             }
@@ -819,9 +820,10 @@ module.exports = function(args) {
         var frontendBrowser = mdns.createBrowser(mdns.tcp('mythfrontend'));
 
         frontendBrowser.on('serviceUp', function(service) {
-            console.log("frontend up: ", service);
+            //console.log("frontend up: ", service);
             var addr = filterIPv4(service.addresses);
             if (addr.length > 0) {
+                service.ipv4 = addr[0];
                 service.shortHost = hostFromService(service);
                 frontends.byName[service.name] = service;
                 frontends.byHost[service.shortHost] = { fullname : service.name, address : addr[0] };
@@ -843,7 +845,7 @@ module.exports = function(args) {
 
         return {
             restart : function () {
-                myth.up = true;
+                myth.up = false;
                 Object(frontends.byName).keys().forEach(function (name) {
                     delete frontends.byHost[frontends.byName[name].shortHost];
                     delete frontends.byName[name];
@@ -857,6 +859,36 @@ module.exports = function(args) {
         };
     })();
 
+
+    // ////////////////////////////////////////////////////////////////////////
+    // Frontend Control
+    // ////////////////////////////////////////////////////////////////////////
+
+    frontendControl = (function () {
+        return {
+            SendMessage : function (host, message) {
+                if (frontends.byHost.hasOwnProperty(host)) {
+
+                    var fe = frontends.byName[frontends.byHost[host].fullname];
+
+                    (function (host) {
+                        var socket = new net.Socket();
+                        var reply = "";
+                        socket.on('data', function (data) {
+                            reply = reply + data.toString();
+                            if (reply.match(/OK/) || reply.match(/ERROR/)) {
+                                socket.end("exit\n");
+                            } else if (reply.match(/[#]/)) {
+                                reply = "";
+                                socket.write(message + "\n");
+                            }
+                        });
+                        socket.connect(6546, host);
+                    })(fe.ipv4);
+                }
+            }
+        };
+    })();
 
     // ////////////////////////////////////////////////////////////////////////
     // what routes see
@@ -990,6 +1022,23 @@ module.exports = function(args) {
             } else {
                 // use the client's path to us
                 return request.headers.host.split(/:/)[0] + ":" + backend.port;
+            }
+        },
+
+        GetFrontendList : function () {
+            return Object.keys(frontends.byHost);
+        },
+
+        SendToFrontend : function (args) {
+            var message;
+            if (args.hasOwnProperty("FileName") && byFilename.hasOwnProperty(args.FileName)) {
+                var prog = byFilename[args.FileName];
+                message = "play program " + prog.Channel.ChanId + " " + localFromUTCString(prog.Recording.StartTs) + " resume";
+            } else if (args.hasOwnProperty("VideoId") && byVideoId[args.VideoId]) {
+                message = "play file myth://Videos/" + byVideoId[args.VideoId].FileName.toString("utf8").replace(/ /g, "%20");
+            }
+            if (message.length > 0) {
+                frontendControl.SendMessage(args.Host, message);
             }
         }
 
