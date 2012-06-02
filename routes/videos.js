@@ -4,7 +4,8 @@ app.get("/videos", function (req, res) {
     console.log("/videos");
     console.log(req.query);
 
-    var videoFolder = mythtv.byVideoFolder[req.query.VideoFolder || "/"];
+    var videoFolder = mythtv.byVideoFolder[req.query.VideoFolder || "/"] ||
+        { Title : req.query.VideoFolder || "/", Videos : [ ] }
 
     var partial = !!req.query.partial || !!req.query.VideoFolder;
 

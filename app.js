@@ -3,12 +3,15 @@
  * Module dependencies.
  */
 
+var os = require("os");
 var express = require('express');
 var app = module.exports = express.createServer();
 var http = require('http');
 var url = require('url');
 var gzip = require('connect-gzip');
 var path = require("path");
+var mdns = require("mdns");
+
 
 // Array Remove - By John Resig (MIT Licensed)
 // http://ejohn.org/blog/javascript-array-remove/
@@ -102,3 +105,10 @@ require('./boot')(app, url, mythtv);
 
 app.listen(process.env["MX_LISTEN"] || 6565);
 console.log("MythTV Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+
+var ad = mdns.createAdvertisement(mdns.tcp('http'),
+                                  app.address().port, 
+                                  {
+                                      name : "MythExpress on " + os.hostname()
+                                  });
+ad.start();

@@ -693,10 +693,10 @@ module.exports = function(args) {
         var incomingLen = 0;
         var incoming = new Buffer(65535);
 
-        socket.on('timeout', function () {
-            console.log('myth event socket timeout/refresh');
-            socket.write(mythCommand(["OK"]));
-        });
+        //socket.on('timeout', function () {
+        //    console.log('myth event socket timeout/refresh');
+        //    socket.write(mythCommand(["OK"]));
+        //});
 
         socket.on('close', function (hadError) {
             myth.connected = false;
@@ -713,7 +713,7 @@ module.exports = function(args) {
         socket.on('error', function (err) {
             console.log('myth event socket error');
             console.log(err);
-            if (err.errno === 'ETIMEDOUT') {
+            if (err.code === 'ETIMEDOUT') {
                 // probably the myth host is down
                 myth.connected = false;
                 myth.bonjourService.restart();
@@ -846,7 +846,7 @@ module.exports = function(args) {
         return {
             restart : function () {
                 myth.up = false;
-                Object(frontends.byName).keys().forEach(function (name) {
+                Object.keys(frontends.byName).forEach(function (name) {
                     delete frontends.byHost[frontends.byName[name].shortHost];
                     delete frontends.byName[name];
                 });
