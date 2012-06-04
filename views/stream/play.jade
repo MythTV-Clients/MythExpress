@@ -12,11 +12,12 @@ if Info
 
 .mx-TextColumn.mx-ControlBubble
   div
-    button.mx-Clickable.mx-Rev300 -5m
-    button.mx-Clickable.mx-Rev30 -30s
-    button.mx-Clickable.mx-Rev5 -5s
-    button.mx-Clickable.mx-Fwd30 +30s
-    button.mx-Clickable.mx-Fwd300 +5m
+    button.mx-Clickable.mx-Move(data-offset="-300") -5m
+    button.mx-Clickable.mx-Move(data-offset="-30") -30s
+    button.mx-Clickable.mx-Move(data-offset="-5") -5s
+    button.mx-Clickable.mx-Move(data-offset="30") +30s
+    button.mx-Clickable.mx-Move(data-offset="120") +2m
+    button.mx-Clickable.mx-Move(data-offset="300") +5m
   div
     button.mx-Clickable.mx-Shrink Shink
     button.mx-Clickable.mx-Original Normal

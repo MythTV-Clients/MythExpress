@@ -312,146 +312,116 @@ $(document).ready(function() {
         return false;
     });
 
-    $("#Content").click(function (ev) {
-        var target = $(ev.target).closest(".mx-Clickable");
-        if (target.length > 0) {
+    $("#Content").on("click", ".mx-Clickable", function (ev) {
+        var target = $(this);
 
-            if (target.hasClass("mx-Folder")) {
-                var showTitle = target.dataText(["Title"]).Title;
-                History.pushState(
-                    { RecGroup: currentRecGroup, Title : showTitle },
-                    currentRecGroup + " • " + showTitle,
-                    "/recordings");
-            }
-
-            else if (target.hasClass("mx-RecordingPreview")) {
-                History.pushState(target.dataAttrs(["FileName"]),
-                                  target.dataAttrs(["Title"]).Title,
-                                  "/streams");
-            }
-
-            else if (target.hasClass("mx-Recording")) {
-                $("#InfoDialogContent").html("");
-                infoDialog
-                    .dialog("option", "buttons", recordingButtons)
-                    .dialog("open");
-                $.get("/recordinginfo", target.dataAttrs(["FileName"]),
-                      function (info, textStatus, jqXHR) {
-                          $("#InfoDialogContent").html(info);
-                      });
-            }
-
-            else if (target.hasClass("mx-VideoFolder")) {
-                History.pushState(target.dataAttrs(["VideoFolder"]),
-                                  document.title + " / " + target.dataText(["Title"]).Title,
-                                  "/videos");
-            }
-
-            else if (target.hasClass("mx-VideoCover")) {
-                History.pushState(target.dataAttrs(["VideoId"]),
-                                  target.parent().dataText(["Title"]).Title,
-                                  "/streams");
-            }
-
-            else if (target.hasClass("mx-Video")) {
-                $("#InfoDialogContent").html("");
-                infoDialog
-                    .dialog("option", "buttons", videoButtons)
-                    .dialog("open");
-                $.get("/videoinfo", target.dataAttrs(["VideoId"]),
-                      function (info, textStatus, jqXHR) {
-                          $("#InfoDialogContent").html(info);
-                      });
-            }
-
-            else if (target.hasClass("mx-StreamPreview")) {
-                History.pushState(target.dataAttrs(["StreamId"]),
-                                  target.parent().dataText(["Title"]).Title,
-                                  "/streams");
-            }
-
-            else if (target.hasClass("mx-Stream")) {
-                $("#InfoDialogContent").html("");
-                infoDialog
-                    .dialog("option", "buttons", streamButtons)
-                    .dialog("open");
-                $.get("/streaminfo", target.dataAttrs(["StreamId"]),
-                      function (info, textStatus, jqXHR) {
-                          $("#InfoDialogContent").html(info);
-                      });
-            }
-
-            else if (target.hasClass("mx-Shrink")) {
-                var box = getVideoParameters();
-                if (box.baseW) {
-                    box.vid.attr("width", box.W - box.baseW / 2);
-                    box.vid.attr("height", box.H - box.baseH / 2);
-                }
-            }
-
-            else if (target.hasClass("mx-Original")) {
-                var box = getVideoParameters();
-                if (box.baseW) {
-                    box.vid.attr("width", box.baseW);
-                    box.vid.attr("height", box.baseH);
-                }
-            }
-
-            else if (target.hasClass("mx-Zoom")) {
-                var box = getVideoParameters();
-                if (box.baseW) {
-                    box.vid.attr("width", box.W + box.baseW / 2);
-                    box.vid.attr("height", box.H + box.baseH / 2);
-                }
-            }
-
-            else if (target.hasClass("mx-Max")) {
-                var box = getVideoParameters();
-                if (box.baseW) {
-                    var ratio = document.width / box.baseW;
-                    box.vid.attr("width", document.width);
-                    box.vid.attr("height", box.baseH * ratio);
-                }
-            }
-
-            else if (target.hasClass("mx-Rev300")) {
-                var vid = $("#Content .nm-VideoBox");
-                if (vid.length == 1) {
-                    vid[0].currentTime = vid[0].currentTime - 300;
-                }
-            }
-
-            else if (target.hasClass("mx-Rev5")) {
-                var vid = $("#Content .nm-VideoBox");
-                if (vid.length == 1) {
-                    vid[0].currentTime = vid[0].currentTime - 5;
-                }
-            }
-
-            else if (target.hasClass("mx-Rev30")) {
-                var vid = $("#Content .nm-VideoBox");
-                if (vid.length == 1) {
-                    vid[0].currentTime = vid[0].currentTime - 30;
-                }
-            }
-
-            else if (target.hasClass("mx-Fwd30")) {
-                var vid = $("#Content .nm-VideoBox");
-                if (vid.length == 1) {
-                    vid[0].currentTime = vid[0].currentTime + 30;
-                }
-            }
-
-            else if (target.hasClass("mx-Fwd300")) {
-                var vid = $("#Content .nm-VideoBox");
-                if (vid.length == 1) {
-                    vid[0].currentTime = vid[0].currentTime + 300;
-                }
-            }
-
-            return false;
+        if (target.hasClass("mx-Folder")) {
+            var showTitle = target.dataText(["Title"]).Title;
+            History.pushState(
+                { RecGroup: currentRecGroup, Title : showTitle },
+                currentRecGroup + " • " + showTitle,
+                "/recordings");
         }
-        return true;
+
+        else if (target.hasClass("mx-RecordingPreview")) {
+            History.pushState(target.dataAttrs(["FileName"]),
+                              target.dataAttrs(["Title"]).Title,
+                              "/streams");
+        }
+
+        else if (target.hasClass("mx-Recording")) {
+            $("#InfoDialogContent").html("");
+            infoDialog
+                .dialog("option", "buttons", recordingButtons)
+                .dialog("open");
+            $.get("/recordinginfo", target.dataAttrs(["FileName"]),
+                  function (info, textStatus, jqXHR) {
+                      $("#InfoDialogContent").html(info);
+                  });
+        }
+
+        else if (target.hasClass("mx-VideoFolder")) {
+            History.pushState(target.dataAttrs(["VideoFolder"]),
+                              document.title + " / " + target.dataText(["Title"]).Title,
+                              "/videos");
+        }
+
+        else if (target.hasClass("mx-VideoCover")) {
+            History.pushState(target.dataAttrs(["VideoId"]),
+                              target.parent().dataText(["Title"]).Title,
+                              "/streams");
+        }
+
+        else if (target.hasClass("mx-Video")) {
+            $("#InfoDialogContent").html("");
+            infoDialog
+                .dialog("option", "buttons", videoButtons)
+                .dialog("open");
+            $.get("/videoinfo", target.dataAttrs(["VideoId"]),
+                  function (info, textStatus, jqXHR) {
+                      $("#InfoDialogContent").html(info);
+                  });
+        }
+
+        else if (target.hasClass("mx-StreamPreview")) {
+            History.pushState(target.dataAttrs(["StreamId"]),
+                              target.parent().dataText(["Title"]).Title,
+                              "/streams");
+        }
+
+        else if (target.hasClass("mx-Stream")) {
+            $("#InfoDialogContent").html("");
+            infoDialog
+                .dialog("option", "buttons", streamButtons)
+                .dialog("open");
+            $.get("/streaminfo", target.dataAttrs(["StreamId"]),
+                  function (info, textStatus, jqXHR) {
+                      $("#InfoDialogContent").html(info);
+                  });
+        }
+
+        else if (target.hasClass("mx-Shrink")) {
+            var box = getVideoParameters();
+            if (box.baseW) {
+                box.vid.attr("width", box.W - box.baseW / 2);
+                box.vid.attr("height", box.H - box.baseH / 2);
+            }
+        }
+
+        else if (target.hasClass("mx-Original")) {
+            var box = getVideoParameters();
+            if (box.baseW) {
+                box.vid.attr("width", box.baseW);
+                box.vid.attr("height", box.baseH);
+            }
+        }
+
+        else if (target.hasClass("mx-Zoom")) {
+            var box = getVideoParameters();
+            if (box.baseW) {
+                box.vid.attr("width", box.W + box.baseW / 2);
+                box.vid.attr("height", box.H + box.baseH / 2);
+            }
+        }
+
+        else if (target.hasClass("mx-Max")) {
+            var box = getVideoParameters();
+            if (box.baseW) {
+                var ratio = document.width / box.baseW;
+                box.vid.attr("width", document.width);
+                box.vid.attr("height", box.baseH * ratio);
+            }
+        }
+
+        else if (target.hasClass("mx-Move")) {
+            var offset = Number(target.attr("data-offset"));
+            var vid = $("#Content .nm-VideoBox");
+            if (vid.length == 1) {
+                vid[0].currentTime = vid[0].currentTime + offset;
+            }
+        }
+
+        return false;
     });
 
 
