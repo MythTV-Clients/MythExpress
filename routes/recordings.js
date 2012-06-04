@@ -26,7 +26,7 @@ app.get("/recordings", function (req, res) {
             layout : !req.query.RecGroup,
             MythBackend : mythtv.MythServiceHost(req),
             Title : "MythTV Recordings",
-            RecGroups : mythtv.recGroups,
+            RecGroups : mythtv.recGroups(),
             Recordings : programList
         });
 

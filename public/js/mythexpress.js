@@ -292,28 +292,25 @@ $(document).ready(function() {
     // Ajax
     // ////////////////////////////////////////////////////////////////////////
 
-    $("#Header button")
-        .button()
-        .click(function (ev) {
-            var target = $(ev.target.offsetParent);
-            if (target.length > 0) {
-                $("#Content").html("");
-                if (target.hasClass("mx-RecGroup")) {
-                    currentRecGroup = target.text().sanitized();
-                    History.pushState(
-                        { RecGroup: currentRecGroup },
-                        target.text().sanitized() + " Recording Group",
-                        "/recordings");
-                } else {
-                    History.pushState(
-                        { partial : true }, // to differentiate from page refreshes which bring up header too
-                        target.text().sanitized(),
-                        target.attr('data-href'));
-                }
-                return false;
-            }
-            return true;
-        });
+    $("#Header").on("click", "button", function (event) {
+        console.log("button click");
+        $("#Content").html("");
+
+        var args = { partial : true };
+        var target = $(this);
+        var href = target.attr("data-href");
+
+        var title = target.text().sanitized();
+
+        if (href === "/recordings") {
+            title = title + " Recording Group";
+            args.RecGroup = target.text().sanitized();
+        }
+
+        History.pushState(args, title, href);
+
+        return false;
+    });
 
     $("#Content").click(function (ev) {
         var target = $(ev.target).closest(".mx-Clickable");
@@ -462,6 +459,8 @@ $(document).ready(function() {
     // WebSocket updates
     // ////////////////////////////////////////////////////////////////////////
 
+    var buttonUpdatePending = false;
+
     function applyUpdate(event) {
         var State = History.getState();
         if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.RecGroup)) {
@@ -475,19 +474,33 @@ $(document).ready(function() {
             processFrontendChange(event);
         }
 
+        else if (event.hasOwnProperty("RecordingGroups")) {
+            buttonUpdatePending = true;
+            $.get("/buttons", function (buttonList) {
+                console.log("buttons update");
+                console.log(buttonList);
+                $("#Buttons").html(buttonList);
+                $("#Buttons button").button();
+                buttonUpdatePending = false;
+            });
+        }
+
         else if (event.Alert) {
-            $("#Footer p[data-Category = '" + event.Category + "']")
-                .slideUp("slow", function () { $(this).remove(); });
-            if (!event.Cancel) {
-                var paragraph = $("<p>")
-                    .attr("data-Category", event.Category)
-                    .attr("class", "mx-" + event.Class)
-                    .text(event.Message)
-                    .prependTo("#Footer");
-                if (event.Decay) {
-                    setTimeout(function () {
-                        paragraph.slideUp("slow", function () { $(this).remove(); });
-                    }, event.Decay * 1000);
+            var oldAlert = $("#Footer p[data-Category = '" + event.Category + "']");
+            if (oldAlert.length == 0 || !event.hasOwnProperty("Message") || oldAlert.text() !== event.Message) {
+                // a new, unique alert
+                oldAlert.slideUp("slow", function () { $(this).remove(); });
+                if (!event.Cancel) {
+                    var paragraph = $("<p>")
+                        .attr("data-Category", event.Category)
+                        .attr("class", "mx-" + event.Class)
+                        .text(event.Message)
+                        .prependTo("#Footer");
+                    if (event.Decay) {
+                        setTimeout(function () {
+                            paragraph.slideUp("slow", function () { $(this).remove(); });
+                        }, event.Decay * 1000);
+                    }
                 }
             }
         }
@@ -519,6 +532,8 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
     // Initialization
     // ////////////////////////////////////////////////////////////////////////
+
+    $("#Buttons button").button();
 
     // save initial state so back button has somewhere to go
     History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },

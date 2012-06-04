@@ -1,4 +1,2 @@
-each group in RecGroups
-  button.mx-RecGroup= group
-button.mx-Videos(data-href="/videos") Videos
-button.mx-Streams(data-href="/streams") Streams
+img(id="ViewMenu", src="img/ViewMenu.png", width=32, height=32, alt="View Choices")
+#Buttons!= partial("button", RecGroups)

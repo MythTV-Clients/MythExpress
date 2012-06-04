@@ -151,7 +151,7 @@ app.get("/streams", function(req, res) {
                 layout : Object.keys(req.query).length == 0,
                 MythBackend : mythtv.MythServiceHost(req),
                 Title : "MythTV Streams",
-                RecGroups : mythtv.recGroups,
+                RecGroups : mythtv.recGroups(),
                 LiveStreamInfos : reply.LiveStreamInfoList.LiveStreamInfos
             });
         });

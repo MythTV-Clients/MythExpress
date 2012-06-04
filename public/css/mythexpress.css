@@ -5,7 +5,7 @@ body {
     font-family: Gill Sans;
 }
 
-// jQuery css override
+/* jQuery css override */
 .ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button { font-family: Gill Sans; }
 
 :link,:visited,ins {
@@ -26,9 +26,19 @@ body {
     background-color: #000000;
 }
 
+#ViewMenu {
+    position: absolute;
+    top: 5px;
+    left: 4px;
+}
+
 #Header div, a {
     display: inline;
     padding-right: 12px;
+}
+
+#Buttons {
+    margin-left: 42px;
 }
 
 #Content {
@@ -59,7 +69,6 @@ body {
     float: left;
     width: 128px;
     height: 128px;
-    //border: solid;
     border-color: grey48;
     text-align: center;
     overflow: hidden;

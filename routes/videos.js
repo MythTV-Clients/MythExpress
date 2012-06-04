@@ -15,7 +15,7 @@ app.get("/videos", function (req, res) {
         layout : !partial,
         url : url,
         MythBackend : mythtv.MythServiceHost(req),
-        RecGroups : mythtv.recGroups,
+        RecGroups : mythtv.recGroups(),
         Title : videoFolder.Title,
         Videos : videoFolder.List
     });

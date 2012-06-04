@@ -73,7 +73,7 @@ module.exports = function(args) {
         connected : false,
         connectPending : false,
         isUp : false,
-        bonjourService : undefined
+        bonjour : undefined
     };
 
     var frontends = {
@@ -102,7 +102,6 @@ module.exports = function(args) {
 
     var byVideoFolder = { };
     var byVideoId = [ ];
-
 
     if (process.env["MX_HOST"]) {
         backend.host = process.env["MX_HOST"];
@@ -264,13 +263,13 @@ module.exports = function(args) {
 
             alertOffline : function (clientNum) {
                 blast({ Alert : true, Category : "Servers", Class : "Alert",
-                        Message : myth.bonjourService.fullname + " is offline"},
+                        Message : myth.bonjour.fullname + " is offline"},
                       clientNum);
             },
 
             alertConnecting : function (clientNum) {
                 blast({ Alert : true, Category : "Servers", Class : "Info",
-                        Message : "MythExpress is reading from " + myth.bonjourService.name },
+                        Message : "MythExpress is loading from " + myth.bonjour.name },
                       clientNum);
             },
 
@@ -280,13 +279,13 @@ module.exports = function(args) {
 
             alertConnection : function (clientNum) {
                 blast({ Alert : true, Category : "Servers", Class : "Info", Decay : 5,
-                        Message : "Connected to " + myth.bonjourService.fullname },
+                        Message : "Connected to " + myth.bonjour.fullname },
                       clientNum);
             },
 
             alertProtocol : function (protocol) {
                 blast({ Alert : true, Category : "Servers", Class : "Alert",
-                        Message : myth.bonjourService.fullname + " uses unrecognized protocol '" + protocol + "'" });
+                        Message : myth.bonjour.fullname + " uses unrecognized protocol '" + protocol + "'" });
             },
 
             alertNoServers : function (clientNum) {
@@ -305,7 +304,7 @@ module.exports = function(args) {
             wssClients.push(ws);
             console.log('new client (' + wssClients.length + ')');
 
-            if (backends.length == 0)
+            if (false && backends.length == 0)
                 changeAPI.alertNoServers(wssClients.length-1);
             else if (myth.connectPending)
                 changeAPI.alertConnecting(wssClients.length-1);
@@ -324,12 +323,80 @@ module.exports = function(args) {
     // data model maintenance
     // ////////////////////////////////////////////////////////////////////////
 
+    var recGroupList = (function () {
+        var stale = true;
+        var groups = {  };
+        var softGroups = [ ];
+        var buttonList = [ ];
+
+        return {
+
+            init : function () {
+                softGroups.length = 0;
+                stale = true;
+            },
+
+            addGroup : function (groupName) {
+                softGroups.push(groupName);
+                stale = true;
+            },
+
+            delGroup : function (groupName) {
+                var found = false;
+                for (var i = 0;  !found && i < softGroups.length;  i++)
+                    if (softGroups[i] === groupName) {
+                        console.log('soft remove ' + softGroups[i]);
+                        softGroups.remove(i);
+                        found = true;
+                    }
+                stale = true;
+            },
+
+            recGroupButtons : function () {
+                if (stale) {
+                    buttonList.length = 0;
+
+                    softGroups.sort(function (g1,g2) { return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1; });
+
+                    var buttonNames = softGroups.length > 0
+                        ? ["All", "Default"].concat(softGroups)
+                        : ["Recordings"];
+
+                    buttonNames.forEach(function (groupName) {
+                        buttonList.push({
+                            Class : "mx-RecGroup",
+                            href : "/recordings",
+                            recGroup : groupName,
+                            Title : groupName
+                        });
+                    });
+
+                    buttonList.push({
+                        Class : "mx-Videos",
+                        href : "/videos",
+                        Title : "Videos"
+                    });
+                    buttonList.push({
+                        Class : "mx-Streams",
+                        href : "/streams",
+                        Title : "Streams"
+                    });
+
+                    stale = false;
+                }
+                return buttonList;
+            }
+
+        };
+    })();
+
     var mythMessageHandler = (function () {
 
         var addRecordingToRecGroup = function (recording, recGroup) {
             if (!byRecGroup[recGroup]) {
                 byRecGroup[recGroup] = { };
                 recGroups.push(recGroup);
+                recGroupList.addGroup(recGroup);
                 eventSocket.recGroupChange(recGroup);
             }
             var groupRecordings = byRecGroup[recGroup];
@@ -373,6 +440,7 @@ module.exports = function(args) {
                     if (Object.keys(byRecGroup[recGroup]).length == 0) {
                         console.log('delete rec group ' + recGroup);
                         delete byRecGroup[recGroup];
+                        recGroupList.delGroup(recGroup);
                         eventSocket.recGroupChange(recGroup);
                     }
                 }
@@ -451,10 +519,17 @@ module.exports = function(args) {
                     } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
                         delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
                         oldProg.Recording.RecGroup = program.Recording.RecGroup;
+                        oldProg.AirDate = program.AirDate;
                         addRecordingToRecGroup(oldProg, program.Recording.RecGroup);
+                        byRecGroup[program.Recording.RecGroup][program.Title].sort(episodeCompare);
                         console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
                                     ' -> ' + program.Recording.RecGroup);
                         // console.log(program);
+                    } else if (program.Title !== oldProg.Title) {
+                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
+                        addRecordingToRecGroup(program, program.Recording.RecGroup);
+                        byRecGroup[program.Recording.RecGroup][program.Title].sort(episodeCompare);
+                        console.log("Title change: " + oldProg.Title + " -> " + program.Title);
                     }
                 } else {
                     if (program.Recording.RecGroup !== "Deleted") {
@@ -491,10 +566,12 @@ module.exports = function(args) {
             recGroups.forEach(function (groupName) {
                 delete byRecGroup[groupName];
             });
+            recGroupList.init();
 
             recGroups.length = 2;
             byRecGroup["All"] = [ ];
             byRecGroup["Default"] = [ ];
+            byRecGroup["Recordings"] = byRecGroup["Default"];  // an alias when we have only one group
 
             eventSocket.recGroupChange("All");
             eventSocket.recGroupChange("Default");
@@ -542,6 +619,7 @@ module.exports = function(args) {
 
                     eventSocket.resettingRecordings(false);
                     eventSocket.sendChanges();
+                    console.log(recGroupList.recGroupButtons());
                 });
 
             Object.keys(byVideoFolder).forEach(function (folder) {
@@ -978,7 +1056,7 @@ module.exports = function(args) {
         byRecGroup : byRecGroup,
         byFilename : byFilename,
         sortedTitles : sortedTitles,
-        recGroups : recGroups,
+        recGroups : recGroupList.recGroupButtons, // recGroups,
 
         byVideoFolder : byVideoFolder,
         byVideoId : byVideoId,
