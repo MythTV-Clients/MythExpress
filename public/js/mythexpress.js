@@ -469,8 +469,27 @@ $(document).ready(function() {
             if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
             }
-        } else if (event.hasOwnProperty("Frontends")) {
+        }
+
+        else if (event.hasOwnProperty("Frontends")) {
             processFrontendChange(event);
+        }
+
+        else if (event.Alert) {
+            $("#Footer p[data-Category = '" + event.Category + "']")
+                .slideUp("slow", function () { $(this).remove(); });
+            if (!event.Cancel) {
+                var paragraph = $("<p>")
+                    .attr("data-Category", event.Category)
+                    .attr("class", "mx-" + event.Class)
+                    .text(event.Message)
+                    .prependTo("#Footer");
+                if (event.Decay) {
+                    setTimeout(function () {
+                        paragraph.slideUp("slow", function () { $(this).remove(); });
+                    }, event.Decay * 1000);
+                }
+            }
         }
     }
 

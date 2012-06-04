@@ -6,6 +6,10 @@ var WebSocketServer = require('ws').Server;
 var fs = require('fs');
 var mdns = require('mdns');
 
+// ////////////////////////////////////////////////////////////////////////
+// Helpers
+// ////////////////////////////////////////////////////////////////////////
+
 var mythProtocolTokens = {
     "64" : "8675309J",
     "65" : "D2BB94C2",
@@ -56,6 +60,12 @@ function localFromUTCString(utcString) {
     return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
 }
 
+
+// ////////////////////////////////////////////////////////////////////////
+// Globals
+// ////////////////////////////////////////////////////////////////////////
+
+var backends = [ ];
 
 module.exports = function(args) {
 
@@ -164,23 +174,17 @@ module.exports = function(args) {
 
         var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
         wssClients = [ ];
-        wss.on('connection', function(ws) {
-            console.log('new client (' + wssClients.length + ')');
-            ws.isAlive = true;
-            ws.on('close', function () {
-                ws.isAlive = false;
-                console.log('ws client closed');
-            });
-            wssClients.push(ws);
-        });
 
-        function blast(msg) {
+        function blast(msg, clientNum) {
             var msgStr = JSON.stringify(msg);
             console.log('blast ' + msgStr);
+            if (typeof(clientNum) == "undefined")
+                clientNum = -1;
             var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
                 if (webSocket.isAlive) {
-                    webSocket.send(msgStr);
+                    if (clientNum == -1 || idx == clientNum)
+                        webSocket.send(msgStr);
                 } else {
                     closed.unshift(idx);
                 }
@@ -197,7 +201,7 @@ module.exports = function(args) {
         var vidChange = false;
         var recGroupsChanged = false;
 
-        return {
+        var changeAPI = {
             resettingRecordings : function (startingReset) {
                 if (inReset && !startingReset)
                     recordingsWereReset = true;
@@ -256,8 +260,63 @@ module.exports = function(args) {
                     blast({ Videos : true });
                     vidChange = false;
                 }
+            },
+
+            alertOffline : function (clientNum) {
+                blast({ Alert : true, Category : "Servers", Class : "Alert",
+                        Message : myth.bonjourService.fullname + " is offline"},
+                      clientNum);
+            },
+
+            alertConnecting : function (clientNum) {
+                blast({ Alert : true, Category : "Servers", Class : "Info",
+                        Message : "MythExpress is reading from " + myth.bonjourService.name },
+                      clientNum);
+            },
+
+            alertConnected : function () {
+                blast({ Alert : true, Category : "Servers", Cancel : true });
+            },
+
+            alertConnection : function (clientNum) {
+                blast({ Alert : true, Category : "Servers", Class : "Info", Decay : 5,
+                        Message : "Connected to " + myth.bonjourService.fullname },
+                      clientNum);
+            },
+
+            alertProtocol : function (protocol) {
+                blast({ Alert : true, Category : "Servers", Class : "Alert",
+                        Message : myth.bonjourService.fullname + " uses unrecognized protocol '" + protocol + "'" });
+            },
+
+            alertNoServers : function (clientNum) {
+                blast({ Alert : true, Category : "Servers", Class : "Alert",
+                        Message : "There is no MythTV server available" },
+                     clientNum);
             }
         };
+
+        wss.on('connection', function(ws) {
+            ws.isAlive = true;
+            ws.on('close', function () {
+                ws.isAlive = false;
+                console.log('ws client closed');
+            });
+            wssClients.push(ws);
+            console.log('new client (' + wssClients.length + ')');
+
+            if (backends.length == 0)
+                changeAPI.alertNoServers(wssClients.length-1);
+            else if (myth.connectPending)
+                changeAPI.alertConnecting(wssClients.length-1);
+            else if (myth.connected && backends.length > 1)
+                changeAPI.alertConnected(wssClients.length-1);
+            else if (!myth.isUp)
+                changeAPI.alertOffline(wssClients.length-1);
+        });
+
+        return changeAPI;
+
     })();
 
 
@@ -422,6 +481,8 @@ module.exports = function(args) {
 
         function init () {
 
+            eventSocket.alertConnecting();
+
             sortedTitles.forEach(function (title) {
                 delete progTitles[title];
             });
@@ -446,6 +507,8 @@ module.exports = function(args) {
                 delete byVideoFolder[folder];
             });
             byVideoId.length = 0;
+
+            var listsToDo = 2;
 
             reqJSON(
                 {
@@ -474,6 +537,9 @@ module.exports = function(args) {
                         });
                     });
 
+                    if (--listsToDo == 0)
+                        eventSocket.alertConnected();
+
                     eventSocket.resettingRecordings(false);
                     eventSocket.sendChanges();
                 });
@@ -488,6 +554,7 @@ module.exports = function(args) {
                 },
                 function (videos) {
                     byVideoFolder["/"] = { Title : "Videos", List : [ ] };
+
                     videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
                         byVideoId[video.Id] = video;
                         byFilename[video.FileName] = video;
@@ -508,9 +575,15 @@ module.exports = function(args) {
                         });
                         curList.List.push(video);
                     });
+
                     Object.keys(byVideoFolder).forEach(function (path) {
                         byVideoFolder[path].List.sort(videoCompare);
                     });
+
+
+                    if (--listsToDo == 0)
+                        eventSocket.alertConnected();
+
                     eventSocket.videoChange();
                     eventSocket.sendChanges();
                 });
@@ -758,6 +831,7 @@ module.exports = function(args) {
                             doConnect();
                         } else {
                             console.log("Unknown protocol version '" + backendProtocol + "'");
+                            changeAPI.alertProtocol(backendProtocol);
                         }
                     }
 

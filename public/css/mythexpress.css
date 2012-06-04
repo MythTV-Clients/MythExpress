@@ -38,6 +38,23 @@ body {
     z-index: 1
 }
 
+#Footer {
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    z-index: 5;
+}
+
+#Footer p {
+    font-size: 2em;
+    line-height: 1.25em;
+    text-align: center;
+    margin-top: .125em;
+}
+
+#Footer p.mx-Alert { background-color: rgb(255,0,0); }
+#Footer p.mx-Info { background-color: #31821D; }
+
 .mx-Recording, .mx-Folder, .mx-VideoCell {
     float: left;
     width: 128px;
