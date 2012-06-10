@@ -271,6 +271,7 @@ module.exports = function(args) {
         var recChange = { };
         var inReset = false;
         var recordingsWereReset = false;
+        var shutdownSeconds = -1;
 
         var vidChange = false;
         var recGroupsChanged = false;
@@ -347,6 +348,18 @@ module.exports = function(args) {
                 }
             },
 
+            alertShutdown : function (seconds, clientNum) {
+                shutdownSeconds = seconds;
+                if (seconds >= 0) {
+                    blast({ Alert : true, Category : "Servers", Class : "Alert",
+                            Message : myth.bonjour.name + " will shut down in " + seconds + " seconds"},
+                          clientNum);
+                } else {
+                    blast({ Alert : true, Category : "Servers", Class : "Alert", Decay : 5,
+                            Message : "Shutdown cancelled" });
+                }
+            },
+
             alertOffline : function (clientNum) {
                 blast({ Alert : true, Category : "Servers", Class : "Alert",
                         Message : "MythTV" + " is offline"},
@@ -398,6 +411,8 @@ module.exports = function(args) {
                 changeAPI.alertConnected(wssClients.length-1);
             else if (!myth.isUp)
                 changeAPI.alertOffline(wssClients.length-1);
+            else if (shutdownSeconds >= 0)
+                changeAPI.alertShutdown(shutdownSeconds, wssClients.length-1);
         });
 
         return changeAPI;
@@ -944,6 +959,10 @@ module.exports = function(args) {
                     console.log(change);
                     //console.log(program);
                     recordingListChange(change,program);
+                }
+
+                else if (msgType === "'SHUTDOWN_COUNTDOWN") {
+                    eventSocket.alertShutdown(head[1]);
                 }
 
                 else if (msgType === "UPDATE_FILE_SIZE" ||

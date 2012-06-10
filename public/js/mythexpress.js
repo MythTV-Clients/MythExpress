@@ -454,8 +454,6 @@ $(document).ready(function() {
         else if (event.hasOwnProperty("RecordingGroups")) {
             buttonUpdatePending = true;
             $.get("/buttons", function (buttonList) {
-                console.log("buttons update");
-                console.log(buttonList);
                 $("#Buttons").html(buttonList);
                 $("#Buttons button").button();
                 buttonUpdatePending = false;
@@ -483,6 +481,7 @@ $(document).ready(function() {
         }
     }
 
+    var webSocketRetries = 0;
     var webSocket = (function () {
         var wsSetup = function () {
             if (WebSocket) {
@@ -491,6 +490,9 @@ $(document).ready(function() {
                     console.log('web socket unavailable, retry in 6 seconds');
                     setTimeout(function () { webSocket(); }, 6000);
                 }
+                ws.onopen = function () {
+                    webSocketRetries = 0;
+                };
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
@@ -498,6 +500,10 @@ $(document).ready(function() {
                 ws.onclose = function () {
                     console.log('web socket closed, retry in 6 seconds');
                     setTimeout(function () { webSocket(); }, 6000);
+                    if (webSocketRetries++ > 1) {
+                        applyUpdate({ Alert : true, Category : "Servers", Class : "Alert",
+                                      Message : "MythExpress is offline" });
+                    }
                 };
             }
         };
