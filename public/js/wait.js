@@ -7,6 +7,7 @@ $(document).ready(function() {
                 if (html.length > 0) {
                     //console.log("got player");
                     $("#Content").html(html);
+                    $("#Content .mx-ControlBubble button").button();
                 } else {
                     //console.log("haven't got player");
                     window.setTimeout(checkIfReady,1000);

@@ -26,8 +26,91 @@ var mythProtocolTokens = {
     "Latest" : "75"
 };
 
+var traitOrder = {
+    Bookmarked : 1,
+    CutList    : 2,
+    Movie      : 3,
+    Preserved  : 4,
+    Watched    : 5,
+    Unwatched  : 6,
+    Deleted    : 7
+};
+
 var slashPattern = new RegExp("[/]");
 
+function titleCompare (t1,t2) {
+    if (t1.substr(0,4) === "The ") t1 = t1.substr(4);
+    if (t2.substr(0,4) === "The ") t2 = t2.substr(4);
+    var t1lc = t1.toLowerCase(), t2lc = t2.toLowerCase();
+    return t1lc > t2lc ? 1 : t1lc < t2lc ? -1 : t1 > t2 ? 1 : t1 < t2 ? -1 : 0;
+}
+
+function episodeCompare (t1,t2) {
+    var t1Val = !!t1.Airdate ? t1.Airdate : (t1.StartTime || t1.SubTitle || t1.FileName);
+    var t2Val = !!t2.Airdate ? t2.Airdate : (t2.StartTime || t2.SubTitle || t2.FileName);
+    return t1Val === t2Val ? 0 : (t1Val > t2Val ? -1 : 1);
+}
+
+function videoCompare (v1,v2) {
+    var t1 = v1.Title.toLowerCase();
+    var t2 = v2.Title.toLowerCase();
+    if (t1.substr(0,4) === "the ") t1 = t1.substr(4);
+    if (t2.substr(0,4) === "the ") t2 = t2.substr(4);
+    return t1 === t2 ? 0 : (t1 < t2 ? -1 : 1);
+}
+
+function traitCompare(t1,t2) {
+    return traitOrder[t1] < traitOrder[t2] ? -1 : 1;
+}
+
+function stringCompare (g1,g2) {
+    return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1;
+}
+
+// similar to jQuery extend
+function copyProperties (src, dst) {
+    Object.keys(src).forEach(function (property) {
+        if (src.hasOwnProperty(property)) { // don't copy properties from parent objects
+            if (typeof(src[property]) === "object" && !src[property].hasOwnProperty("length")) {
+                // property is an object but not an array
+                if (!dst.hasOwnProperty(property))
+                    dst[property] = { };
+                copyProperties(src[property], dst[property]);
+            } else {
+                dst[property] = src[property];
+            }
+        }
+    });
+    return dst;
+}
+
+function getProgramFlags(programFlags) {
+    return {
+        InUse          : !!(programFlags & 0x00700000),
+        InUsePlaying   : !!(programFlags & 0x00200000),
+        CommercialFree : !!(programFlags & 0x00000800),
+        HasCutlist     : !!(programFlags & 0x00000002),
+        BookmarkSet    : !!(programFlags & 0x00000010),
+        Watched        : !!(programFlags & 0x00000200),
+        AutoExpirable  : !!(programFlags & 0x00000004),
+        Preserved      : !!(programFlags & 0x00000400),
+        Repeat         : !!(programFlags & 0x00001000),
+        Duplicate      : !!(programFlags & 0x00002000),
+        Reactivated    : !!(programFlags & 0x00004000),
+        DeletePending  : !!(programFlags & 0x00000080)
+    };
+}
+
+function getVideoProps(propMask) {
+    return {
+        HDTV       : !!(propMask & 0x01),
+        Widescreen : !!(propMask & 0x02),
+        AVC        : !!(propMask & 0x04),
+        "720p"     : !!(propMask & 0x08),
+        "1080p"    : !!(propMask & 0x10),
+        Damaged    : !!(propMask & 0x20)
+    };
+}
 
 function filterIPv4(addressList) {
     var ip4 = [ ];
@@ -41,23 +124,6 @@ function filterIPv4(addressList) {
 function hostFromService(service) {
     var parts = service.name.split(/[ ]/);
     return parts[parts.length - 1];
-}
-
-function toUTCString(localTs) {
-    return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
-}
-
-function localFromUTCString(utcString) {
-    var utc = new Date();
-
-    utc.setUTCFullYear(Number(utcString.substr(0,4)),
-                       Number(utcString.substr(5,2))-1,
-                       Number(utcString.substr(8,2)));
-    utc.setUTCHours(Number(utcString.substr(11,2)),
-                    Number(utcString.substr(14,2)),
-                    Number(utcString.substr(17,2)));
-
-    return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
 }
 
 
@@ -93,12 +159,17 @@ module.exports = function(args) {
                     'accept': 'application/json' }
     };
 
+    var viewButtons = {
+        Programs : [ ],
+        Properties : [ ]
+    };
+
     var byRecGroup = { "All" : [ ], "Default" : [ ] };
     var byFilename = { };
     var byChanId = { };
-    var sortedTitles = [ ];
-    var progTitles = { };
-    var recGroups = [ "All", "Default" ];
+    var sortedTitles = { };
+    var groupNames = [ ];
+    var traitNames = [ ];
 
     var byVideoFolder = { };
     var byVideoId = [ ];
@@ -113,28 +184,7 @@ module.exports = function(args) {
     }
 
 
-    var titleCompare = function (t1,t2) {
-        if (t1.substr(0,4) === "The ") t1 = t1.substr(4);
-        if (t2.substr(0,4) === "The ") t2 = t2.substr(4);
-        var t1lc = t1.toLowerCase(), t2lc = t2.toLowerCase();
-        return t1lc > t2lc ? 1 : t1lc < t2lc ? -1 : t1 > t2 ? 1 : t1 < t2 ? -1 : 0;
-    };
-
-    var episodeCompare = function (t1,t2) {
-        var t1Val = !!t1.Airdate ? t1.Airdate : (t1.StartTime || t1.SubTitle || t1.FileName);
-        var t2Val = !!t2.Airdate ? t2.Airdate : (t2.StartTime || t2.SubTitle || t2.FileName);
-        return t1Val === t2Val ? 0 : (t1Val > t2Val ? -1 : 1);
-    };
-
-    var videoCompare = function (v1,v2) {
-        var t1 = v1.Title.toLowerCase();
-        var t2 = v2.Title.toLowerCase();
-        if (t1.substr(0,4) === "the ") t1 = t1.substr(4);
-        if (t2.substr(0,4) === "the ") t2 = t2.substr(4);
-        return t1 === t2 ? 0 : (t1 < t2 ? -1 : 1);
-    };
-
-    var reqJSON = function (options, callback) {
+    function reqJSON (options, callback) {
         var allOptions = { };
         Object.keys(backend).forEach(function (option) {
             allOptions[option] = backend[option];
@@ -162,7 +212,32 @@ module.exports = function(args) {
             })
         });
         req.end();
-    };
+    }
+
+
+    function toUTCString(localTs) {
+        if (backendProtocol > "74")
+            return localTs.getFullYear() + "-" + ("0" + (localTs.getMonth()+1)).substr(-2) + "-" + ("0" + localTs.getDate()).substr(-2) + "T" + ("0" + localTs.getHours()).substr(-2) + ":" + ("0" + localTs.getMinutes()).substr(-2) + ":" + ("0" + localTs.getSeconds()).substr(-2);
+        else
+            return localTs.getUTCFullYear() + "-" + ("0" + (localTs.getUTCMonth()+1)).substr(-2) + "-" + ("0" + localTs.getUTCDate()).substr(-2) + "T" + ("0" + localTs.getUTCHours()).substr(-2) + ":" + ("0" + localTs.getUTCMinutes()).substr(-2) + ":" + ("0" + localTs.getUTCSeconds()).substr(-2);
+    }
+
+
+    function localFromUTCString(utcString) {
+        if (backendProtocol > "74")
+            return utcString;
+
+        var utc = new Date();
+
+        utc.setUTCFullYear(Number(utcString.substr(0,4)),
+                           Number(utcString.substr(5,2))-1,
+                           Number(utcString.substr(8,2)));
+        utc.setUTCHours(Number(utcString.substr(11,2)),
+                        Number(utcString.substr(14,2)),
+                        Number(utcString.substr(17,2)));
+
+        return utc.getFullYear() + "-" + ("0" + (utc.getMonth()+1)).substr(-2) + "-" + ("0" + utc.getDate()).substr(-2) + "T" + ("0" + utc.getHours()).substr(-2) + ":" + ("0" + utc.getMinutes()).substr(-2) + ":" + ("0" + utc.getSeconds()).substr(-2);
+    }
 
 
     // ////////////////////////////////////////////////////////////////////////
@@ -207,6 +282,10 @@ module.exports = function(args) {
                 inReset = startingReset;
             },
 
+            isDoingReset : function () {
+                return inReset;
+            },
+
             recordingChange : function (change) {
                 if (!inReset) {
                     if (!change.title)
@@ -222,12 +301,19 @@ module.exports = function(args) {
             },
 
             recGroupChange : function (grp) {
-                console.log('logged a recording group change: ' + grp);
                 recGroupsChanged = true;
+            },
+
+            groupsDidChange : function () {
+                return recGroupsChanged;
             },
 
             frontendChange : function () {
                 blast({ Frontends : Object.keys(frontends.byHost) });
+            },
+
+            groupChanges : function () {
+                return recChange;
             },
 
             sendChanges : function () {
@@ -263,7 +349,7 @@ module.exports = function(args) {
 
             alertOffline : function (clientNum) {
                 blast({ Alert : true, Category : "Servers", Class : "Alert",
-                        Message : myth.bonjour.fullname + " is offline"},
+                        Message : "MythTV" + " is offline"},
                       clientNum);
             },
 
@@ -323,107 +409,38 @@ module.exports = function(args) {
     // data model maintenance
     // ////////////////////////////////////////////////////////////////////////
 
-    var recGroupList = (function () {
-        var stale = true;
-        var groups = {  };
-        var softGroups = [ ];
-        var buttonList = [ ];
-
-        return {
-
-            init : function () {
-                softGroups.length = 0;
-                stale = true;
-            },
-
-            addGroup : function (groupName) {
-                softGroups.push(groupName);
-                stale = true;
-            },
-
-            delGroup : function (groupName) {
-                var found = false;
-                for (var i = 0;  !found && i < softGroups.length;  i++)
-                    if (softGroups[i] === groupName) {
-                        console.log('soft remove ' + softGroups[i]);
-                        softGroups.remove(i);
-                        found = true;
-                    }
-                stale = true;
-            },
-
-            recGroupButtons : function () {
-                if (stale) {
-                    buttonList.length = 0;
-
-                    softGroups.sort(function (g1,g2) { return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1; });
-
-                    var buttonNames = softGroups.length > 0
-                        ? ["All", "Default"].concat(softGroups)
-                        : ["Recordings"];
-
-                    buttonNames.forEach(function (groupName) {
-                        buttonList.push({
-                            Class : "mx-RecGroup",
-                            href : "/recordings",
-                            recGroup : groupName,
-                            Title : groupName
-                        });
-                    });
-
-                    buttonList.push({
-                        Class : "mx-Videos",
-                        href : "/videos",
-                        Title : "Videos"
-                    });
-                    buttonList.push({
-                        Class : "mx-Streams",
-                        href : "/streams",
-                        Title : "Streams"
-                    });
-
-                    stale = false;
-                }
-                return buttonList;
-            }
-
-        };
-    })();
-
     var mythMessageHandler = (function () {
 
-        var addRecordingToRecGroup = function (recording, recGroup) {
-            if (!byRecGroup[recGroup]) {
+        function getChanKey(arg1, arg2) {
+            if (typeof(arg1) === "object")
+                return arg1.Channel.ChanId + ' ' + localFromUTCString(arg1.Recording.StartTs);
+            else
+                return arg1 + ' ' + arg2;
+        }
+
+        function eventTimeToString(eventTime, override) {
+            var t = new Date(eventTime * 1000);
+            if (backendProtocol > "74" && !override)
+                return t.getFullYear() + "-" + ("0" + (t.getMonth()+1)).substr(-2) + "-" + ("0" + t.getDate()).substr(-2) + "T" + ("0" + t.getHours()).substr(-2) + ":" + ("0" + t.getMinutes()).substr(-2) + ":" + ("0" + t.getSeconds()).substr(-2);
+            else
+                return t.getUTCFullYear() + "-" + ("0" + (t.getUTCMonth()+1)).substr(-2) + "-" + ("0" + t.getUTCDate()).substr(-2) + "T" + ("0" + t.getUTCHours()).substr(-2) + ":" + ("0" + t.getUTCMinutes()).substr(-2) + ":" + ("0" + t.getUTCSeconds()).substr(-2);
+        }
+
+        function addRecordingToRecGroup (recording, recGroup) {
+            if (!byRecGroup.hasOwnProperty(recGroup)) {
                 byRecGroup[recGroup] = { };
-                recGroups.push(recGroup);
-                recGroupList.addGroup(recGroup);
                 eventSocket.recGroupChange(recGroup);
             }
             var groupRecordings = byRecGroup[recGroup];
-            if (!groupRecordings[recording.Title]) {
-                groupRecordings[recording.Title] = [ ];
+            if (!byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
+                byRecGroup[recGroup][recording.Title] = [ ];
                 eventSocket.recordingChange({ group : recGroup});
             }
             eventSocket.recordingChange({ group : recGroup, title : recording.Title});
-            groupRecordings[recording.Title].push(recording);
-        };
+            byRecGroup[recGroup][recording.Title].push(recording);
+        }
 
-        var newRecording = function (recording) {
-            if (!progTitles.hasOwnProperty(recording.Title)) {
-                progTitles[recording.Title] = true;
-                sortedTitles.push(recording.Title);
-            }
-
-            byFilename[recording.FileName] = recording;
-
-            var chanKey = recording.Channel.ChanId + ' ' + localFromUTCString(recording.Recording.StartTs);
-            byChanId[chanKey] = recording.FileName;
-
-            addRecordingToRecGroup(recording, "All");
-            addRecordingToRecGroup(recording, recording.Recording.RecGroup);
-        };
-
-        var delRecordingFromRecGroup = function (recording, recGroup) {
+        function delRecordingFromRecGroup (recording, recGroup) {
             if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
                 var episodes = byRecGroup[recGroup][recording.Title];
                 for (var found = false, i = 0; !found && i < episodes.length; i++) {
@@ -440,104 +457,183 @@ module.exports = function(args) {
                     if (Object.keys(byRecGroup[recGroup]).length == 0) {
                         console.log('delete rec group ' + recGroup);
                         delete byRecGroup[recGroup];
-                        recGroupList.delGroup(recGroup);
                         eventSocket.recGroupChange(recGroup);
                     }
                 }
             }
-        };
+        }
+
+        function assignProperties(program) {
+            var mx = { recGroups : { }, traits : { } };
+
+            if (program.Recording.hasOwnProperty("RecGroup") && program.Recording.RecGroup !== "Deleted") {
+                mx.recGroups.All = true;
+                mx.recGroups[program.Recording.RecGroup] = true;
+            }
+
+            var flags = getProgramFlags(program.ProgramFlags);
+            if (flags.BookmarkSet) mx.traits.Bookmarked = true;
+            if (flags.HasCutList) mx.traits.CutList = true;
+            if (flags.Preserved) mx.traits.Preserved = true;
+            if (flags.Watched) mx.traits.Watched = true;
+            else mx.traits.Unwatched = true;
+            if (program.Recording.RecGroup === "Deleted") mx.traits.Deleted = true;
+            if (program.hasOwnProperty("ProgramId") && program.ProgramId.length > 0 && program.ProgramId.substr(0,2) === "MV") mx.traits.Movie = true;
+
+            program.ProgramFlags_ = flags;
+            program.mx = mx;
+        }
+
+        function emptyProgram (fileName) {
+            var empty = {
+                Title : "",
+                StartTime : undefined,
+                ProgramFlags : 0,
+                Recording : { RecGroup : undefined },
+                FileName : fileName
+            };
+            assignProperties(empty);
+            return empty;
+        }
+
+        var doLog = false;
+
+        function applyProgramUpdate(newProg) {
+
+            var oldProg = { }, isExistingProgram;
+
+            if (isExistingProgram = byFilename.hasOwnProperty(newProg.FileName)) {
+                copyProperties(byFilename[newProg.FileName], oldProg);
+                copyProperties(newProg, byFilename[newProg.FileName]);
+            } else {
+                oldProg = emptyProgram();
+                byFilename[newProg.FileName] = newProg;
+                byChanId[getChanKey(newProg)] = newProg.FileName;
+            }
+
+            assignProperties(newProg);
+
+            var oldGroups = Object.keys(oldProg.mx.recGroups).concat(Object.keys(oldProg.mx.traits));
+            var newGroups = Object.keys(newProg.mx.recGroups).concat(Object.keys(newProg.mx.traits));
+
+            var oldMap = { }, newMap = { };
+            oldGroups.forEach(function (group) { oldMap[group] = true; });
+            newGroups.forEach(function (group) { newMap[group] = true; });
+
+            if (oldProg.Title != newProg.Title) {
+                // remove from all groups under the old title and
+                // readd under the new title
+                if (doLog) console.log('  title change ' + oldProg.title + " => " + newProg.Title
+                                       + " (" + newProg.FileName + ")");
+                if (isExistingProgram) {
+                    oldGroups.forEach(function (group) {
+                        if (doLog) console.log('  del from ' + group);
+                        delRecordingFromRecGroup(oldProg, group);
+                    });
+                }
+                newGroups.forEach(function (group) {
+                    if (doLog) console.log('  add from ' + group);
+                    addRecordingToRecGroup(newProg, group);
+                });
+            } else {
+                // remove from groups not appearing in the new and
+                // add to groups that weren't in the old list
+                oldGroups.forEach(function (group) {
+                    if (!newMap.hasOwnProperty(group)) {
+                        if (doLog) console.log('  del from ' + group);
+                        delRecordingFromRecGroup(oldProg, group);
+                    }
+                });
+                newGroups.forEach(function (group) {
+                    if (!oldMap.hasOwnProperty(group)) {
+                        if (doLog) console.log('  add from ' + group);
+                        addRecordingToRecGroup(newProg, group);
+                    }
+                });
+            }
+
+        }
 
         // new update events can come before we've processed the GetRecorded request
         var pendingRetrieves = { };
 
-        var retrieveAndAddRecording = function (chanId, startTs) {
-            if (!pendingRetrieves.hasOwnProperty(chanId + startTs)) {
-                pendingRetrieves[chanId + startTs] = true;
-                console.log('add new recording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+        function takeAndAddRecording(recording, override) {
+            var chanKey = getChanKey(recording);
+            if (override || !pendingRetrieves.hasOwnProperty(chanKey)) {
+                doLog = true;
+                applyProgramUpdate(recording);
+                doLog = false;
+                delete pendingRetrieves[chanKey];
+            }
+        }
+
+        function retrieveAndAddRecording (chanId, startTs) {
+            var chanKey = getChanKey(chanId, startTs);
+            if (!pendingRetrieves.hasOwnProperty(chanKey)) {
+                pendingRetrieves[chanKey] = true;
+                console.log('retrieveAndAddRecording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
                 reqJSON(
                     {
                         path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
                     },
                     function (response) {
-                        console.log('new recording');
-                        console.log(response);
-                        var recording = response.Program;
-                        var startingTitleCount = sortedTitles.length;
-
-                        console.log('new recording ' + recording.Title + ' ' + recording.SubTitle);
-                        newRecording(recording);
-
-                        if (sortedTitles.length > startingTitleCount)
-                            sortedTitles.sort(titleCompare);
-
-                        var title = recording.Title;
-                        byRecGroup["All"][title].sort(episodeCompare);
-                        byRecGroup[recording.Recording.RecGroup][title].sort(episodeCompare);
-
-                        delete pendingRetrieves[chanId + startTs];
-                        eventSocket.sendChanges();
+                        //console.log('retrieveAndAddRecording');
+                        //console.log(response);
+                        takeAndAddRecording(response.Program, true);
                     });
             }
         };
 
-        function deleteFromView(program) {
-            // program has been expired or moved to Deleted group
-            delete byFilename[program.FileName];
-            delRecordingFromRecGroup(program, "All");
-            delRecordingFromRecGroup(program, program.Recording.RecGroup);
-            console.log('deleteFromView ' + program.StartTime + ' ' + program.Title);
-            //console.log(program);
-        }
-
-        function deleteByChanId(chanKey) {
+        function deleteByChanId (chanKey) {
             if (byChanId.hasOwnProperty(chanKey)) {
                 var fileName = byChanId[chanKey];
+
                 if (byFilename.hasOwnProperty(fileName)) {
-                    deleteFromView(byFilename[fileName]);
+                    var prog = byFilename[fileName];
+                    console.log("deleted dangling program " + prog.Title + " " + prog.StartTime);
+                    if (prog.hasOwnProperty("mx")) {
+                        for (var group in prog.mx.recGroups) {
+                            if (doLog) console.log('  del from ' + group);
+                            delRecordingFromRecGroup(prog, group);
+                        };
+                        for (var flag in prog.mx.ProgramFlags_) {
+                            if (prog.mx.ProgramFlags_[flag]) {
+                                if (doLog) console.log('  del from ' + group);
+                                delRecordingFromRecGroup(prog, group);
+                            }
+                        };
+                    }
+
+                    delete byFilename[fileName];
                 }
+
+                // get rid of stranded streams here until the BE does it
+                reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + byChanId[chanKey] },
+                        function (reply) {
+                            reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
+                                console.log("remove stream " + stream.Id);
+                                reqJSON({ path : "/Content/RemoveLiveStream?Id=" + stream.Id },
+                                        function (reply) { }
+                                       );
+                            });
+                        }
+                       );
+
                 delete byChanId[chanKey];
             }
         }
 
-        var recordingListChange = function (change, program) {
+        function recordingListChange (change, program) {
             if (change[0] === "ADD") {
-                var chanId = change[1];
-                var startTs = change[2];
-
-                // event time is local, services time is UTC
-                var startDate = new Date(Number(startTs.substr(0,4)), Number(startTs.substr(5,2))-1, Number(startTs.substr(8,2)), Number(startTs.substr(11,2)), Number(startTs.substr(14,2)), Number(startTs.substr(17,2)))
-                startTs = toUTCString(startDate);
-
+                var chanId = change[1], startTs = change[2];
+                console.log('add ' + chanId + ' / ' + startTs);
                 retrieveAndAddRecording(chanId, startTs)
             }
 
             else if (change[0] === "UPDATE") {
-                if (byFilename.hasOwnProperty(program.FileName)) {
-                    var oldProg = byFilename[program.FileName];
-                    if (program.Recording.RecGroup === "Deleted") {
-                        deleteFromView(oldProg);
-                    } else if (program.Recording.RecGroup !== oldProg.Recording.RecGroup) {
-                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
-                        oldProg.Recording.RecGroup = program.Recording.RecGroup;
-                        oldProg.AirDate = program.AirDate;
-                        addRecordingToRecGroup(oldProg, program.Recording.RecGroup);
-                        byRecGroup[program.Recording.RecGroup][program.Title].sort(episodeCompare);
-                        console.log('update rec group ' + oldProg.StartTime + ' ' + oldProg.Title +
-                                    ' -> ' + program.Recording.RecGroup);
-                        // console.log(program);
-                    } else if (program.Title !== oldProg.Title) {
-                        delRecordingFromRecGroup(oldProg, oldProg.Recording.RecGroup);
-                        addRecordingToRecGroup(program, program.Recording.RecGroup);
-                        byRecGroup[program.Recording.RecGroup][program.Title].sort(episodeCompare);
-                        console.log("Title change: " + oldProg.Title + " -> " + program.Title);
-                    }
-                } else {
-                    if (program.Recording.RecGroup !== "Deleted") {
-                        var unixStartTs = new Date(program.Recording.StartTs*1000);
-                        var startTs = toUTCString(unixStartTs);
-                        retrieveAndAddRecording(program.Channel.ChanId, startTs)
-                    }
-                }
+                console.log("UPDATE " + program.Title + " " + program.StartTime);
+                //console.log(program);
+                takeAndAddRecording(program);
             }
 
             else if (change[0] === "DELETE") {
@@ -552,29 +648,107 @@ module.exports = function(args) {
                 console.log('unhandled program change: ' + change);
                 console.log(program);
             }
-        };
+        }
+
+        function updateStructures() {
+            var pendingChanges = eventSocket.groupChanges();
+            for (var group in pendingChanges) {
+                //console.log('pending change for ' + group);
+                if (byRecGroup.hasOwnProperty(group)) {
+                    for (var title in pendingChanges[group]) {
+                        if (title === "*") {
+                            //console.log('    sort group ' + group);
+                            sortedTitles[group] = Object.keys(byRecGroup[group]).sort(titleCompare);
+                        } else {
+                            if (byRecGroup[group].hasOwnProperty(title)) {
+                                //console.log('    sort title ' + title);
+                                byRecGroup[group][title].sort(episodeCompare);
+                            }
+                        }
+                    }
+                } else {
+                    //console.log("    no byRecGroup entry");
+                    if (sortedTitles.hasOwnProperty(group)) {
+                        //console.log("delete sortedTitles for " + group);
+                        delete sortedTitles[group];
+                    }
+                }
+            }
+
+            if (eventSocket.groupsDidChange()) {
+                console.log('menu update');
+                var groupNames = [ ];
+                var traitNames = [ ];
+
+                for (var group in byRecGroup) {
+                    if (traitOrder.hasOwnProperty(group)) {
+                        traitNames.push(group);
+                    } else if (group !== "Default" && group !== "Recordings" && group !== "All") {
+                        groupNames.push(group);
+                    }
+                };
+
+                groupNames.sort(stringCompare);
+                if (groupNames.length > 1) {
+                    groupNames.unshift("Default");
+                    groupNames.unshift("All");
+                } else {
+                    groupNames.unshift("Recordings");
+                }
+
+                traitNames.sort(traitCompare);
+
+                viewButtons.Programs.length = 0;
+                viewButtons.Properties.length = 0;
+
+                groupNames.forEach(function (groupName) {
+                    viewButtons.Programs.push({
+                        Class : "mx-RecGroup",
+                        href : "/recordings",
+                        recGroup : groupName,
+                        Title : groupName
+                    });
+                });
+
+                viewButtons.Programs.push({
+                    Class : "mx-Videos",
+                    href : "/videos",
+                    Title : "Videos"
+                });
+                viewButtons.Programs.push({
+                    Class : "mx-Streams",
+                    href : "/streams",
+                    Title : "Streams"
+                });
+
+                traitNames.forEach(function (traitName) {
+                    viewButtons.Properties.push({
+                        Class : "mx-RecGroup",
+                        href : "/recordings",
+                        recGroup : traitName,
+                        Title : traitName
+                    });
+                });
+                viewButtons.Properties.push({
+                    Class : "mx-Streams",
+                    href : "/streams",
+                    Title : "Streams"
+                });
+            }
+        }
 
         function init () {
 
             eventSocket.alertConnecting();
+            eventSocket.resettingRecordings(true);
 
-            sortedTitles.forEach(function (title) {
-                delete progTitles[title];
+            Object.keys(sortedTitles).forEach(function (group) {
+                delete sortedTitles[group];
             });
-            sortedTitles.length = 0;
 
-            recGroups.forEach(function (groupName) {
-                delete byRecGroup[groupName];
-            });
-            recGroupList.init();
-
-            recGroups.length = 2;
-            byRecGroup["All"] = [ ];
-            byRecGroup["Default"] = [ ];
-            byRecGroup["Recordings"] = byRecGroup["Default"];  // an alias when we have only one group
-
-            eventSocket.recGroupChange("All");
-            eventSocket.recGroupChange("Default");
+            byRecGroup.All = [ ];
+            byRecGroup.Default = [ ];
+            byRecGroup.Recordings = byRecGroup.Default;  // an alias when we have only one group
 
             Object.keys(byFilename).forEach(function (fileName) {
                 delete byFilename[fileName];
@@ -589,28 +763,19 @@ module.exports = function(args) {
 
             reqJSON(
                 {
-                    path : '/Dvr/GetRecordedList'
+                    path : "/Dvr/GetRecordedList"
+                    // path : "/Dvr/GetRecordedList?StartIndex=1&Count=1"
                 },
                 function (pl) {
-                    eventSocket.resettingRecordings(true);
 
                     pl.ProgramList.Programs.forEach(function (prog) {
-                        newRecording(prog);
+                        applyProgramUpdate(prog);
                     });
 
-                    sortedTitles.sort(titleCompare);
-
-                    if (recGroups.length > 3) {
-                        var locals = recGroups.slice(2);
-                        locals.sort(function (g1,g2) { return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1; });
-                        locals.forEach(function (recGoup, idx) {
-                            recGroups[idx+2] = locals[idx];
-                        });
-                    }
-
-                    recGroups.forEach(function (recGroup) {
-                        Object.keys(byRecGroup[recGroup]).forEach(function (title) {
-                            byRecGroup[recGroup][title].sort(episodeCompare);
+                    Object.keys(byRecGroup).forEach(function (group) {
+                        sortedTitles[group] = Object.keys(byRecGroup[group]).sort(titleCompare);
+                        Object.keys(byRecGroup[group]).forEach(function (title) {
+                            byRecGroup[group][title].sort(episodeCompare);
                         });
                     });
 
@@ -618,8 +783,12 @@ module.exports = function(args) {
                         eventSocket.alertConnected();
 
                     eventSocket.resettingRecordings(false);
+                    mythMessageHandler.updateStructures();
                     eventSocket.sendChanges();
-                    console.log(recGroupList.recGroupButtons());
+
+                    Object.keys(byRecGroup).forEach(function (group) {
+                        console.log(group + ' ' + Object.keys(byRecGroup[group]).length);
+                    });
                 });
 
             Object.keys(byVideoFolder).forEach(function (folder) {
@@ -667,10 +836,6 @@ module.exports = function(args) {
                 });
         }
 
-        var deleteRecording = function(info) {
-        };
-
-
         var pullProgramInfo = function (message) {
             program = { };
 
@@ -689,8 +854,8 @@ module.exports = function(args) {
             program.Channel.ChanName = message.shift();
             program.FileName = message.shift();
             program.FileSize = message.shift();
-            program.StartTime = message.shift();
-            program.EndTime = message.shift();
+            program.StartTime = eventTimeToString(message.shift(), true);
+            program.EndTime = eventTimeToString(message.shift(), true);
             program.FindId = message.shift();
             program.HostName = message.shift();
             program.SourceId = message.shift();
@@ -703,9 +868,10 @@ module.exports = function(args) {
             program.Recording.RecType = message.shift();
             program.Recording.DupInType = message.shift();
             program.Recording.DupMethod = message.shift();
-            program.Recording.StartTs = message.shift();
-            program.Recording.EndTs = message.shift();
+            program.Recording.StartTs = eventTimeToString(message.shift(), true);
+            program.Recording.EndTs = eventTimeToString(message.shift(), true);
             program.ProgramFlags = message.shift();
+            program.ProgramFlags_ = getProgramFlags(program.ProgramFlags);
             program.Recording.RecGroup = message.shift();
             program.OutputFilters = message.shift();
             program.SeriesId = message.shift();
@@ -713,7 +879,7 @@ module.exports = function(args) {
             if (backendProtocol >= "67") {
                 program.Inetref = message.shift();
             }
-            program.LastModified = message.shift();
+            program.LastModified = eventTimeToString(message.shift(), true);
             program.Stars = message.shift();
             program.Airdate = message.shift();
             program.PlayGroup = message.shift();
@@ -774,8 +940,9 @@ module.exports = function(args) {
                     var change = message.shift().substring(22).split(/[ ]/);
                     var changeType = change[0];
                     var program = pullProgramInfo(message);
+                    console.log("RECORDING_LIST_CHANGE");
                     console.log(change);
-                    console.log(program);
+                    //console.log(program);
                     recordingListChange(change,program);
                 }
 
@@ -790,13 +957,14 @@ module.exports = function(args) {
                 else {
                     console.log('Non system event:');
                     console.log(message);
-                }
+               }
             }
         }
 
         return {
             init : init,
-            handleMessage : handleMessage
+            handleMessage : handleMessage,
+            updateStructures : updateStructures
         };
 
     })();
@@ -864,7 +1032,7 @@ module.exports = function(args) {
         socket.on('error', function (err) {
             console.log('myth event socket error');
             console.log(err);
-            if (err.code === 'ETIMEDOUT') {
+            if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED') {
                 // probably the myth host is down
                 myth.connected = false;
                 myth.bonjourService.restart();
@@ -916,7 +1084,10 @@ module.exports = function(args) {
                 }
             }
 
-            eventSocket.sendChanges();
+            if (!eventSocket.isDoingReset()) {
+                mythMessageHandler.updateStructures();
+                eventSocket.sendChanges();
+            }
 
         });
 
@@ -1056,7 +1227,7 @@ module.exports = function(args) {
         byRecGroup : byRecGroup,
         byFilename : byFilename,
         sortedTitles : sortedTitles,
-        recGroups : recGroupList.recGroupButtons, // recGroups,
+        viewButtons : viewButtons,
 
         byVideoFolder : byVideoFolder,
         byVideoId : byVideoId,
@@ -1157,18 +1328,7 @@ module.exports = function(args) {
 
 
         DecodeVideoProps : function (recording) {
-            var props = { };
-            if (recording.VideoProps & 1)
-                props.HDTV = true;
-            if (recording.VideoProps & 2)
-                props.Widescreen = true;
-            if (recording.VideoProps & 4)
-                props.AVC = true;
-            if (recording.VideoProps & 8)
-                props["720"] = true;
-            if (recording.VideoProps & 8)
-                props["1080"] = true;
-            return props;
+            return getVideoProps(recording.VideoProps);
         },
 
 

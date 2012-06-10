@@ -102,6 +102,9 @@ body {
     float: left;
 }
 
+.mx-Wait img       { float: left; margin-left: 48px; margin-right: 12px; }
+.mx-Wait p         { padding-top: 100px; font-size: 2em; }
+
 #InfoDialog {
     width: 800px;
     height: 600px;

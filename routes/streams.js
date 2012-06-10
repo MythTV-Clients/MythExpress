@@ -119,7 +119,8 @@ app.get("/streams", function(req, res) {
                 console.log('Streaming reply:');
                 console.log(reply);
 
-                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id,
+                                             Message : "Buffering" });
             });
         });
     }
@@ -135,7 +136,8 @@ app.get("/streams", function(req, res) {
                 console.log('Streaming reply:');
                 console.log(reply);
 
-                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id });
+                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id,
+                                             Message : "Buffering" });
             });
         });
     }
@@ -151,7 +153,7 @@ app.get("/streams", function(req, res) {
                 layout : Object.keys(req.query).length == 0,
                 MythBackend : mythtv.MythServiceHost(req),
                 Title : "MythTV Streams",
-                RecGroups : mythtv.recGroups(),
+                RecGroups : mythtv.viewButtons.Programs,
                 LiveStreamInfos : reply.LiveStreamInfoList.LiveStreamInfos
             });
         });
@@ -185,6 +187,11 @@ app.get("/streamstatus", function(req, res) {
 app.get("/streamplayer", function(req, res) {
     renderPlayerForStream(req, res, req.query.StreamId, true);
     // true = delay video control until enough segments are encoded
+});
+
+
+app.get("/seconds", function(req, res) {
+    res.partial("stream/seconds", { Message : req.query.Message, StreamId : 0 });
 });
 
 

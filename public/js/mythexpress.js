@@ -16,6 +16,12 @@ $(document).ready(function() {
         }
     });
 
+    var requestingMessage;
+    $.get("/seconds?Message=Requesting", function (html) {
+        requestingMessage = html;
+    });
+
+
     // ////////////////////////////////////////////////////////////////////////
     // Helpers
     // ////////////////////////////////////////////////////////////////////////
@@ -293,7 +299,6 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     $("#Header").on("click", "button", function (event) {
-        console.log("button click");
         $("#Content").html("");
 
         var args = { partial : true };
@@ -304,7 +309,7 @@ $(document).ready(function() {
 
         if (href === "/recordings") {
             title = title + " Recording Group";
-            args.RecGroup = target.text().sanitized();
+            args.RecGroup = currentRecGroup = target.text().sanitized();
         }
 
         History.pushState(args, title, href);
@@ -324,6 +329,7 @@ $(document).ready(function() {
         }
 
         else if (target.hasClass("mx-RecordingPreview")) {
+            $("#Content").html(requestingMessage);
             History.pushState(target.dataAttrs(["FileName"]),
                               target.dataAttrs(["Title"]).Title,
                               "/streams");
@@ -347,6 +353,7 @@ $(document).ready(function() {
         }
 
         else if (target.hasClass("mx-VideoCover")) {
+            $("#Content").html(requestingMessage);
             History.pushState(target.dataAttrs(["VideoId"]),
                               target.parent().dataText(["Title"]).Title,
                               "/streams");

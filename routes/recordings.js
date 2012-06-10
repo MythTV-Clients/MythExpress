@@ -15,18 +15,18 @@ app.get("/recordings", function (req, res) {
 
     } else {
 
-        var groupTitles = mythtv.byRecGroup[recGroup];
         var programList = [ ];
-        mythtv.sortedTitles.forEach(function (title) {
-            if (groupTitles[title])
-                programList.push(groupTitles[title]);
-        });
+        if (mythtv.sortedTitles.hasOwnProperty(recGroup)) {
+            mythtv.sortedTitles[recGroup].forEach(function (title) {
+                programList.push(mythtv.byRecGroup[recGroup][title]);
+            });
+        }
 
         res.render("recordings", {
             layout : !req.query.RecGroup,
             MythBackend : mythtv.MythServiceHost(req),
             Title : "MythTV Recordings",
-            RecGroups : mythtv.recGroups(),
+            RecGroups : mythtv.viewButtons.Programs,
             Recordings : programList
         });
 
@@ -35,6 +35,18 @@ app.get("/recordings", function (req, res) {
 
 
 app.get("/recordinginfo", function (req, res) {
-    console.log("/recordinginfo " + req.query.FileName);
-    res.partial("info/recording", { recording : mythtv.byFilename[req.query.FileName] });
+    var program = mythtv.byFilename[req.query.FileName];
+
+    var flags = [ ];
+    if (program.hasOwnProperty("ProgramFlags_")) {
+        Object.keys(program.ProgramFlags_).forEach(function (flag) {
+            if (program.ProgramFlags_[flag])
+                flags.push(flag);
+        });
+    }
+
+    res.partial("info/recording", {
+        recording : program,
+        flags : flags.join(' ')
+    });
 });
