@@ -483,19 +483,22 @@ module.exports = function(args) {
         function assignProperties(program) {
             var mx = { recGroups : { }, traits : { } };
 
-            if (program.Recording.hasOwnProperty("RecGroup") && program.Recording.RecGroup !== "Deleted") {
-                mx.recGroups.All = true;
-                mx.recGroups[program.Recording.RecGroup] = true;
-            }
-
             var flags = getProgramFlags(program.ProgramFlags);
-            if (flags.BookmarkSet) mx.traits.Bookmarked = true;
-            if (flags.HasCutList) mx.traits.CutList = true;
-            if (flags.Preserved) mx.traits.Preserved = true;
-            if (flags.Watched) mx.traits.Watched = true;
-            else mx.traits.Unwatched = true;
-            if (program.Recording.RecGroup === "Deleted") mx.traits.Deleted = true;
-            if (program.hasOwnProperty("ProgramId") && program.ProgramId.length > 0 && program.ProgramId.substr(0,2) === "MV") mx.traits.Movie = true;
+
+            if (program.Recording.RecGroup === "Deleted") {
+                mx.traits.Deleted = true;
+            } else {
+                mx.recGroups.All = true;
+                if (program.Recording.hasOwnProperty("RecGroup"))
+                    mx.recGroups[program.Recording.RecGroup] = true;
+
+                if (flags.BookmarkSet) mx.traits.Bookmarked = true;
+                if (flags.HasCutList) mx.traits.CutList = true;
+                if (flags.Preserved) mx.traits.Preserved = true;
+                if (flags.Watched) mx.traits.Watched = true;
+                else mx.traits.Unwatched = true;
+                if (program.hasOwnProperty("ProgramId") && program.ProgramId.length > 0 && program.ProgramId.substr(0,2) === "MV") mx.traits.Movie = true;
+            }
 
             program.ProgramFlags_ = flags;
             program.mx = mx;
