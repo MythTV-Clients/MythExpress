@@ -974,7 +974,7 @@ module.exports = function(args) {
                     recordingListChange(change,program);
                 }
 
-                else if (msgType === "'SHUTDOWN_COUNTDOWN") {
+                else if (msgType === "SHUTDOWN_COUNTDOWN") {
                     eventSocket.alertShutdown(head[1]);
                 }
 
