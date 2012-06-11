@@ -467,14 +467,17 @@ module.exports = function(args) {
                     }
                 }
                 eventSocket.recordingChange({ group : recGroup, title : recording.Title});
-                if (episodes.length == 0) {
-                    console.log('that was the last episode');
-                    delete byRecGroup[recGroup][recording.Title];
+
+                if (episodes.length < 2) {
                     eventSocket.recordingChange({ group : recGroup });
-                    if (Object.keys(byRecGroup[recGroup]).length == 0) {
-                        console.log('delete rec group ' + recGroup);
-                        delete byRecGroup[recGroup];
-                        eventSocket.recGroupChange(recGroup);
+                    if (episodes.length == 0) {
+                        console.log('that was the last episode');
+                        delete byRecGroup[recGroup][recording.Title];
+                        if (Object.keys(byRecGroup[recGroup]).length == 0) {
+                            console.log('delete rec group ' + recGroup);
+                            delete byRecGroup[recGroup];
+                            eventSocket.recGroupChange(recGroup);
+                        }
                     }
                 }
             }
@@ -651,7 +654,7 @@ module.exports = function(args) {
             }
 
             else if (change[0] === "UPDATE") {
-                console.log("UPDATE " + program.Title + " " + program.StartTime);
+                console.log("UPDATE " + program.Title + " " + program.StartTime + " " + program.SubTitle);
                 //console.log(program);
                 takeAndAddRecording(program);
             }
@@ -966,7 +969,7 @@ module.exports = function(args) {
                     var changeType = change[0];
                     var program = pullProgramInfo(message);
                     console.log("RECORDING_LIST_CHANGE");
-                    console.log(change);
+                    //console.log(change);
                     //console.log(program);
                     recordingListChange(change,program);
                 }
