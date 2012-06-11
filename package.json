@@ -1,6 +1,6 @@
 {
     "name" : "MythExpress",
-    "version" : "0.1.0",
+    "version" : "0.2.0",
     "private" : true,
     "dependencies" : {
         "express" : "2.5.4",
@@ -9,6 +9,7 @@
         "connect-assetmanager" : ">= 0.0.26",
         "nopt" : ">=1.0.10",
         "ws" : ">=0.4.15",
-        "mdns" : ">=0.0.6"
+        "mdns" : ">=0.0.6",
+        "async" : ">=0.1.22"
     }
 }

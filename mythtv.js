@@ -5,6 +5,8 @@ var net = require('net');
 var WebSocketServer = require('ws').Server;
 var fs = require('fs');
 var mdns = require('mdns');
+var async = require('async');
+
 
 // ////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -668,30 +670,24 @@ module.exports = function(args) {
         function updateStructures() {
             var pendingChanges = eventSocket.groupChanges();
             for (var group in pendingChanges) {
-                //console.log('pending change for ' + group);
                 if (byRecGroup.hasOwnProperty(group)) {
                     for (var title in pendingChanges[group]) {
                         if (title === "*") {
-                            //console.log('    sort group ' + group);
                             sortedTitles[group] = Object.keys(byRecGroup[group]).sort(titleCompare);
                         } else {
                             if (byRecGroup[group].hasOwnProperty(title)) {
-                                //console.log('    sort title ' + title);
                                 byRecGroup[group][title].sort(episodeCompare);
                             }
                         }
                     }
                 } else {
-                    //console.log("    no byRecGroup entry");
                     if (sortedTitles.hasOwnProperty(group)) {
-                        //console.log("delete sortedTitles for " + group);
                         delete sortedTitles[group];
                     }
                 }
             }
 
             if (eventSocket.groupsDidChange()) {
-                console.log('menu update');
                 var groupNames = [ ];
                 var traitNames = [ ];
 
@@ -753,102 +749,113 @@ module.exports = function(args) {
         }
 
         function init () {
+            async.auto({
 
-            eventSocket.alertConnecting();
-            eventSocket.resettingRecordings(true);
-
-            Object.keys(sortedTitles).forEach(function (group) {
-                delete sortedTitles[group];
-            });
-
-            byRecGroup.All = [ ];
-            byRecGroup.Default = [ ];
-            byRecGroup.Recordings = byRecGroup.Default;  // an alias when we have only one group
-
-            Object.keys(byFilename).forEach(function (fileName) {
-                delete byFilename[fileName];
-            });
-
-            Object.keys(byVideoFolder).forEach(function (folder) {
-                delete byVideoFolder[folder];
-            });
-            byVideoId.length = 0;
-
-            var listsToDo = 2;
-
-            reqJSON(
-                {
-                    path : "/Dvr/GetRecordedList"
-                    // path : "/Dvr/GetRecordedList?StartIndex=1&Count=1"
+                alertClients : function (finished) {
+                    eventSocket.alertConnecting();
+                    eventSocket.resettingRecordings(true);
+                    finished(null);
                 },
-                function (pl) {
 
-                    pl.ProgramList.Programs.forEach(function (prog) {
-                        applyProgramUpdate(prog);
-                    });
-
-                    Object.keys(byRecGroup).forEach(function (group) {
-                        sortedTitles[group] = Object.keys(byRecGroup[group]).sort(titleCompare);
-                        Object.keys(byRecGroup[group]).forEach(function (title) {
-                            byRecGroup[group][title].sort(episodeCompare);
+                resetStructures : [
+                    "alertClients",
+                    function (finished) {
+                        Object.keys(sortedTitles).forEach(function (group) {
+                            delete sortedTitles[group];
                         });
-                    });
 
-                    if (--listsToDo == 0)
+                        byRecGroup.All = [ ];
+                        byRecGroup.Default = [ ];
+                        byRecGroup.Recordings = byRecGroup.Default;  // an alias for when we have only one group
+
+                        Object.keys(byFilename).forEach(function (fileName) {
+                            delete byFilename[fileName];
+                        });
+
+                        Object.keys(byVideoFolder).forEach(function (folder) {
+                            delete byVideoFolder[folder];
+                        });
+                        byVideoId.length = 0;
+
+                        byVideoFolder["/"] = { Title : "Videos", List : [ ] };
+
+                        finished(null);
+                    }
+                ],
+
+                loadRecordings : [
+                    "resetStructures",
+                    function (finished) {
+                        reqJSON(
+                            { path : "/Dvr/GetRecordedList" },
+                            function (pl) {
+                                pl.ProgramList.Programs.forEach(function (prog) {
+                                    applyProgramUpdate(prog);
+                                });
+
+                                Object.keys(byRecGroup).forEach(function (group) {
+                                    sortedTitles[group] = Object.keys(byRecGroup[group]).sort(titleCompare);
+                                    Object.keys(byRecGroup[group]).forEach(function (title) {
+                                        byRecGroup[group][title].sort(episodeCompare);
+                                    });
+                                    console.log(group + ' ' + Object.keys(byRecGroup[group]).length);
+                                });
+
+                                finished(null);
+                            });
+                    }],
+
+                loadVideos : [
+                    "resetStructures",
+                    function (finished) {
+                        reqJSON(
+                            { path : '/Video/GetVideoList' },
+                            function (videos) {
+                                videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
+                                    byVideoId[video.Id] = video;
+                                    byFilename[video.FileName] = video;
+                                    var curPath = "";
+                                    var curList = byVideoFolder["/"];
+                                    path.dirname(video.FileName).split(slashPattern).forEach(function (folder) {
+                                        if (folder !== ".") {
+                                            var newPath = curPath + "/" + folder;
+                                            var newList = byVideoFolder[newPath];
+                                            if (!newList) {
+                                                newList = { Title : folder, List : [ ], VideoFolder : newPath };
+                                                byVideoFolder[newPath] = newList;
+                                                curList.List.push(newList);
+                                            }
+                                            curPath = newPath;
+                                            curList = newList;
+                                        }
+                                    });
+                                    curList.List.push(video);
+                                });
+
+                                Object.keys(byVideoFolder).forEach(function (path) {
+                                    byVideoFolder[path].List.sort(videoCompare);
+                                });
+
+                                eventSocket.videoChange();
+
+                                finished(null);
+                            });
+
+                        finished(null);
+                    }
+                ],
+
+                initializeFinished : [
+                    "loadRecordings", "loadVideos",
+                    function (finished) {
+                        mythMessageHandler.updateStructures();
+                        eventSocket.resettingRecordings(false);
                         eventSocket.alertConnected();
-
-                    eventSocket.resettingRecordings(false);
-                    mythMessageHandler.updateStructures();
-                    eventSocket.sendChanges();
-
-                    Object.keys(byRecGroup).forEach(function (group) {
-                        console.log(group + ' ' + Object.keys(byRecGroup[group]).length);
-                    });
-                });
-
-            Object.keys(byVideoFolder).forEach(function (folder) {
-                delete byVideoFolder[folder];
+                        eventSocket.sendChanges();
+                        finished(null);
+                    }
+                ]
             });
-
-            reqJSON(
-                {
-                    path : '/Video/GetVideoList'
-                },
-                function (videos) {
-                    byVideoFolder["/"] = { Title : "Videos", List : [ ] };
-
-                    videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
-                        byVideoId[video.Id] = video;
-                        byFilename[video.FileName] = video;
-                        var curPath = "";
-                        var curList = byVideoFolder["/"];
-                        path.dirname(video.FileName).split(slashPattern).forEach(function (folder) {
-                            if (folder !== ".") {
-                                var newPath = curPath + "/" + folder;
-                                var newList = byVideoFolder[newPath];
-                                if (!newList) {
-                                    newList = { Title : folder, List : [ ], VideoFolder : newPath };
-                                    byVideoFolder[newPath] = newList;
-                                    curList.List.push(newList);
-                                }
-                                curPath = newPath;
-                                curList = newList;
-                            }
-                        });
-                        curList.List.push(video);
-                    });
-
-                    Object.keys(byVideoFolder).forEach(function (path) {
-                        byVideoFolder[path].List.sort(videoCompare);
-                    });
-
-
-                    if (--listsToDo == 0)
-                        eventSocket.alertConnected();
-
-                    eventSocket.videoChange();
-                    eventSocket.sendChanges();
-                });
         }
 
         var pullProgramInfo = function (message) {
