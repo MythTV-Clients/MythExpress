@@ -483,9 +483,9 @@ $(document).ready(function() {
 
     function applyUpdate(event) {
         var State = History.getState();
-        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.Group)) {
-            var insideTitle = State.data.hasOwnProperty("Title");
-            if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
+        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.args.Group)) {
+            var insideTitle = State.data.args.hasOwnProperty("Title");
+            if (event.Reset || (insideTitle && event.Title === State.data.args.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
             }
         }

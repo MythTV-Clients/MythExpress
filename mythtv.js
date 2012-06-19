@@ -501,7 +501,7 @@ module.exports = function(args) {
                     mx.recGroups[program.Recording.RecGroup] = true;
 
                 if (flags.BookmarkSet) mx.traits.Bookmarked = true;
-                if (flags.HasCutList) mx.traits.CutList = true;
+                if (flags.HasCutlist) mx.traits.CutList = true;
                 if (flags.Preserved) mx.traits.Preserved = true;
                 if (flags.Watched) mx.traits.Watched = true;
                 else mx.traits.Unwatched = true;
@@ -533,6 +533,7 @@ module.exports = function(args) {
             if (isExistingProgram = byFilename.hasOwnProperty(newProg.FileName)) {
                 copyProperties(byFilename[newProg.FileName], oldProg);
                 copyProperties(newProg, byFilename[newProg.FileName]);
+                newProg = byFilename[newProg.FileName];
             } else {
                 oldProg = emptyProgram();
                 byFilename[newProg.FileName] = newProg;
@@ -566,6 +567,9 @@ module.exports = function(args) {
             } else {
                 // remove from groups not appearing in the new and
                 // add to groups that weren't in the old list
+                //console.log("old groups / new groups for existing prog? " + isExistingProgram);
+                //console.log(oldGroups);
+                //console.log(newGroups);
                 oldGroups.forEach(function (group) {
                     if (!newMap.hasOwnProperty(group)) {
                         if (doLog) console.log('  del from ' + group);
@@ -592,7 +596,7 @@ module.exports = function(args) {
                 applyProgramUpdate(recording);
                 doLog = false;
                 delete pendingRetrieves[chanKey];
-            }
+            } else console.log("    ignored due to pending retrieve");
         }
 
         function retrieveAndAddRecording (chanId, startTs) {
@@ -609,7 +613,7 @@ module.exports = function(args) {
                         //console.log(response);
                         takeAndAddRecording(response.Program, true);
                     });
-            }
+            } else console.log("    ignored due to pending retrieve");
         };
 
         function deleteByChanId (chanKey) {
@@ -979,7 +983,7 @@ module.exports = function(args) {
                     var change = message.shift().substring(22).split(/[ ]/);
                     var changeType = change[0];
                     var program = pullProgramInfo(message);
-                    console.log("RECORDING_LIST_CHANGE");
+                    console.log("RECORDING_LIST_CHANGE " + changeType);
                     //console.log(change);
                     //console.log(program);
                     recordingListChange(change,program);
