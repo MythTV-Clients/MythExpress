@@ -531,6 +531,7 @@ $(document).ready(function() {
         init : function () {
             if (WebSocket) {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
+                applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
