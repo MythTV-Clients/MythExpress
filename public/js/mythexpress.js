@@ -78,8 +78,8 @@ $(document).ready(function() {
         $.get(State.url, State.data.args,
               function(markup, textStatus, jqXHR) {
                   var pageView = jqXHR.getResponseHeader("X-MX-View") || "";
-                  var pageTitle = decodeURIComponent(escape(jqXHR.getResponseHeader("X-MX-Title" || "")));
-                  // console.log(jqXHR.getAllResponseHeaders());
+                  var pageTitle = decodeURIComponent(escape(jqXHR.getResponseHeader("X-MX-Title") || ""));
+                  console.log(jqXHR.getAllResponseHeaders());
                   var changed = false;
 
                   if (pageView.length > 0 && pageView !== $("#Buttons").attr("data-View")) {
