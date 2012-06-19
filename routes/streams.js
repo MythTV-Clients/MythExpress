@@ -64,11 +64,20 @@ app.get("/streams", function(req, res) {
     console.log("/streams");
     console.log(req.query);
 
+    if (req.query.hasOwnProperty("View")) {
+        req.Context.View = req.query.View;
+    }
+
     if (req.query.StreamId) {
         renderPlayerForStream(req, res, req.query.StreamId);
     }
 
     else if (req.query.FileName) {
+
+        req.Context.Title = mythtv.byFilename[req.query.FileName].Title;
+
+        app.sendHeaders(req, res);
+
         renderIfStreamExists(req, res, req.query.FileName, function() {
             // requesting a new stream
             var recording = mythtv.byFilename[req.query.FileName];
@@ -149,11 +158,15 @@ app.get("/streams", function(req, res) {
                 normalizeMetadata(req, stream);
             });
 
+            req.Context.Title = "Streams";
+            req.Context.Group = "Programs";
+
+            app.sendHeaders(req, res);
+
             res.render("streams", {
-                layout : Object.keys(req.query).length == 0,
                 MythBackend : mythtv.MythServiceHost(req),
-                Title : "MythTV Streams",
-                RecGroups : mythtv.viewButtons.Programs,
+                Title : req.Context.Title,
+                //RecGroups : mythtv.viewButtons.Programs,
                 LiveStreamInfos : reply.LiveStreamInfoList.LiveStreamInfos
             });
         });
@@ -166,16 +179,14 @@ app.get("/streams", function(req, res) {
 app.get("/streamstatus", function(req, res) {
     mythtv.StreamList(function(reply) {
         var streams = [ ];
+        var backend = mythtv.MythServiceHost(req);
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
             normalizeMetadata(req, stream);
-            res.render("stream", { layout : false, stream : stream, MythBackend : mythtv.MythServiceHost(req) },
+            res.render("stream", { layout : false, stream : stream, MythBackend : backend },
                        function(err,html) {
-                           if (err) {
-                               console.log(err);
-                           } else {
-                               streams.push(html);
-                           }
+                           if (err) console.log(err);
+                           else streams.push(html);
                        });
         });
 

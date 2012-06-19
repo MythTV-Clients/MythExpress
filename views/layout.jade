@@ -15,7 +15,10 @@ html
       script(type="text/javascript", src="js/history.adapter.jquery.js")
       script(type="text/javascript", src="js/mythexpress.js")
   body
-    #Content!= body
+    #Content
+      #Context.mx-Hidden= JSON.stringify(Context)
+      != body
     #Header!= partial("header")
+    #Views.mx-Hidden!= partial("ui/viewspopup")
     #Footer
     #InfoDialog!= partial("info/infodialog")

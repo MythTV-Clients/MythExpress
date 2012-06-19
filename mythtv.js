@@ -339,7 +339,7 @@ module.exports = function(args) {
                     }
 
                     if (recGroupsChanged) {
-                        blast({ RecordingGroups : true })
+                        blast({ RecordingGroups : true });
                         recGroupsChanged = false;
                     }
                 }
@@ -460,23 +460,28 @@ module.exports = function(args) {
         function delRecordingFromRecGroup (recording, recGroup) {
             if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
                 var episodes = byRecGroup[recGroup][recording.Title];
-                for (var found = false, i = 0; !found && i < episodes.length; i++) {
+
+                var found = false
+                for (i = 0; !found && i < episodes.length; i++) {
                     if (episodes[i].FileName === recording.FileName) {
                         found = true;
                         episodes.remove(i);
                     }
                 }
-                eventSocket.recordingChange({ group : recGroup, title : recording.Title});
 
-                if (episodes.length < 2) {
-                    eventSocket.recordingChange({ group : recGroup });
-                    if (episodes.length == 0) {
-                        console.log('that was the last episode');
-                        delete byRecGroup[recGroup][recording.Title];
-                        if (Object.keys(byRecGroup[recGroup]).length == 0) {
-                            console.log('delete rec group ' + recGroup);
-                            delete byRecGroup[recGroup];
-                            eventSocket.recGroupChange(recGroup);
+                if (found) {
+                    eventSocket.recordingChange({ group : recGroup, title : recording.Title});
+
+                    if (episodes.length < 2) {
+                        eventSocket.recordingChange({ group : recGroup });
+                        if (episodes.length == 0) {
+                            console.log('that was the last episode');
+                            delete byRecGroup[recGroup][recording.Title];
+                            if (Object.keys(byRecGroup[recGroup]).length == 0) {
+                                console.log('delete rec group ' + recGroup);
+                                delete byRecGroup[recGroup];
+                                eventSocket.recGroupChange(recGroup);
+                            }
                         }
                     }
                 }
@@ -625,6 +630,12 @@ module.exports = function(args) {
                                 delRecordingFromRecGroup(prog, group);
                             }
                         };
+                    } else {
+                        // clean out any possible straggler records
+                        var prog = emptyProgram(fileName);
+                        groupNames.concat(trainNames).forEach(function (group) {
+                            delRecordingFromRecGroup(emptyProgram, group);
+                        });
                     }
 
                     delete byFilename[fileName];
@@ -694,8 +705,8 @@ module.exports = function(args) {
             }
 
             if (eventSocket.groupsDidChange()) {
-                var groupNames = [ ];
-                var traitNames = [ ];
+                groupNames.length = 0;
+                traitNames.length = 0;
 
                 for (var group in byRecGroup) {
                     if (traitOrder.hasOwnProperty(group)) {
@@ -741,7 +752,7 @@ module.exports = function(args) {
                 traitNames.forEach(function (traitName) {
                     viewButtons.Properties.push({
                         Class : "mx-RecGroup",
-                        href : "/recordings",
+                        href : "/properties",
                         recGroup : traitName,
                         Title : traitName
                     });
@@ -1260,6 +1271,9 @@ module.exports = function(args) {
         byFilename : byFilename,
         sortedTitles : sortedTitles,
         viewButtons : viewButtons,
+
+        groupNames : groupNames,
+        traitNames : traitNames,
 
         byVideoFolder : byVideoFolder,
         byVideoId : byVideoId,

@@ -1,36 +1,66 @@
 
-app.get("/recordings", function (req, res) {
+function doRender(req, res, headerData) {
 
     console.log(req.query);
 
-    var recGroup = req.query.RecGroup || "Default";
+    var locals = {
+        MythBackend : mythtv.MythServiceHost(req),
+        RecGroup : req.query.Group,
+        Recordings : undefined
+    };
 
-    if (req.query.Title) {
+    var recGroup = req.query.Group;
+    var jadeFile;
 
-        res.render("episodes", {
-            layout : false,
-            MythBackend : mythtv.MythServiceHost(req),
-            Recordings : mythtv.byRecGroup[recGroup][req.query.Title]
-        });
+    if (req.query.hasOwnProperty("Title")) {
+
+        jadeFile = "episodes";
+
+        locals.Recordings = mythtv.byRecGroup[recGroup].hasOwnProperty(req.query.Title)
+            ? mythtv.byRecGroup[recGroup][req.query.Title]
+            : [ ];
+
+        req.Context.Title = recGroup + " \u2022 " + req.query.Title;
 
     } else {
 
-        var programList = [ ];
-        if (mythtv.sortedTitles.hasOwnProperty(recGroup)) {
-            mythtv.sortedTitles[recGroup].forEach(function (title) {
-                programList.push(mythtv.byRecGroup[recGroup][title]);
-            });
-        }
+        jadeFile = "recordings";
 
-        res.render("recordings", {
-            layout : !req.query.RecGroup,
-            MythBackend : mythtv.MythServiceHost(req),
-            Title : "MythTV Recordings",
-            RecGroups : mythtv.viewButtons.Programs,
-            Recordings : programList
+        locals.Recordings = [ ];
+        mythtv.sortedTitles[recGroup].forEach(function (title) {
+            locals.Recordings.push(mythtv.byRecGroup[recGroup][title]);
         });
 
+        req.Context.Title = recGroup + (req.Context.View === "Programs" ? " Recording Group" : " Recordings");
+
     }
+
+    app.sendHeaders(req, res);
+    res.render(jadeFile, locals);
+
+}
+
+
+app.get("/recordings", function (req, res) {
+    // return "Default" or "Recordings" depending if there are >1 groups
+    if (!req.query.hasOwnProperty("Group"))
+        req.query.Group = mythtv.groupNames.length > 1 ? mythtv.groupNames[1] : mythtv.groupNames[0];
+
+    req.Context.View = "Programs";
+    req.Context.Group = req.query.Group;
+
+    doRender(req, res);
+});
+
+
+app.get("/properties", function (req, res) {
+    if (!req.query.hasOwnProperty("Group"))
+        req.query.Group = mythtv.traitNames[0];
+
+    req.Context.View = "Properties";
+    req.Context.Group = req.query.Group;
+
+    doRender(req, res);
 });
 
 

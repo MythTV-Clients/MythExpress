@@ -1,7 +1,7 @@
 .mx-VideoCell
   if video.VideoFolder
-    .mx-Clickable.mx-VideoFolder.mx-Data(data-VideoFolder=video.VideoFolder)
-      img.Folder(src="img/folder2.png")
+    .mx-Clickable.mx-Group.mx-Data(data-VideoFolder=video.VideoFolder)
+      img.Folder(src="img/folder2.png",width=128,height=128,alt=video.Title)
       span.mx-Title= video.Title
   else
     .mx-Video.mx-Clickable.mx-Data(data-VideoId=video.Id)

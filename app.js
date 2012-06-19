@@ -12,7 +12,6 @@ var gzip = require('connect-gzip');
 var path = require("path");
 var mdns = require("mdns");
 
-
 // Array Remove - By John Resig (MIT Licensed)
 // http://ejohn.org/blog/javascript-array-remove/
 Array.prototype.remove = function(from, to) {
@@ -41,7 +40,6 @@ app.configure(function(){
     app.set('view engine', 'jade');
     app.use(express.bodyParser());
     app.use(express.methodOverride());
-    app.use(app.router);
 });
 
 app.configure('development', function(){
@@ -89,6 +87,12 @@ app.configure('production', function(){
 });
 
 
+app.sendHeaders = function (req, res) {
+    for (var key in req.Context)
+        res.header("X-MX-" + key, req.Context[key]);
+};
+
+
 // MythTV
 
 var mythArgs = { };
@@ -97,6 +101,9 @@ if (process.env["MX_AFFINITY"]) {
 }
 
 var mythtv = require('./mythtv')(mythArgs);
+
+var frontPage = require("./frontpage");
+app.use(frontPage);
 
 
 // Routes

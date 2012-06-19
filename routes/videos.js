@@ -1,22 +1,28 @@
 
+var slashPattern = /[/]/g;
+
 app.get("/videos", function (req, res) {
 
     console.log("/videos");
     console.log(req.query);
 
-    var videoFolder = mythtv.byVideoFolder[req.query.VideoFolder || "/"] ||
-        { Title : req.query.VideoFolder || "/", Videos : [ ] }
+    var folderName = req.query.Group || "/";
 
-    var partial = !!req.query.partial || !!req.query.VideoFolder;
+    var videoFolder = mythtv.byVideoFolder.hasOwnProperty(folderName)
+        ? mythtv.byVideoFolder[folderName]
+        : { Title : req.query.Group || "/", List : [ ] }
 
-    console.log('Video partial : ' + partial);
+    req.Context.View = "Programs";
+    req.Context.Title = folderName === "/"
+        ? "Videos"
+        : ("Videos" + folderName.replace(slashPattern, " / "));
+
+    app.sendHeaders(req, res);
 
     res.render("videos", {
-        layout : !partial,
         url : url,
         MythBackend : mythtv.MythServiceHost(req),
-        RecGroups : mythtv.viewButtons.Programs,
-        Title : videoFolder.Title,
+        Title : req.Context.Title,
         Videos : videoFolder.List
     });
 });

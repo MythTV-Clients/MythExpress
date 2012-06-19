@@ -16,7 +16,7 @@ body {
 #Header {
     position: fixed;
     width: 400%;
-    height: 52px;
+    //height: 52px;
     top: 0;
     right: 0;
     left: 0;
@@ -26,11 +26,22 @@ body {
     background-color: #000000;
 }
 
-#ViewMenu {
-    position: absolute;
-    top: 5px;
-    left: 4px;
-}
+#Views                { position: absolute; top: 0px; left: 0px;
+                        width: 100%; height: 100%; 
+                        z-index: 20; }
+#ViewsIcon            { position: relative; top: 5px; left: 4px; }
+#ViewsPopup           { position: fixed; top: 24px; left: 24px;
+                        border: outset; border-radius: 15px;
+                        background-color: rgb(20,20,20);
+                        padding: 0.5em 1.2em 0.7em 1em;
+                        z-index: 22; }
+li.mx-PopupItem       { font-size: 2em; width: 8em;
+                        color: rgb(240,240,240);
+                        list-style-type: none;
+                      }
+li.mx-PopupItem:hover { font-weight: bold; }
+.mx-ViewsBackground   { position: fixed; top: 0px; left: 0px;
+                        display: block; width: 100%; height: 100%; }
 
 #Header div, a {
     display: inline;
@@ -38,7 +49,7 @@ body {
 }
 
 #Buttons {
-    margin-left: 42px;
+    margin-left: 6px;
 }
 
 #Content {
@@ -63,7 +74,7 @@ body {
 }
 
 #Footer p.mx-Alert { background-color: rgb(255,0,0); }
-#Footer p.mx-Info { background-color: #31821D; }
+#Footer p.mx-Info  { background-color: #31821D; }
 
 .mx-Recording, .mx-Folder, .mx-VideoCell {
     float: left;

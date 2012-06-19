@@ -2,5 +2,5 @@ if recording.length == 1
    != partial("episode", { episode : recording[0], ShowTitle : true})
 else
   .mx-Clickable.mx-Folder.mx-Data
-    img.Folder(src="img/folder.png",alt=recording[0].Title)
+    img.Folder(src="img/folder.png",width=128,height=92,alt=recording[0].Title)
     span.mx-Title= recording[0].Title

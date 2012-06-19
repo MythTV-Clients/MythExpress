@@ -6,20 +6,9 @@ $(document).ready(function() {
             console.log = function () { }
     }
 
-    var infoDialog = $("#InfoDialog").dialog({
-        autoOpen : false,
-        modal : true,
-        dialogClass : "mx-InfoDialog",
-        width : 800, height : 600,
-        open : function (event, ui) {
-            $("#InfoDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
-        }
-    });
-
-    var requestingMessage;
-    $.get("/seconds?Message=Requesting", function (html) {
-        requestingMessage = html;
-    });
+    var infoDialog;
+    var viewsMap;              // maps view name -> initial url
+    var requestingMessage;     // html of clock with "Requesting..." message
 
 
     // ////////////////////////////////////////////////////////////////////////
@@ -30,8 +19,7 @@ $(document).ready(function() {
         return this.replace(/[\n\r]/g, "").replace(/[ ]+$/, "");
     }
 
-    var currentRecGroup = "Default";
-    var currentVideoFolder = "/";
+    var currentGroup = "Default";
 
     jQuery.fn.dataAttrs = function () {
         var dataElement = $(this[0]).closest(".mx-Data");
@@ -42,7 +30,7 @@ $(document).ready(function() {
             if (!!value && value.length > 0)
                 result[parameter] = value;
         });
-        return result;
+        return { args : result };
     };
 
     jQuery.fn.dataText = function() { // not always hidden but...
@@ -72,15 +60,48 @@ $(document).ready(function() {
         return res;
     }
 
+
     // ////////////////////////////////////////////////////////////////////////
     // History management
     // ////////////////////////////////////////////////////////////////////////
 
+    var updateButtons;
+
+    // https://developer.mozilla.org/en/DOM/Manipulating_the_browser_history
+    var History = window.History; // Note capital H for the History.js object
+
+    var inReplaceState = false;
+
     function loadCurrentView(State) {
-        $.get(State.url, State.data,
-              function(data, textStatus, jqXHR) {
-                  if (data !== $("#Content").html()) {
-                      $("#Content").html(data);
+        // console.log("get " + State.url);
+        // console.log(State.data.args);
+        $.get(State.url, State.data.args,
+              function(markup, textStatus, jqXHR) {
+                  var pageView = jqXHR.getResponseHeader("X-MX-View") || "";
+                  var pageTitle = decodeURIComponent(escape(jqXHR.getResponseHeader("X-MX-Title" || "")));
+                  // console.log(jqXHR.getAllResponseHeaders());
+                  var changed = false;
+
+                  if (pageView.length > 0 && pageView !== $("#Buttons").attr("data-View")) {
+                      console.log("header says view is " + pageView);
+                      updateButtons(pageView);
+                  }
+
+                  if (!State.data.hasOwnProperty("content") || markup !== State.data.content) {
+                      $("#Content").html(markup);
+                      changed = true;
+                  }
+
+                  if (pageTitle.length > 0 && pageTitle != document.title) {
+                      document.title = pageTitle;
+                      canged = true;
+                  }
+
+                  if (changed) {
+                      var newData = $.extend({ }, State.data);
+                      newData.content = markup;
+                      inReplaceState = true;
+                      History.replaceState(newData, document.title, document.location.pathname);
                   }
 
                   if ($("#Content .mx-StreamList").length > 0) {
@@ -94,38 +115,31 @@ $(document).ready(function() {
               });
     }
 
-    var History = window.History; // Note capital H for the History.js object
-    if (History.enabled) {
-        $(window).bind('statechange', function () {
-            var State = History.getState();
+    History.Adapter.bind(window, 'statechange', function () {
+        if (inReplaceState) {
+            inReplaceState = false;
+        } else {
+            loadCurrentView(History.getState());
+            // event.preventDefault();
+        }
+        return false;
+    });
 
-            if (!event) {
-                // kludge to ignore state changes from internal
-                // history manipulation but still act like we've
-                // loaded the view the usual way
-                if ($("#Content .mx-StreamList").length > 0) {
-                    setTimeout(updateStreamStatus, 5000);
-                }
-                return false;
-            }
-
-            if (State.data.historyInit) {
-                var newData = State.data;
-                delete newData.historyInit;
-                History.replaceState(newData, State.title, State.url);
-                return false;
-            }
-
-            loadCurrentView(State);
-
-            event.preventDefault();
-            return false;
-        });
-    }
 
     // ////////////////////////////////////////////////////////////////////////
     // View management
     // ////////////////////////////////////////////////////////////////////////
+
+    updateButtons = function (newView) {
+        var buttons = $("#Buttons");
+        var view = typeof(newView) === "undefined" ? buttons.attr("data-View") : newView;
+        $.get("/ui/buttons", { View : view }, function (buttonList) {
+            $("#Buttons")
+                .attr("data-View", view)
+                .html(buttonList);
+            $("#Buttons button").button();
+        });
+    };
 
     function updateStreamStatus() {
         if ($("#Content .mx-StreamList").length == 0) {
@@ -229,7 +243,9 @@ $(document).ready(function() {
             click : function (ev) {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                History.pushState(target.dataAttrs(["StreamId"]),
+                var pushData = target.dataAttrs(["StreamId"]);
+                pushData.args.View = $("#Buttons").attr("data-View");
+                History.pushState(pushData,
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -240,7 +256,6 @@ $(document).ready(function() {
                 $(this).dialog("close");
                 var parms = $("#InfoDialog").find(".mx-Data").dataAttrs(["StreamId"]);
                 $.get("/deletestream", parms);
-                $("#S" + parms.StreamId).slideUp("slow", function () { $(this).remove(); });
             }
         },
         {
@@ -298,149 +313,177 @@ $(document).ready(function() {
     // Ajax
     // ////////////////////////////////////////////////////////////////////////
 
-    $("#Header").on("click", "button", function (event) {
-        $("#Content").html("");
+    $("#Header")
+        .on("click", "img", function () {
+            $("#Views").removeClass("mx-Hidden");
+            return false;
+        })
+        .on("click", "button", function () {
+            $("#Content").html("");
 
-        var args = { partial : true };
-        var target = $(this);
-        var href = target.attr("data-href");
+            var args = { };
+            var target = $(this);
+            var href = target.attr("data-href");
 
-        var title = target.text().sanitized();
+            var title = target.text().sanitized();
 
-        if (href === "/recordings") {
-            title = title + " Recording Group";
-            args.RecGroup = currentRecGroup = target.text().sanitized();
-        }
+            console.log("button click " + title + " = " + href);
 
-        History.pushState(args, title, href);
-
-        return false;
-    });
-
-    $("#Content").on("click", ".mx-Clickable", function (ev) {
-        var target = $(this);
-
-        if (target.hasClass("mx-Folder")) {
-            var showTitle = target.dataText(["Title"]).Title;
-            History.pushState(
-                { RecGroup: currentRecGroup, Title : showTitle },
-                currentRecGroup + " • " + showTitle,
-                "/recordings");
-        }
-
-        else if (target.hasClass("mx-RecordingPreview")) {
-            $("#Content").html(requestingMessage);
-            History.pushState(target.dataAttrs(["FileName"]),
-                              target.dataAttrs(["Title"]).Title,
-                              "/streams");
-        }
-
-        else if (target.hasClass("mx-Recording")) {
-            $("#InfoDialogContent").html("");
-            infoDialog
-                .dialog("option", "buttons", recordingButtons)
-                .dialog("open");
-            $.get("/recordinginfo", target.dataAttrs(["FileName"]),
-                  function (info, textStatus, jqXHR) {
-                      $("#InfoDialogContent").html(info);
-                  });
-        }
-
-        else if (target.hasClass("mx-VideoFolder")) {
-            History.pushState(target.dataAttrs(["VideoFolder"]),
-                              document.title + " / " + target.dataText(["Title"]).Title,
-                              "/videos");
-        }
-
-        else if (target.hasClass("mx-VideoCover")) {
-            $("#Content").html(requestingMessage);
-            History.pushState(target.dataAttrs(["VideoId"]),
-                              target.parent().dataText(["Title"]).Title,
-                              "/streams");
-        }
-
-        else if (target.hasClass("mx-Video")) {
-            $("#InfoDialogContent").html("");
-            infoDialog
-                .dialog("option", "buttons", videoButtons)
-                .dialog("open");
-            $.get("/videoinfo", target.dataAttrs(["VideoId"]),
-                  function (info, textStatus, jqXHR) {
-                      $("#InfoDialogContent").html(info);
-                  });
-        }
-
-        else if (target.hasClass("mx-StreamPreview")) {
-            History.pushState(target.dataAttrs(["StreamId"]),
-                              target.parent().dataText(["Title"]).Title,
-                              "/streams");
-        }
-
-        else if (target.hasClass("mx-Stream")) {
-            $("#InfoDialogContent").html("");
-            infoDialog
-                .dialog("option", "buttons", streamButtons)
-                .dialog("open");
-            $.get("/streaminfo", target.dataAttrs(["StreamId"]),
-                  function (info, textStatus, jqXHR) {
-                      $("#InfoDialogContent").html(info);
-                  });
-        }
-
-        else if (target.hasClass("mx-Shrink")) {
-            var box = getVideoParameters();
-            if (box.baseW) {
-                box.vid.attr("width", box.W - box.baseW / 2);
-                box.vid.attr("height", box.H - box.baseH / 2);
+            if (href === "/recordings") {
+                title = title + " Recording Group";
+                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).args.RecGroup;
+                    //target.text().sanitized();
+            } else if (href === "/properties") {
+                title = title + " Recordings";
+                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).args.RecGroup;
             }
-        }
 
-        else if (target.hasClass("mx-Original")) {
-            var box = getVideoParameters();
-            if (box.baseW) {
-                box.vid.attr("width", box.baseW);
-                box.vid.attr("height", box.baseH);
+            History.pushState({ args : args }, title, href);
+
+            return false;
+        });
+
+    $("#Views")
+        .on("click", ".mx-ViewsBackground", function () {
+            $("#Views").addClass("mx-Hidden");
+            return false;
+        })
+        .on("click", ".mx-PopupItem", function () {
+            var view = $(this).text().sanitized();
+            $("#Views").addClass("mx-Hidden");
+            console.log("clicked " + view + " for /" + viewsMap[view]);
+            History.pushState({ }, "Loading " + view + "\u2026", "/" + viewsMap[view]);
+            return false;
+        });
+
+    $("#Content")
+        .on("click", ".mx-Clickable", function () {
+            var target = $(this);
+
+            if (target.hasClass("mx-Folder")) {
+                var showTitle = target.dataText(["Title"]).Title;
+                console.log(History.getState().data.args);
+                var currentRecGroup = History.getState().data.args.Group;
+                History.pushState({ args : { Group : currentRecGroup, Title : showTitle }},
+                                  currentRecGroup + " • " + showTitle,
+                                  "/recordings");
             }
-        }
 
-        else if (target.hasClass("mx-Zoom")) {
-            var box = getVideoParameters();
-            if (box.baseW) {
-                box.vid.attr("width", box.W + box.baseW / 2);
-                box.vid.attr("height", box.H + box.baseH / 2);
+            else if (target.hasClass("mx-RecordingPreview")) {
+                $("#Content").html(requestingMessage);
+                History.pushState(target.dataAttrs(["FileName"]),
+                                  target.dataAttrs(["Title"]).Title,
+                                  "/streams");
             }
-        }
 
-        else if (target.hasClass("mx-Max")) {
-            var box = getVideoParameters();
-            if (box.baseW) {
-                var ratio = document.width / box.baseW;
-                box.vid.attr("width", document.width);
-                box.vid.attr("height", box.baseH * ratio);
+            else if (target.hasClass("mx-Recording")) {
+                $("#InfoDialogContent").html("");
+                infoDialog
+                    .dialog("option", "buttons", recordingButtons)
+                    .dialog("open");
+                $.get("/recordinginfo", target.dataAttrs(["FileName"]).args,
+                      function (info, textStatus, jqXHR) {
+                          $("#InfoDialogContent").html(info);
+                      });
             }
-        }
 
-        else if (target.hasClass("mx-Move")) {
-            var offset = Number(target.attr("data-offset"));
-            var vid = $("#Content .nm-VideoBox");
-            if (vid.length == 1) {
-                vid[0].currentTime = vid[0].currentTime + offset;
+            else if (target.hasClass("mx-VideoFolder")) {
+                History.pushState(target.dataAttrs(["Group"]),
+                                  document.title + " / " + target.dataText(["Title"]).Title,
+                                  "/videos");
             }
-        }
 
-        return false;
-    });
+            else if (target.hasClass("mx-VideoCover")) {
+                $("#Content").html(requestingMessage);
+                History.pushState(target.dataAttrs(["VideoId"]),
+                                  target.parent().dataText(["Title"]).Title,
+                                  "/streams");
+            }
+
+            else if (target.hasClass("mx-Video")) {
+                $("#InfoDialogContent").html("");
+                infoDialog
+                    .dialog("option", "buttons", videoButtons)
+                    .dialog("open");
+                $.get("/videoinfo", target.dataAttrs(["VideoId"]),
+                      function (info, textStatus, jqXHR) {
+                          $("#InfoDialogContent").html(info);
+                      });
+            }
+
+            else if (target.hasClass("mx-StreamPreview")) {
+                var pushData = target.dataAttrs(["StreamId"]);
+                pushData.args.View = $("#Buttons").attr("data-View");
+                History.pushState(args,
+                                  target.parent().dataText(["Title"]).Title,
+                                  "/streams");
+            }
+
+            else if (target.hasClass("mx-Stream")) {
+                $("#InfoDialogContent").html("");
+                infoDialog
+                    .dialog("option", "buttons", streamButtons)
+                    .dialog("open");
+                $.get("/streaminfo", target.dataAttrs(["StreamId"]),
+                      function (info, textStatus, jqXHR) {
+                          $("#InfoDialogContent").html(info);
+                      });
+            }
+
+            else if (target.hasClass("mx-Shrink")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.W - box.baseW / 2);
+                    box.vid.attr("height", box.H - box.baseH / 2);
+                }
+            }
+
+            else if (target.hasClass("mx-Original")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.baseW);
+                    box.vid.attr("height", box.baseH);
+                }
+            }
+
+            else if (target.hasClass("mx-Zoom")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    box.vid.attr("width", box.W + box.baseW / 2);
+                    box.vid.attr("height", box.H + box.baseH / 2);
+                }
+            }
+
+            else if (target.hasClass("mx-Max")) {
+                var box = getVideoParameters();
+                if (box.baseW) {
+                    var ratio = document.width / box.baseW;
+                    box.vid.attr("width", document.width);
+                    box.vid.attr("height", box.baseH * ratio);
+                }
+            }
+
+            else if (target.hasClass("mx-Move")) {
+                var offset = Number(target.attr("data-offset"));
+                var vid = $("#Content .nm-VideoBox");
+                if (vid.length == 1) {
+                    var newTime = vid[0].currentTime + offset;
+                    if (newTime < 0) newTime = 0;
+                    vid[0].currentTime = vid[0].currentTime + offset;
+                }
+            }
+
+            return false;
+        });
 
 
     // ////////////////////////////////////////////////////////////////////////
     // WebSocket updates
     // ////////////////////////////////////////////////////////////////////////
 
-    var buttonUpdatePending = false;
-
     function applyUpdate(event) {
         var State = History.getState();
-        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.RecGroup)) {
+        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.Group)) {
             var insideTitle = State.data.hasOwnProperty("Title");
             if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
@@ -452,12 +495,7 @@ $(document).ready(function() {
         }
 
         else if (event.hasOwnProperty("RecordingGroups")) {
-            buttonUpdatePending = true;
-            $.get("/buttons", function (buttonList) {
-                $("#Buttons").html(buttonList);
-                $("#Buttons button").button();
-                buttonUpdatePending = false;
-            });
+            updateButtons();
         }
 
         else if (event.Alert) {
@@ -481,35 +519,36 @@ $(document).ready(function() {
         }
     }
 
-    var webSocketRetries = 0;
-    var webSocket = (function () {
-        var wsSetup = function () {
+    var webSocket = {
+        showingOffline : false,
+        showOffline : function () {
+            if (!webSocket.showingOffline) {
+                webSocket.showingOffline = true;
+                applyUpdate({ Alert : true, Category : "Servers", Class : "Alert",
+                              Message : "MythExpress is offline" });
+            }
+        },
+        init : function () {
             if (WebSocket) {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
-                if (!ws) {
-                    console.log('web socket unavailable, retry in 6 seconds');
-                    setTimeout(function () { webSocket(); }, 6000);
-                }
-                ws.onopen = function () {
-                    webSocketRetries = 0;
-                };
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
+                    webSocket.showingOffline = false;
                 };
-                ws.onclose = function () {
+                ws.onerror = function (event) {
+                    console.log(event);
+                    webSocket.showOffline();
+                };
+                ws.onclose = function (event) {
                     console.log('web socket closed, retry in 6 seconds');
-                    setTimeout(function () { webSocket(); }, 6000);
-                    if (webSocketRetries++ > 1) {
-                        applyUpdate({ Alert : true, Category : "Servers", Class : "Alert",
-                                      Message : "MythExpress is offline" });
-                    }
+                    webSocket.showOffline();
+                    setTimeout(function () { webSocket.init(); }, 6000);
                 };
             }
-        };
-        wsSetup();
-        return wsSetup;
-    })();
+        }
+    };
+    webSocket.init();
 
 
     // ////////////////////////////////////////////////////////////////////////
@@ -518,8 +557,45 @@ $(document).ready(function() {
 
     $("#Buttons button").button();
 
-    // save initial state so back button has somewhere to go
-    History.pushState({ historyInit : true, RecGroup : currentRecGroup, VideoFolder : currentVideoFolder },
-                      document.title, window.location.pathname);
+    infoDialog = $("#InfoDialog").dialog({
+        autoOpen : false,
+        modal : true,
+        dialogClass : "mx-InfoDialog",
+        width : 800, height : 600,
+        open : function (event, ui) {
+            $("#InfoDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
+        }
+    });
+
+     $.get("/seconds", { Message : "Requesting" }, function (html) {
+         requestingMessage = html;
+     });
+
+     $.get("/ui/views", function (viewsData) {
+         viewsMap = viewsData.Map;
+         // console.log(viewsMap);
+         $("#ViewsPopup")
+             .html(viewsData.Markup);
+     });
+
+    (function () {
+        var context = $("#Context");
+        if (context.length > 0) {
+            context = JSON.parse(context.html());
+            // save initial state so back button has somewhere to go
+            History.pushState(
+                {
+                    args : {
+                        View  : context.View,
+                        Group : context.Group
+                    },
+                    content : $("#Content").html()
+                },
+                document.title, window.location.pathname);
+            updateButtons(context.View);
+            // console.log("initial context");
+            // console.log(History.getState());
+        }
+    })();
 
 });
