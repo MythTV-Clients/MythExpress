@@ -13,6 +13,7 @@ app.get("/videos", function (req, res) {
         : { Title : req.query.Group || "/", List : [ ] }
 
     req.Context.View = "Programs";
+    req.Context.Group = folderName;
     req.Context.Title = folderName === "/"
         ? "Videos"
         : ("Videos" + folderName.replace(slashPattern, " / "));

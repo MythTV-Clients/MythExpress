@@ -46,8 +46,10 @@ app.get("/recordings", function (req, res) {
     if (!req.query.hasOwnProperty("Group"))
         req.query.Group = mythtv.groupNames.length > 1 ? mythtv.groupNames[1] : mythtv.groupNames[0];
 
-    req.Context.View = "Programs";
-    req.Context.Group = req.query.Group;
+    if (!req.Context.hasOwnProperty("View"))
+        req.Context.View = "Programs";
+    if (!req.Context.hasOwnProperty("Group"))
+        req.Context.Group = req.query.Group;
 
     doRender(req, res);
 });

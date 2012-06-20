@@ -30,7 +30,7 @@ $(document).ready(function() {
             if (!!value && value.length > 0)
                 result[parameter] = value;
         });
-        return { args : result };
+        return result;
     };
 
     jQuery.fn.dataText = function() { // not always hidden but...
@@ -65,43 +65,75 @@ $(document).ready(function() {
     // History management
     // ////////////////////////////////////////////////////////////////////////
 
-    var updateButtons;
-
+    // helpful info:
     // https://developer.mozilla.org/en/DOM/Manipulating_the_browser_history
+    // https://developer.mozilla.org/en/Using_Firefox_1.5_caching
+
     var History = window.History; // Note capital H for the History.js object
+
+    function updateState(newData) {
+        var curData = $.extend({ }, History.getState().data);
+        curData.Title = document.title;
+        var changed = false;
+        for (var key in newData) {
+            if (!curData.hasOwnProperty(key) || curData[key] != newData[key]) {
+                curData[key] = newData[key];
+                changed = true;
+            }
+        }
+        if (changed) {
+            var result = { };
+            if (curData.hasOwnProperty("Title")) {
+                result.Title = curData.Title;
+                delete curData.Title;
+            }
+            result.Data = curData;
+            return result;
+        } else {
+            return false;
+        }
+    }
+
+    function getDataFromHeaders(headers) {
+        var data = { };
+        headers.split(/[\r\n]/).forEach(function (header) {
+            var half = header.split(/[:][ ]/);
+            if (half[0].substr(0,5) === "X-MX-") {
+                data[half[0].substr(5)] = decodeURIComponent(escape(half[1]));
+            }
+        });
+        return data;
+    }
+
+    var updateButtons;  // this is a forward reference for the function
 
     var inReplaceState = false;
 
     function loadCurrentView(State) {
         // console.log("get " + State.url);
-        // console.log(State.data.args);
-        $.get(State.url, State.data.args,
+        // console.log(State.data);
+        $.get(State.url, State.data,
               function(markup, textStatus, jqXHR) {
-                  var pageView = jqXHR.getResponseHeader("X-MX-View") || "";
-                  var pageTitle = decodeURIComponent(escape(jqXHR.getResponseHeader("X-MX-Title") || ""));
-                  console.log(jqXHR.getAllResponseHeaders());
-                  var changed = false;
+                  $("#Content").html(markup);
 
-                  if (pageView.length > 0 && pageView !== $("#Buttons").attr("data-View")) {
-                      console.log("header says view is " + pageView);
-                      updateButtons(pageView);
-                  }
+                  // console.log(jqXHR.getAllResponseHeaders());
 
-                  if (!State.data.hasOwnProperty("content") || markup !== State.data.content) {
-                      $("#Content").html(markup);
-                      changed = true;
-                  }
-
-                  if (pageTitle.length > 0 && pageTitle != document.title) {
-                      document.title = pageTitle;
-                      canged = true;
-                  }
-
-                  if (changed) {
-                      var newData = $.extend({ }, State.data);
-                      newData.content = markup;
+                  var newState;
+                  if (newState = updateState(getDataFromHeaders(jqXHR.getAllResponseHeaders()))) {
+                      // console.log("replace state new data:");
+                      // console.log(newState);
+                      var newTitle = document.title;
+                      if (newState.hasOwnProperty("Title")) {
+                          document.title = newTitle = newState.Title;
+                      }
                       inReplaceState = true;
-                      History.replaceState(newData, document.title, document.location.pathname);
+                      History.replaceState(newState.Data, newTitle, document.location.pathname);
+                  }
+
+                  var curState = History.getState().data;
+                  if (curState.hasOwnProperty("View") && curState.View !== $("#Buttons").attr("data-View")) {
+                      // console.log("header says view is " + curState.View);
+                      updateButtons(curState.View);
                   }
 
                   if ($("#Content .mx-StreamList").length > 0) {
@@ -112,6 +144,7 @@ $(document).ready(function() {
                   if (videoControls.length > 0) {
                       videoControls.button();
                   }
+                  // console.log("exit get " + textStatus);
               });
     }
 
@@ -244,7 +277,7 @@ $(document).ready(function() {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
                 var pushData = target.dataAttrs(["StreamId"]);
-                pushData.args.View = $("#Buttons").attr("data-View");
+                pushData.View = $("#Buttons").attr("data-View");
                 History.pushState(pushData,
                                   target.dataText(["Title"]).Title,
                                   "/streams");
@@ -321,24 +354,26 @@ $(document).ready(function() {
         .on("click", "button", function () {
             $("#Content").html("");
 
-            var args = { };
+            var args = {
+                View : $("#Buttons").attr("data-View")
+            };
             var target = $(this);
             var href = target.attr("data-href");
 
             var title = target.text().sanitized();
 
-            console.log("button click " + title + " = " + href);
+            // console.log("button click " + title + " = " + href);
 
             if (href === "/recordings") {
                 title = title + " Recording Group";
-                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).args.RecGroup;
+                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
                     //target.text().sanitized();
             } else if (href === "/properties") {
                 title = title + " Recordings";
-                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).args.RecGroup;
+                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
             }
 
-            History.pushState({ args : args }, title, href);
+            History.pushState(args, title, href);
 
             return false;
         });
@@ -351,7 +386,7 @@ $(document).ready(function() {
         .on("click", ".mx-PopupItem", function () {
             var view = $(this).text().sanitized();
             $("#Views").addClass("mx-Hidden");
-            console.log("clicked " + view + " for /" + viewsMap[view]);
+            // console.log("clicked " + view + " for /" + viewsMap[view]);
             History.pushState({ }, "Loading " + view + "\u2026", "/" + viewsMap[view]);
             return false;
         });
@@ -362,11 +397,16 @@ $(document).ready(function() {
 
             if (target.hasClass("mx-Folder")) {
                 var showTitle = target.dataText(["Title"]).Title;
-                console.log(History.getState().data.args);
-                var currentRecGroup = History.getState().data.args.Group;
-                History.pushState({ args : { Group : currentRecGroup, Title : showTitle }},
-                                  currentRecGroup + " • " + showTitle,
-                                  "/recordings");
+                // console.log(History.getState().data);
+                var currentRecGroup = History.getState().data.Group;
+                History.pushState(
+                    {
+                        Group : currentRecGroup,
+                        Title : showTitle,
+                        View : $("#Buttons").attr("data-View")
+                    },
+                    currentRecGroup + " • " + showTitle,
+                    "/recordings");
             }
 
             else if (target.hasClass("mx-RecordingPreview")) {
@@ -381,7 +421,7 @@ $(document).ready(function() {
                 infoDialog
                     .dialog("option", "buttons", recordingButtons)
                     .dialog("open");
-                $.get("/recordinginfo", target.dataAttrs(["FileName"]).args,
+                $.get("/recordinginfo", target.dataAttrs(["FileName"]),
                       function (info, textStatus, jqXHR) {
                           $("#InfoDialogContent").html(info);
                       });
@@ -413,8 +453,8 @@ $(document).ready(function() {
 
             else if (target.hasClass("mx-StreamPreview")) {
                 var pushData = target.dataAttrs(["StreamId"]);
-                pushData.args.View = $("#Buttons").attr("data-View");
-                History.pushState(args,
+                pushData.View = $("#Buttons").attr("data-View");
+                History.pushState(pushData,
                                   target.parent().dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -483,9 +523,9 @@ $(document).ready(function() {
 
     function applyUpdate(event) {
         var State = History.getState();
-        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.args.Group)) {
-            var insideTitle = State.data.args.hasOwnProperty("Title");
-            if (event.Reset || (insideTitle && event.Title === State.data.args.Title) || (!insideTitle && event.Title === "*")) {
+        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.Group)) {
+            var insideTitle = State.data.hasOwnProperty("Title");
+            if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
             }
         }
@@ -583,16 +623,13 @@ $(document).ready(function() {
         var context = $("#Context");
         if (context.length > 0) {
             context = JSON.parse(context.html());
+            var newTitle = document.title;
+            if (context.hasOwnProperty("Title")) {
+                newTitle = context.Title;
+                delete context.Title;
+            }
             // save initial state so back button has somewhere to go
-            History.pushState(
-                {
-                    args : {
-                        View  : context.View,
-                        Group : context.Group
-                    },
-                    content : $("#Content").html()
-                },
-                document.title, window.location.pathname);
+            History.pushState(context.View, newTitle, window.location.pathname);
             updateButtons(context.View);
             // console.log("initial context");
             // console.log(History.getState());
