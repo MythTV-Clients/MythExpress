@@ -130,6 +130,8 @@ $(document).ready(function() {
                       History.replaceState(newState.Data, newTitle, document.location.pathname);
                   }
 
+                  $("#Title").text(document.title);
+
                   var curState = History.getState().data;
                   if (curState.hasOwnProperty("View") && curState.View !== $("#Buttons").attr("data-View")) {
                       // console.log("header says view is " + curState.View);
@@ -153,7 +155,6 @@ $(document).ready(function() {
             inReplaceState = false;
         } else {
             loadCurrentView(History.getState());
-            // event.preventDefault();
         }
         return false;
     });
@@ -347,8 +348,12 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     $("#Header")
-        .on("click", "img", function () {
+        .on("click", "#ViewsIcon", function () {
             $("#Views").removeClass("mx-Hidden");
+            return false;
+        })
+        .on("click", "#BackButton", function () {
+            History.back();
             return false;
         })
         .on("click", "button", function () {
@@ -571,7 +576,7 @@ $(document).ready(function() {
         init : function () {
             if (WebSocket) {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
-                applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
+                //applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
@@ -630,6 +635,7 @@ $(document).ready(function() {
             }
             // save initial state so back button has somewhere to go
             History.pushState(context.View, newTitle, window.location.pathname);
+            $("#Title").text(newTitle);
             updateButtons(context.View);
             // console.log("initial context");
             // console.log(History.getState());

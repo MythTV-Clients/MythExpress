@@ -1,0 +1,10 @@
+
+#Title      { display: block !important; font-size: 1.25em; 
+              margin-bottom: 0.2em;
+              text-align: center; vertical-align:middle; }
+
+#Header     { height: 4.75em; }
+#BackButton { position: relative; top: 0px; float: right; margin: 0em, 11.5em 0em 10.25em; }
+#Buttons    { position: fixed; top: 1.5em; left: 42px; }
+
+#Content    { margin-top: 4.75em; }

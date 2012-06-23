@@ -2,14 +2,22 @@
 html
   head
     title= Title
-    meta(name="apple-mobile-web-app-capable", content="yes")
+    if isIOS
+      meta(name="apple-mobile-web-app-capable", content="yes")
     if app.settings.env === "production"
-      link(rel="stylesheet", href="/css/dark-hive/all.css")
+      if isWebApp
+        link(rel="stylesheet", href="/css/dark-hive/webapp.css")
+      else
+        link(rel="stylesheet", href="/css/dark-hive/browser.css")
       script(type="text/javascript", src="/js/all.js")
     else
       link(rel="stylesheet", href="/css/HTML5Reset.css")
       link(rel="stylesheet", href="/css/dark-hive/jquery-ui-1.8.17.custom.css")
       link(rel='stylesheet', href='/css/mythexpress.css')
+      if isWebApp
+        link(rel='stylesheet', href='/css/webapp.css')
+      else
+        link(rel='stylesheet', href='/css/browser.css')
       script(type="text/javascript", src="js/jquery-1.7.1.js")
       script(type="text/javascript", src="js/jquery-ui-1.8.17.custom.js")
       script(type="text/javascript", src="js/history.js")

@@ -70,15 +70,28 @@ app.configure('production', function(){
                 "mythexpress.js"
             ]
         },
-        'css' : {
-            'route' : new RegExp("/css/dark-hive/all.css"),
+        'browser' : {
+            'route' : new RegExp("/css/dark-hive/browser.css"),
             'path' : __dirname + '/public/css/',
             'dataType' : 'css',
             'stale' : true,
             'files' : [
                 "HTML5Reset.css",
                 "dark-hive/jquery-ui-1.8.17.custom.css",
-                "mythexpress.css"
+                "mythexpress.css",
+                "browser.css"
+            ]
+        },
+        'webapp' : {
+            'route' : new RegExp("/css/dark-hive/webapp.css"),
+            'path' : __dirname + '/public/css/',
+            'dataType' : 'css',
+            'stale' : true,
+            'files' : [
+                "HTML5Reset.css",
+                "dark-hive/jquery-ui-1.8.17.custom.css",
+                "mythexpress.css",
+                "webapp.css"
             ]
         }
     };

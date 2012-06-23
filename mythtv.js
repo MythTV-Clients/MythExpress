@@ -1223,8 +1223,8 @@ module.exports = function(args) {
 
                 backendBrowser.stop();
                 backendBrowser.start();
-                backendBrowser.stop();
-                backendBrowser.start();
+                //backendBrowser.stop();
+                //backendBrowser.start();
             }
         };
     })();

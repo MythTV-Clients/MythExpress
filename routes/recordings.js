@@ -27,11 +27,11 @@ function doRender(req, res, headerData) {
         jadeFile = "recordings";
 
         locals.Recordings = [ ];
-        mythtv.sortedTitles[recGroup].forEach(function (title) {
+        (mythtv.sortedTitles[recGroup] || [ ]).forEach(function (title) {
             locals.Recordings.push(mythtv.byRecGroup[recGroup][title]);
         });
 
-        req.Context.Title = recGroup + (req.Context.View === "Programs" ? " Recording Group" : " Recordings");
+        req.Context.Title = (recGroup || "No") + (req.Context.View === "Programs" ? " Recording Group" : " Recordings");
 
     }
 

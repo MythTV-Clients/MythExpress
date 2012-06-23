@@ -15,14 +15,13 @@ body {
 
 #Header {
     position: fixed;
-    width: 400%;
-    //height: 52px;
+    width: 100%;
     top: 0;
     right: 0;
     left: 0;
     z-index: 5;
-    overflow: none;
-    overflow-x: auto;
+    //overflow: none;
+    //overflow-x: auto;
     background-color: #000000;
 }
 
@@ -43,18 +42,14 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-ViewsBackground   { position: fixed; top: 0px; left: 0px;
                         display: block; width: 100%; height: 100%; }
 
-#Header div, a {
-    display: inline;
-    padding-right: 12px;
-}
-
 #Buttons {
-    margin-left: 6px;
+    overflow: none;
+    overflow-x: scroll;
+    white-space: nowrap;
 }
 
 #Content {
     position: relative;
-    margin-top: 64px;
     width: 100%;
     z-index: 1
 }

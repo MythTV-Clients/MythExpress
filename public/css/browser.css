@@ -1,0 +1,8 @@
+
+#Title      { display: none !important; }
+
+#Header     { height: 3.5em; }
+#BackButton { position: fixed; top: 0.1em; right: 0.25em; }
+#Buttons    { position: fixed; top: 3px; left: 42px; }
+
+#Content    { margin-top: 3.5em; }

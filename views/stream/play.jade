@@ -12,7 +12,8 @@ if Info
 
 .mx-TextColumn.mx-ControlBubble
   div
-    button.mx-Clickable.mx-Move(data-offset="-300") -5m
+    if !isIOS
+      button.mx-Clickable.mx-Move(data-offset="-300") -5m
     button.mx-Clickable.mx-Move(data-offset="-30") -30s
     button.mx-Clickable.mx-Move(data-offset="-5") -5s
     button.mx-Clickable.mx-Move(data-offset="30") +30s
