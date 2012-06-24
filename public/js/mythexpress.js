@@ -112,9 +112,15 @@ $(document).ready(function() {
     function loadCurrentView(State) {
         // console.log("get " + State.url);
         // console.log(State.data);
+        $("#Content").hide("blind", { }, 500);
         $.get(State.url, State.data,
               function(markup, textStatus, jqXHR) {
-                  $("#Content").html(markup);
+                  $("#Content")  // promis() waits if hide is in progress
+                      .promise().done(function () {
+                          $("#Content")
+                              .css("display","block")
+                              .html(markup);
+                      })
 
                   // console.log(jqXHR.getAllResponseHeaders());
 
@@ -569,14 +575,16 @@ $(document).ready(function() {
         showOffline : function () {
             if (!webSocket.showingOffline) {
                 webSocket.showingOffline = true;
-                applyUpdate({ Alert : true, Category : "Servers", Class : "Alert",
+                applyUpdate({ Alert : true, Category : "MythExpress", Class : "Alert",
                               Message : "MythExpress is offline" });
             }
         },
         init : function () {
             if (WebSocket) {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
-                //applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
+                ws.onopen = function () {
+                    applyUpdate({ Alert : true, Category : "MythExpress", Cancel : true });
+                }
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));

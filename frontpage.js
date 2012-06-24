@@ -10,10 +10,10 @@ module.exports = function (req, res, next) {
         var isWebApp = isIOS && browser.search(/Mobile/) != -1 && browser.search(/Safari/) == -1;
         res.local("isIOS", isIOS);
         res.local("isWebApp", isWebApp);
-        if (req.isXMLHttpRequest) {
-            console.log(browser);
-            console.log("isIOS: " + isIOS + " isWebApp: " + isWebApp);
-        }
+        // if (req.isXMLHttpRequest) {
+        //     console.log(browser);
+        //     console.log("isIOS: " + isIOS + " isWebApp: " + isWebApp);
+        // }
     } else {
         res.local("isIPad", false);
         res.local("isWebApp", false);
