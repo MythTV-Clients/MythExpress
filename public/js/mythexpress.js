@@ -112,10 +112,14 @@ $(document).ready(function() {
     function loadCurrentView(State) {
         // console.log("get " + State.url);
         // console.log(State.data);
-        $("#Content").hide("blind", { }, 500);
+        if (State.url.substr(-8) === "/streams" && (State.data.hasOwnProperty("FileName") || State.data.hasOwnProperty("VideoId"))) {
+            $("#Content").html(requestingMessage);
+        } else {
+            $("#Content").hide("blind", { }, 500);
+        }
         $.get(State.url, State.data,
               function(markup, textStatus, jqXHR) {
-                  $("#Content")  // promis() waits if hide is in progress
+                  $("#Content")  // promise() waits if hide is in progress
                       .promise().done(function () {
                           $("#Content")
                               .css("display","block")
@@ -403,8 +407,9 @@ $(document).ready(function() {
         });
 
     $("#Content")
-        .on("click", ".mx-Clickable", function () {
+        .on("click", ".mx-Clickable", function (event) {
             var target = $(this);
+            var isTopHalf = (event.offsetY * 2) < target.height();
 
             if (target.hasClass("mx-Folder")) {
                 var showTitle = target.dataText(["Title"]).Title;
@@ -420,22 +425,21 @@ $(document).ready(function() {
                     "/recordings");
             }
 
-            else if (target.hasClass("mx-RecordingPreview")) {
-                $("#Content").html(requestingMessage);
-                History.pushState(target.dataAttrs(["FileName"]),
-                                  target.dataAttrs(["Title"]).Title,
-                                  "/streams");
-            }
-
             else if (target.hasClass("mx-Recording")) {
-                $("#InfoDialogContent").html("");
-                infoDialog
-                    .dialog("option", "buttons", recordingButtons)
-                    .dialog("open");
-                $.get("/recordinginfo", target.dataAttrs(["FileName"]),
-                      function (info, textStatus, jqXHR) {
-                          $("#InfoDialogContent").html(info);
-                      });
+                if (isTopHalf) {
+                    History.pushState(target.dataAttrs(["FileName"]),
+                                      target.dataAttrs(["Title"]).Title,
+                                      "/streams");
+                } else {
+                    $("#InfoDialogContent").html("");
+                    infoDialog
+                        .dialog("option", "buttons", recordingButtons)
+                        .dialog("open");
+                    $.get("/recordinginfo", target.dataAttrs(["FileName"]),
+                          function (info, textStatus, jqXHR) {
+                              $("#InfoDialogContent").html(info);
+                          });
+                }
             }
 
             else if (target.hasClass("mx-VideoFolder")) {
@@ -444,22 +448,21 @@ $(document).ready(function() {
                                   "/videos");
             }
 
-            else if (target.hasClass("mx-VideoCover")) {
-                $("#Content").html(requestingMessage);
-                History.pushState(target.dataAttrs(["VideoId"]),
-                                  target.parent().dataText(["Title"]).Title,
-                                  "/streams");
-            }
-
             else if (target.hasClass("mx-Video")) {
-                $("#InfoDialogContent").html("");
-                infoDialog
-                    .dialog("option", "buttons", videoButtons)
-                    .dialog("open");
-                $.get("/videoinfo", target.dataAttrs(["VideoId"]),
-                      function (info, textStatus, jqXHR) {
-                          $("#InfoDialogContent").html(info);
-                      });
+                if (isTopHalf) {
+                    History.pushState(target.dataAttrs(["VideoId"]),
+                                      target.parent().dataText(["Title"]).Title,
+                                      "/streams");
+                } else {
+                    $("#InfoDialogContent").html("");
+                    infoDialog
+                        .dialog("option", "buttons", videoButtons)
+                        .dialog("open");
+                    $.get("/videoinfo", target.dataAttrs(["VideoId"]),
+                          function (info, textStatus, jqXHR) {
+                              $("#InfoDialogContent").html(info);
+                          });
+                }
             }
 
             else if (target.hasClass("mx-StreamPreview")) {
