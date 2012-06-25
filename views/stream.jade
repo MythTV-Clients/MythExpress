@@ -1,6 +1,6 @@
 .mx-Stream.mx-Clickable.mx-Data(data-StreamId=stream.Id, data-Title=(!!stream.Info ? stream.Info.Title : "No Description"))
   .mx-StreamPreview.mx-Clickable
-    img(src=stream.Image || "img/static.png")
+    img(src=stream.Image || "img/static.png",onerror="mxRec(this)")
   .mx-StreamTitles
     if stream.Info
       p.mx-Title= stream.Info.Title

@@ -71,7 +71,7 @@ li.mx-PopupItem:hover { font-weight: bold; }
 #Footer p.mx-Alert { background-color: rgb(255,0,0); }
 #Footer p.mx-Info  { background-color: #31821D; }
 
-.mx-Recording, .mx-Folder, .mx-VideoCell {
+.mx-Recording, .mx-Folder, .mx-Video, .mx-VideoFolder {
     float: left;
     width: 128px;
     height: 128px;
@@ -81,7 +81,7 @@ li.mx-PopupItem:hover { font-weight: bold; }
     margin: 3px;
 }
 
-.mx-VideoCell {
+.mx-Video, .mx-VideoFolder {
     height: 224px;
 }
 

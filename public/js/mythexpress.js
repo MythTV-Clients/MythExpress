@@ -1,3 +1,7 @@
+
+var mxRec = function (img) { $(img).attr("src", "img/static.png"); };
+var mxVid = function (img) { $(img).attr("src", "img/MoviePoster.png"); };
+
 $(document).ready(function() {
 
     if (typeof console === 'undefined') {
@@ -9,7 +13,7 @@ $(document).ready(function() {
     var infoDialog;
     var viewsMap;              // maps view name -> initial url
     var requestingMessage;     // html of clock with "Requesting..." message
-
+    var updateStreamStatus;    // forward declaration
 
     // ////////////////////////////////////////////////////////////////////////
     // Helpers
@@ -130,8 +134,6 @@ $(document).ready(function() {
 
                   var newState;
                   if (newState = updateState(getDataFromHeaders(jqXHR.getAllResponseHeaders()))) {
-                      // console.log("replace state new data:");
-                      // console.log(newState);
                       var newTitle = document.title;
                       if (newState.hasOwnProperty("Title")) {
                           document.title = newTitle = newState.Title;
@@ -148,7 +150,7 @@ $(document).ready(function() {
                       updateButtons(curState.View);
                   }
 
-                  if ($("#Content .mx-StreamList").length > 0) {
+                  if (markup.match(/mx-StreamList/)) {
                       setTimeout(updateStreamStatus, 5000);
                   }
 
@@ -174,6 +176,19 @@ $(document).ready(function() {
     // View management
     // ////////////////////////////////////////////////////////////////////////
 
+    $("#Content").load(function () {
+        console.log("onload called");
+        // http://stackoverflow.com/questions/92720/jquery-javascript-to-replace-broken-images
+        $("#Content img").each(function () {
+            if (this.readyState === "uninitialized" || (typeof this.naturalWidth !== "undefined" && this.naturalWidth == 0)) {
+                console.log("img/static");
+                $(this).attr("src", "img/static.png");
+            }
+        });
+    });
+
+    
+
     updateButtons = function (newView) {
         var buttons = $("#Buttons");
         var view = typeof(newView) === "undefined" ? buttons.attr("data-View") : newView;
@@ -185,7 +200,7 @@ $(document).ready(function() {
         });
     };
 
-    function updateStreamStatus() {
+    updateStreamStatus = function () {
         if ($("#Content .mx-StreamList").length == 0) {
             // there's an empty streamlist div acting as a sentinal.
             // its absence indicates we've moved way from the stream list

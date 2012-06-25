@@ -5,5 +5,5 @@ if video.VideoFolder
 else
   .mx-Video.mx-Clickable.mx-Data(data-VideoId=video.Id)
     if video.Coverart.length > 0
-       img.mx-VideoCover(src=url.format({ host : MythBackend, pathname : "Content/GetImageFile", query : { StorageGroup : "Coverart", FileName : video.Coverart, Width : 128, Height : 192 } }))
+       img.mx-VideoCover(src=url.format({ host : MythBackend, pathname : "Content/GetImageFile", query : { StorageGroup : "Coverart", FileName : video.Coverart, Width : 128, Height : 192 } }),onerror="mxVid(this)")
     span.mx-Title= video.Title
