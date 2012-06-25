@@ -311,8 +311,8 @@ module.exports = function(args) {
                 return recGroupsChanged;
             },
 
-            frontendChange : function () {
-                blast({ Frontends : Object.keys(frontends.byHost) });
+            frontendChange : function (clientNum) {
+                blast({ Frontends : Object.keys(frontends.byHost) }, clientNum);
             },
 
             groupChanges : function () {
@@ -404,6 +404,8 @@ module.exports = function(args) {
             });
             wssClients.push(ws);
             console.log('new client (' + wssClients.length + ')');
+
+            changeAPI.frontendChange(wssClients.length-1);
 
             if (false && backends.length == 0)
                 changeAPI.alertNoServers(wssClients.length-1);
@@ -1221,10 +1223,8 @@ module.exports = function(args) {
                     delete frontends.byName[name];
                 });
 
-                backendBrowser.stop();
-                backendBrowser.start();
-                //backendBrowser.stop();
-                //backendBrowser.start();
+                backendBrowser.stop();  frontendBrowser.stop();
+                backendBrowser.start(); frontendBrowser.start();
             }
         };
     })();
