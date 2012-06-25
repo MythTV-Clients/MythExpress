@@ -98,7 +98,7 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-Show           { width: 40%; }
 .mx-Status         { width: 8em; }
 .mx-Parameters     { width: 12em; }
-.mx-VideoBox       { margin: auto; }
+.mx-VideoBox       { margin: auto; clear: both; }
 .mx-Hidden         { display: none !important; }
 .mx-Dimmed         { background-color: grey75; }
 

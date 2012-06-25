@@ -128,37 +128,35 @@ $(document).ready(function() {
                           $("#Content")
                               .css("display","block")
                               .html(markup);
-                      })
 
-                  // console.log(jqXHR.getAllResponseHeaders());
+                          // console.log(jqXHR.getAllResponseHeaders());
 
-                  var newState;
-                  if (newState = updateState(getDataFromHeaders(jqXHR.getAllResponseHeaders()))) {
-                      var newTitle = document.title;
-                      if (newState.hasOwnProperty("Title")) {
-                          document.title = newTitle = newState.Title;
-                      }
-                      inReplaceState = true;
-                      History.replaceState(newState.Data, newTitle, document.location.pathname);
-                  }
+                          var newState;
+                          if (newState = updateState(getDataFromHeaders(jqXHR.getAllResponseHeaders()))) {
+                              var newTitle = document.title;
+                              if (newState.hasOwnProperty("Title")) {
+                                  document.title = newTitle = newState.Title;
+                              }
+                              inReplaceState = true;
+                              History.replaceState(newState.Data, newTitle, document.location.pathname);
+                          }
 
-                  $("#Title").text(document.title);
+                          $("#Title").text(document.title);
 
-                  var curState = History.getState().data;
-                  if (curState.hasOwnProperty("View") && curState.View !== $("#Buttons").attr("data-View")) {
-                      // console.log("header says view is " + curState.View);
-                      updateButtons(curState.View);
-                  }
+                          var curState = History.getState().data;
+                          if (curState.hasOwnProperty("View") && curState.View !== $("#Buttons").attr("data-View")) {
+                              updateButtons(curState.View);
+                          }
 
-                  if (markup.match(/mx-StreamList/)) {
-                      setTimeout(updateStreamStatus, 5000);
-                  }
+                          if (markup.match(/mx-StreamList/)) {
+                              setTimeout(updateStreamStatus, 5000);
+                          }
 
-                  var videoControls = $("#Content .mx-ControlBubble button");
-                  if (videoControls.length > 0) {
-                      videoControls.button();
-                  }
-                  // console.log("exit get " + textStatus);
+                          var videoControls = $("#Content .mx-ControlBubble button");
+                          if (videoControls.length > 0) {
+                              videoControls.button();
+                          }
+                      });
               });
     }
 
@@ -254,9 +252,9 @@ $(document).ready(function() {
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                window.open("/watch/file/" + target.dataAttrs(["FileName"]).FileName,
-                            target.dataText(["Title"]).Title,
-                            "_blank");
+                History.pushState(target.dataAttrs(["FileName"]),
+                                  target.dataText(["Title"]).Title,
+                                  "/watch/program");
             }
         },
         {
@@ -283,9 +281,9 @@ $(document).ready(function() {
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                window.open("/watch/video/" + target.dataAttrs(["VideoId"]).VideoId,
-                            "",
-                            "_blank");
+                History.pushState(target.dataAttrs(["VideoId"]),
+                                  "Loading&hellip;",
+                                  "/watch/video");
             }
         },
         {
