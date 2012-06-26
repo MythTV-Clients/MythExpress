@@ -6,7 +6,7 @@
 var vm = require('vm');
 var fs = require('fs');
 
-module.exports = function (app, url, mythtv) {
+module.exports = function (context) {
     var dir = __dirname + '/routes';
     // grab a list of our route files
     fs.readdirSync(dir).forEach(function(file) {
@@ -17,13 +17,14 @@ module.exports = function (app, url, mythtv) {
             // with vm.runInNewContext() instead of loading it with
             // require(). require's internals use similar, so dont
             // be afraid of "boot time".
-            var context = { app: app, url : url, mythtv: mythtv };
+            var ctx = { }
+            for (var key in context) ctx[key] = context[key];
             // we have to merge the globals for console, process etc
-            for (var key in global) context[key] = global[key];
+            for (var key in global) ctx[key] = global[key];
             // note that this is essentially no different than ... just using
             // global variables, though it's only YOUR code that could influence
             // them, which is a bonus.
-            vm.runInNewContext(str, context, file);
+            vm.runInNewContext(str, ctx, file);
         }
     });
 };
