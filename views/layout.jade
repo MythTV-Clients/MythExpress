@@ -1,12 +1,12 @@
 !!!
-html(manifest=app.settings.env + ".manifest")
+html(manifest="mythexpress.manifest")
   head
     title= Title
     script(type="text/javascript")
-      window.applicationCache.addEventListener("downloading", function() { console.log("refreshing cache"); }, false);
-      window.applicationCache.addEventListener("cached", function() { console.log("initial cache loaded"); }, false);
+      //window.applicationCache.addEventListener("downloading", function() { console.log("refreshing cache"); }, false);
+      //window.applicationCache.addEventListener("cached", function() { console.log("initial cache loaded"); }, false);
       window.applicationCache.addEventListener("updateready", function() { console.log("cache swap"); window.applicationCache.swapCache(); }, false);
-      window.applicationCache.addEventListener("error", function() { console.log("error downloading cache"); }, false);
+      //window.applicationCache.addEventListener("error", function() { console.log("error downloading cache"); }, false);
     if isIOS
       meta(name="apple-mobile-web-app-capable", content="yes")
     if app.settings.env === "production"

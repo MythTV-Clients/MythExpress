@@ -58,10 +58,12 @@ function buildManifest() {
         WebApp : manifestLines.concat([cssPath + "webapp.css"]).join("\n"),
         Browser : manifestLines.concat([cssPath + "browser.css"]).join("\n")
     };
+
+    console.log("manifest built with last time @ " + scan.lastModification);
 }
 
 
-app.get("/" + app.settings.env + ".manifest", function (req, res) {
+app.get("/mythexpress.manifest", function (req, res) {
     if (!manifest)
         buildManifest();
 
@@ -78,10 +80,14 @@ function watchEvent (event, filename) {
 
 function scanAndWatch(directory) {
     fs.readdirSync(directory).forEach(function(file) {
+        var fullPath = directory + '/' + file;
+        var stats = fs.statSync(fullPath);
         if (file.match(/[.](js|css)$/)) {
-            var fullPath = directory + '/' + file;
-            fs.watch(fullPath, watchEvent);
-            var stats = fs.statSync(fullPath);
+            fs.watch(fullPath, function (event, filename) {
+                console.log("WatchEvent " + event + " on " + file);
+                buildManifest();
+            });
+        } else {
             if (stats.isDirectory())
                 scanAndWatch(fullPath);
         }
