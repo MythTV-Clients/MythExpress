@@ -405,18 +405,19 @@ module.exports = function(args) {
             wssClients.push(ws);
             console.log('new client (' + wssClients.length + ')');
 
-            changeAPI.frontendChange(wssClients.length-1);
+            var clientNum = wssClients.length-1;
+            changeAPI.frontendChange(clientNum);
 
             if (false && backends.length == 0)
-                changeAPI.alertNoServers(wssClients.length-1);
+                changeAPI.alertNoServers(clientNum);
             else if (myth.connectPending)
-                changeAPI.alertConnecting(wssClients.length-1);
+                changeAPI.alertConnecting(clientNum);
             else if (myth.connected && backends.length > 1)
-                changeAPI.alertConnected(wssClients.length-1);
+                changeAPI.alertConnected(clientNum);
             else if (!myth.isUp)
-                changeAPI.alertOffline(wssClients.length-1);
+                changeAPI.alertOffline(clientNum);
             else if (shutdownSeconds >= 0)
-                changeAPI.alertShutdown(shutdownSeconds, wssClients.length-1);
+                changeAPI.alertShutdown(shutdownSeconds, clientNum);
         });
 
         return changeAPI;
@@ -1218,13 +1219,15 @@ module.exports = function(args) {
         return {
             restart : function () {
                 myth.up = false;
-                Object.keys(frontends.byName).forEach(function (name) {
-                    delete frontends.byHost[frontends.byName[name].shortHost];
-                    delete frontends.byName[name];
-                });
+                if (false) {
+                    Object.keys(frontends.byName).forEach(function (name) {
+                        delete frontends.byHost[frontends.byName[name].shortHost];
+                        delete frontends.byName[name];
+                    });
 
-                backendBrowser.stop();  frontendBrowser.stop();
-                backendBrowser.start(); frontendBrowser.start();
+                    backendBrowser.stop();  frontendBrowser.stop();
+                    backendBrowser.start(); frontendBrowser.start();
+                }
             }
         };
     })();

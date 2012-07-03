@@ -9,6 +9,8 @@ $(document).ready(function() {
         if (typeof console.log === 'undefined')
             console.log = function () { }
     }
+    // for webapps
+    // console.log = function (msg) { $.post("/log", { msg : msg }); }
 
     var infoDialog;
     var viewsMap;              // maps view name -> initial url
@@ -111,61 +113,62 @@ $(document).ready(function() {
 
     var updateButtons;  // this is a forward reference for the function
 
-    var inReplaceState = false;
-
     function loadCurrentView(State) {
-        // console.log("get " + State.url);
-        // console.log(State.data);
+        //console.log("get " + State.url);
+        //console.log(State);
         if (State.url.substr(-8) === "/streams" && (State.data.hasOwnProperty("FileName") || State.data.hasOwnProperty("VideoId"))) {
             $("#Content").html(requestingMessage);
         } else {
-            $("#Content").hide("blind", { }, 500);
+            //$("#Content").hide("blind", { }, 500);
+            $("#Content").html("");
         }
-        $.get(State.url, State.data,
-              function(markup, textStatus, jqXHR) {
-                  $("#Content")  // promise() waits if hide is in progress
-                      .promise().done(function () {
-                          $("#Content")
-                              .css("display","block")
-                              .html(markup);
 
-                          // console.log(jqXHR.getAllResponseHeaders());
+        $.ajax({
+            type       : "GET",
+            url        : State.url,
+            data       : State.data,
+            cache      : false,
+            beforeSend : function (xhr) {
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                return true;
+            },
+            success    : function(markup, textStatus, jqXHR) {
+                $("#Content")
+                    .css("display","block")
+                    .html(markup);
 
-                          var newState;
-                          if (newState = updateState(getDataFromHeaders(jqXHR.getAllResponseHeaders()))) {
-                              var newTitle = document.title;
-                              if (newState.hasOwnProperty("Title")) {
-                                  document.title = newTitle = newState.Title;
-                              }
-                              inReplaceState = true;
-                              History.replaceState(newState.Data, newTitle, document.location.pathname);
-                          }
+                // console.log(jqXHR.getAllResponseHeaders());
 
-                          $("#Title").text(document.title);
+                var newState;
+                if (newState = getDataFromHeaders(jqXHR.getAllResponseHeaders())) {
+                    var newTitle = document.title;
+                    if (newState.hasOwnProperty("Title")) {
+                        document.title = newTitle = newState.Title;
+                    }
+                }
+                //console.log(newState);
 
-                          var curState = History.getState().data;
-                          if (curState.hasOwnProperty("View") && curState.View !== $("#Buttons").attr("data-View")) {
-                              updateButtons(curState.View);
-                          }
+                $("#Title").text(document.title);
 
-                          if (markup.match(/mx-StreamList/)) {
-                              setTimeout(updateStreamStatus, 5000);
-                          }
+                if (newState.hasOwnProperty("View") && newState.View !== $("#Buttons").attr("data-View")) {
+                    updateButtons(newState.View);
+                }
 
-                          var videoControls = $("#Content .mx-ControlBubble button");
-                          if (videoControls.length > 0) {
-                              videoControls.button();
-                          }
-                      });
-              });
+                if (markup.match(/mx-StreamList/)) {
+                    setTimeout(updateStreamStatus, 5000);
+                }
+
+                var videoControls = $("#Content .mx-ControlBubble button");
+                if (videoControls.length > 0) {
+                    videoControls.button();
+                }
+            }
+        });
     }
 
-    History.Adapter.bind(window, 'statechange', function () {
-        if (inReplaceState) {
-            inReplaceState = false;
-        } else {
-            loadCurrentView(History.getState());
-        }
+    History.Adapter.bind(window, "statechange", function () {
+        //console.log("History state change");
+        loadCurrentView(History.getState());
         return false;
     });
 
@@ -173,19 +176,6 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
     // View management
     // ////////////////////////////////////////////////////////////////////////
-
-    $("#Content").load(function () {
-        console.log("onload called");
-        // http://stackoverflow.com/questions/92720/jquery-javascript-to-replace-broken-images
-        $("#Content img").each(function () {
-            if (this.readyState === "uninitialized" || (typeof this.naturalWidth !== "undefined" && this.naturalWidth == 0)) {
-                console.log("img/static");
-                $(this).attr("src", "img/static.png");
-            }
-        });
-    });
-
-    
 
     updateButtons = function (newView) {
         var buttons = $("#Buttons");
@@ -254,7 +244,7 @@ $(document).ready(function() {
                 var target = $("#InfoDialog").find(".mx-Data");
                 History.pushState(target.dataAttrs(["FileName"]),
                                   target.dataText(["Title"]).Title,
-                                  "/watch/program");
+                                  "/watch");
             }
         },
         {
@@ -283,7 +273,7 @@ $(document).ready(function() {
                 var target = $("#InfoDialog").find(".mx-Data");
                 History.pushState(target.dataAttrs(["VideoId"]),
                                   "Loading&hellip;",
-                                  "/watch/video");
+                                  "/watch");
             }
         },
         {
@@ -361,10 +351,6 @@ $(document).ready(function() {
         feList = newFEs;
     }
 
-    $.get("/frontend/list", function (newFEs) {
-        processFrontendChange({ Frontends : newFEs });
-    });
-
 
     // ////////////////////////////////////////////////////////////////////////
     // Ajax
@@ -395,7 +381,7 @@ $(document).ready(function() {
             if (href === "/recordings") {
                 title = title + " Recording Group";
                 args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
-                    //target.text().sanitized();
+                //target.text().sanitized();
             } else if (href === "/properties") {
                 title = title + " Recordings";
                 args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
@@ -414,7 +400,7 @@ $(document).ready(function() {
         .on("click", ".mx-PopupItem", function () {
             var view = $(this).text().sanitized();
             $("#Views").addClass("mx-Hidden");
-            // console.log("clicked " + view + " for /" + viewsMap[view]);
+            //console.log("clicked " + view + " for /" + viewsMap[view]);
             History.pushState({ }, "Loading " + view + "\u2026", "/" + viewsMap[view]);
             return false;
         });
@@ -565,7 +551,7 @@ $(document).ready(function() {
             updateButtons();
         }
 
-        else if (event.Alert) {
+        else if (event.hasOwnProperty("Alert")) {
             var oldAlert = $("#Footer p[data-Category = '" + event.Category + "']");
             if (oldAlert.length == 0 || !event.hasOwnProperty("Message") || oldAlert.text() !== event.Message) {
                 // a new, unique alert
@@ -600,9 +586,12 @@ $(document).ready(function() {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
                 ws.onopen = function () {
                     applyUpdate({ Alert : true, Category : "MythExpress", Cancel : true });
+                    if ($("#Context").length > 0) {
+                        // loadCurrentView(History.getState());
+                    }
                 }
                 ws.onmessage = function (msg) {
-                    console.log(msg.data);
+                    //console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
                     webSocket.showingOffline = false;
                 };
@@ -618,14 +607,51 @@ $(document).ready(function() {
             }
         }
     };
-    webSocket.init();
 
 
     // ////////////////////////////////////////////////////////////////////////
     // Initialization
     // ////////////////////////////////////////////////////////////////////////
 
-    $("#Buttons button").button();
+    $.get("/ui/views", function (viewsData) {
+        viewsMap = viewsData.Map;
+        // console.log(viewsMap);
+        $("#ViewsPopup")
+            .html(viewsData.Markup);
+    });
+
+    $.get("/frontend/list", function (newFEs) {
+        processFrontendChange({ Frontends : newFEs });
+    });
+
+    (function () {
+        if (false) {
+            var context = $("#Context");
+            if (context.length > 0) {
+                context = JSON.parse(context.html());
+                var newTitle = document.title;
+                if (context.hasOwnProperty("Title")) {
+                    newTitle = context.Title;
+                    delete context.Title;
+                }
+                // save initial state so back button has somewhere to go
+                History.pushState(context.View, newTitle, window.location.pathname);
+                $("#Title").text(newTitle);
+                //updateButtons(context.View);
+                // console.log("initial context");
+                // console.log(History.getState());
+            }
+        }
+    })();
+
+    // save initial state so back button has somewhere to go
+    //History.pushState({ }, document.title, window.location.pathname);
+    //console.log(History.getState());
+    //loadCurrentView(History.getState());
+
+    $.get("/seconds", { Message : "Requesting" }, function (html) {
+        requestingMessage = html;
+    });
 
     infoDialog = $("#InfoDialog").dialog({
         autoOpen : false,
@@ -636,17 +662,6 @@ $(document).ready(function() {
             $("#InfoDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
         }
     });
-
-     $.get("/seconds", { Message : "Requesting" }, function (html) {
-         requestingMessage = html;
-     });
-
-     $.get("/ui/views", function (viewsData) {
-         viewsMap = viewsData.Map;
-         // console.log(viewsMap);
-         $("#ViewsPopup")
-             .html(viewsData.Markup);
-     });
 
     (function () {
         var context = $("#Context");
@@ -659,11 +674,10 @@ $(document).ready(function() {
             }
             // save initial state so back button has somewhere to go
             History.pushState(context.View, newTitle, window.location.pathname);
-            $("#Title").text(newTitle);
-            updateButtons(context.View);
-            // console.log("initial context");
-            // console.log(History.getState());
-        }
-    })();
+            $("#Buttons").attr("data-View", "force an update")
+            loadCurrentView(History.getState());
+            //$.get("/recordings", function (markup) { console.log(markup); });
+            webSocket.init();
+        }})();
 
 });

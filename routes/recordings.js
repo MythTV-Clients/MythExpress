@@ -20,7 +20,7 @@ function doRender(req, res, headerData) {
             ? mythtv.byRecGroup[recGroup][req.query.Title]
             : [ ];
 
-        req.Context.Title = recGroup + " \u2022 " + req.query.Title;
+        res.local("Context").Title = recGroup + " \u2022 " + req.query.Title;
 
     } else {
 
@@ -31,9 +31,13 @@ function doRender(req, res, headerData) {
             locals.Recordings.push(mythtv.byRecGroup[recGroup][title]);
         });
 
-        req.Context.Title = (recGroup || "No") + (req.Context.View === "Programs" ? " Recording Group" : " Recordings");
+        res.local("Context").Title = (recGroup || "No") + (res.local("Context").View === "Programs" ? " Recording Group" : " Recordings");
 
     }
+
+    // console.log("dorender with locals() and locals:");
+    // console.log(res._locals);
+    // console.log(locals);
 
     app.sendHeaders(req, res);
     res.render(jadeFile, locals);
@@ -41,26 +45,26 @@ function doRender(req, res, headerData) {
 }
 
 
-app.get("/recordings", function (req, res) {
+app.get("/recordings", MX, function (req, res) {
     // return "Default" or "Recordings" depending if there are >1 groups
     if (!req.query.hasOwnProperty("Group"))
         req.query.Group = mythtv.groupNames.length > 1 ? mythtv.groupNames[1] : mythtv.groupNames[0];
 
-    if (!req.Context.hasOwnProperty("View"))
-        req.Context.View = "Programs";
-    if (!req.Context.hasOwnProperty("Group"))
-        req.Context.Group = req.query.Group;
+    if (!res.local("Context").hasOwnProperty("View"))
+        res.local("Context").View = "Programs";
+    if (!res.local("Context").hasOwnProperty("Group"))
+        res.local("Context").Group = req.query.Group;
 
     doRender(req, res);
 });
 
 
-app.get("/properties", function (req, res) {
+app.get("/properties", MX, function (req, res) {
     if (!req.query.hasOwnProperty("Group"))
         req.query.Group = mythtv.traitNames[0];
 
-    req.Context.View = "Properties";
-    req.Context.Group = req.query.Group;
+    res.local("Context").View = "Properties";
+    res.local("Context").Group = req.query.Group;
 
     doRender(req, res);
 });

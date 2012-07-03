@@ -59,13 +59,15 @@ function renderIfStreamExists(req, res, fileName, noStreamCallback) {
 }
 
 
-app.get("/streams", function(req, res) {
+app.get("/streams", MX, function(req, res) {
 
     console.log("/streams");
     console.log(req.query);
 
+    var resContext = res.local("Context");
+
     if (req.query.hasOwnProperty("View")) {
-        req.Context.View = req.query.View;
+        resContext.View = req.query.View;
     }
 
     if (req.query.StreamId) {
@@ -74,7 +76,7 @@ app.get("/streams", function(req, res) {
 
     else if (req.query.FileName) {
 
-        req.Context.Title = mythtv.byFilename[req.query.FileName].Title;
+        resContext.Title = mythtv.byFilename[req.query.FileName].Title;
 
         app.sendHeaders(req, res);
 
@@ -158,14 +160,14 @@ app.get("/streams", function(req, res) {
                 normalizeMetadata(req, stream);
             });
 
-            req.Context.Title = "Streams";
-            req.Context.Group = "Programs";
+            resContext.Title = "Streams";
+            resContext.Group = "Programs";
 
             app.sendHeaders(req, res);
 
-            res.render("streams", {
+            res.partial("streams", {
                 MythBackend : mythtv.MythServiceHost(req),
-                Title : req.Context.Title,
+                Title : resContext.Title,
                 //RecGroups : mythtv.viewButtons.Programs,
                 LiveStreamInfos : reply.LiveStreamInfoList.LiveStreamInfos
             });
@@ -183,7 +185,7 @@ app.get("/streamstatus", function(req, res) {
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
             normalizeMetadata(req, stream);
-            res.render("stream", { layout : false, stream : stream, MythBackend : backend },
+            res.partial("stream", { layout : false, stream : stream, MythBackend : backend },
                        function(err,html) {
                            if (err) console.log(err);
                            else streams.push(html);

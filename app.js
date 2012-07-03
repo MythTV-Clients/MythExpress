@@ -37,20 +37,20 @@ if (parsed.hasOwnProperty("logfile")) {
 
 // Configuration
 
-app.configure(function(){
+app.configure(function() {
     app.set("views", __dirname + "/views");
     app.set("view engine", "jade");
     app.use(express.bodyParser());
     app.use(express.methodOverride());
 });
 
-app.configure("development", function(){
+app.configure("development", function() {
     app.set("view options", { pretty: true });
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
     app.use(express.static(__dirname + "/public"));
 });
 
-app.configure("production", function(){
+app.configure("production", function() {
     app.use(express.errorHandler()); 
     app.use(gzip.gzip());
     app.use(gzip.staticGzip(__dirname + "/public", { maxAge: 18 * 60 * 60 }));
@@ -101,10 +101,15 @@ app.configure("production", function(){
     app.use(assetManager(assetManagerGroups));
 });
 
+// app.configure(function() {
+//     app.use(require("./frontpage"));
+// });
 
 app.sendHeaders = function (req, res) {
-    for (var key in req.Context)
-        res.header("X-MX-" + key, req.Context[key]);
+    var context = res.local("Context");
+    for (var key in context)
+        res.header("X-MX-" + key, context[key]);
+    res.header("Cache-Control", "no-cache");
 };
 
 
@@ -117,8 +122,8 @@ if (process.env["MX_AFFINITY"]) {
 
 var mythtv = require("./mythtv")(mythArgs);
 
-var frontPage = require("./frontpage");
-app.use(frontPage);
+//var frontPage = require("./frontpage");
+//app.use(frontPage);
 
 
 // Routes
@@ -129,8 +134,20 @@ require("./boot")({ app: app,
                     fs : fs,
                     util : util,
                     __dirname : __dirname,
-                    mythtv: mythtv
+                    mythtv: mythtv,
+                    MX : require("./frontpage")
                   });
+
+if (app.settings.env === "development") {
+    app.post("/log", function (req, res) {
+        if (req.body.hasOwnProperty("msg"))
+            console.log("Client: " + req.body.msg);
+        res.send(200);
+    });
+}
+
+
+// Server
 
 app.listen(process.env["MX_LISTEN"] || 6565);
 console.log("MythTV Express server listening on port %d in %s mode", app.address().port, app.settings.env);

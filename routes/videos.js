@@ -1,7 +1,7 @@
 
 var slashPattern = /[/]/g;
 
-app.get("/videos", function (req, res) {
+app.get("/videos", MX, function (req, res) {
 
     console.log("/videos");
     console.log(req.query);
@@ -12,9 +12,9 @@ app.get("/videos", function (req, res) {
         ? mythtv.byVideoFolder[folderName]
         : { Title : req.query.Group || "/", List : [ ] }
 
-    req.Context.View = "Programs";
-    req.Context.Group = folderName;
-    req.Context.Title = folderName === "/"
+    res.local("Context").View = "Programs";
+    res.local("Context").Group = folderName;
+    res.local("Context").Title = folderName === "/"
         ? "Videos"
         : ("Videos" + folderName.replace(slashPattern, " / "));
 
@@ -23,7 +23,7 @@ app.get("/videos", function (req, res) {
     res.render("videos", {
         url : url,
         MythBackend : mythtv.MythServiceHost(req),
-        Title : req.Context.Title,
+        Title : res.local("Context").Title,
         Videos : videoFolder.List
     });
 });

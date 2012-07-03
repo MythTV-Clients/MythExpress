@@ -14,15 +14,14 @@ var views = {
 };
 
 app.get("/ui/views", function (req, res) {
-    res.render("ui/views",
-               {
-                   layout : false,
-                   views : Object.keys(views)
-               },
-               function (err, html) {
-                   res.json({
-                       Markup : html,
-                       Map : views
-                   });
-               });
+    res.partial("ui/views",
+                {
+                    views : Object.keys(views)
+                },
+                function (err, html) {
+                    res.json({
+                        Markup : html,
+                        Map : views
+                    });
+                });
 });

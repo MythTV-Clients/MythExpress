@@ -1,5 +1,5 @@
 
-app.get("/watch", function (req, res) {
+app.get("/watch", MX, function (req, res) {
     if (req.query.hasOwnProperty("FileName")) {
         if (mythtv.byFilename[req.query.FileName]) {
 
@@ -10,17 +10,17 @@ app.get("/watch", function (req, res) {
                 Description : recording.Description
             };
 
-            req.Context.Title = recording.Title;
+            res.local("Context").Title = recording.Title;
             app.sendHeaders(req, res);
 
-            res.render("stream/play", {
+            res.partial("stream/play", {
                 Info : info,
                 FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetRecording?ChanId=" + recording.Channel.ChanId + "&StartTime=" + recording.Recording.StartTs
             });
 
         } else {
 
-            res.render("stream/missing", {
+            res.partial("stream/missing", {
                 programIsMissing : true,
                 FileName : req.query.FileName
             });
@@ -38,10 +38,10 @@ app.get("/watch", function (req, res) {
                 Description : video.Description
             };
 
-            req.Context.Title = video.Title;
+            res.local("Context").Title = video.Title;
             app.sendHeaders(req, res);
 
-            res.render("stream/play", {
+            res.partial("stream/play", {
                 Info : info,
                 FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetVideo?Id=" + video.Id
             });
@@ -49,7 +49,7 @@ app.get("/watch", function (req, res) {
 
     } else {
 
-        res.render("stream/missing", {
+        res.partial("stream/missing", {
             programIsMissing : false,
             VideoId : req.query.VideoId
         });

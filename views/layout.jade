@@ -1,28 +1,35 @@
 !!!
-html(manifest="mythexpress.manifest")
+html(manifest="mythexpress.appcache")
   head
-    title= Title
-    script(type="text/javascript")
-      //window.applicationCache.addEventListener("downloading", function() { console.log("refreshing cache"); }, false);
-      //window.applicationCache.addEventListener("cached", function() { console.log("initial cache loaded"); }, false);
-      window.applicationCache.addEventListener("updateready", function() { console.log("cache swap"); window.applicationCache.swapCache(); }, false);
-      //window.applicationCache.addEventListener("error", function() { console.log("error downloading cache"); }, false);
+    title MythExpress Loading&hellip;
+    //- <link rel="apple-touch-startup-image" href="/startup.png">
     if isIOS
       meta(name="apple-mobile-web-app-capable", content="yes")
+    if isWebApp
+      meta(name="apple-mobile-web-app-status-bar-style", content="black")
+      link(rel="apple-touch-startup-image", href="img/splash/Banksy-Portrait.png", media="(max-device-width: 768px) and (orientation: portrait)")
+      link(rel="apple-touch-startup-image", href="img/splash/Banksy-Landscape.png", media="(max-device-width: 768px) and (orientation: landscape)")
+      link(rel="apple-touch-startup-image", href="img/splash/Banksy-Portrait-Retina.png", media="(max-device-width: 768px) and (orientation: portrait) and (-webkit-device-pixel-ratio: 2)")
+      link(rel="apple-touch-startup-image", href="img/splash/Banksy-Landscape-Retina.png", media="(max-device-width: 768px) and (orientation: landscape) and (-webkit-device-pixel-ratio: 2)")
     if app.settings.env === "production"
-      if isWebApp
-        link(rel="stylesheet", href="/css/dark-hive/webapp.css")
-      else
-        link(rel="stylesheet", href="/css/dark-hive/browser.css")
-      script(type="text/javascript", src="/js/all.js")
+      link(rel="stylesheet", href=(isWebApp ? "css/dark-hive/webapp.css" : "css/dark-hive/browser.css"))
     else
-      link(rel="stylesheet", href="/css/HTML5Reset.css")
-      link(rel="stylesheet", href="/css/dark-hive/jquery-ui-1.8.17.custom.css")
-      link(rel='stylesheet', href='/css/mythexpress.css')
-      if isWebApp
-        link(rel='stylesheet', href='/css/webapp.css')
-      else
-        link(rel='stylesheet', href='/css/browser.css')
+      link(rel="stylesheet", href="css/HTML5Reset.css")
+      link(rel="stylesheet", href="css/dark-hive/jquery-ui-1.8.17.custom.css")
+      link(rel="stylesheet", href="css/mythexpress.css")
+      link(rel="stylesheet", href=(isWebApp ? "css/webapp.css" : "css/browser.css"))
+    //- http://www.w3.org/TR/html5/offline.html#appcacheevents
+      //- wac.addEventListener("checking",     function() { console.log("checking"); }, false);
+      //- wac.addEventListener("noupdate",     function() { console.log("noupdate"); }, false);
+      //- wac.addEventListener("cached",       function() { console.log("cached"  ); }, false);
+      //- wac.addEventListener("obsolete",     function() { console.log("obsolete"); }, false);
+      //- wac.swapCache();
+    script(type="text/javascript")
+      var wac = window.applicationCache;
+      wac.addEventListener("updateready",  function() { window.location.reload(); console.log("cache swap"); }, false);
+    if app.settings.env === "production"
+      script(type="text/javascript", src="js/all.js")
+    else
       script(type="text/javascript", src="js/jquery-1.7.1.js")
       script(type="text/javascript", src="js/jquery-ui-1.8.17.custom.js")
       script(type="text/javascript", src="js/history.js")
@@ -31,7 +38,6 @@ html(manifest="mythexpress.manifest")
   body
     #Content
       #Context.mx-Hidden= JSON.stringify(Context)
-      != body
     #Header!= partial("header")
     #Views.mx-Hidden!= partial("ui/viewspopup")
     #Footer

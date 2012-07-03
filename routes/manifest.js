@@ -1,8 +1,19 @@
 
-var manifest;
+var manifest = false;
 var isProduction = app.settings.env === "production";
+
 var filesToIgnore = ["^[.]", "[#~]$", "^webapp.css$", "^browser.css$"].join("|");
 
+var whitelist2 = ["frontend/list","frontend/play","recordings","properties","recordinginfo",
+                 "streams","streamstatus","streamplayer","seconds","streaminfo","deletestream",
+                 "ui/buttons","ui/views","videos","videoinfo","watch"];
+
+var whitelist = ["NETWORK:","*","#"];
+
+var whitelist3 = ["NETWORK:","*",
+                 "frontend/list","frontend/play","recordings","properties","recordinginfo",
+                 "streams","streamstatus","streamplayer","seconds","streaminfo","deletestream",
+                 "ui/buttons","ui/views","videos","videoinfo","watch"];
 
 function deepScan(directory) {
     // console.log("Scan " + directory);
@@ -21,10 +32,9 @@ function deepScan(directory) {
                 if (modTime > lastModification) {
                     lastModification = modTime;
                 }
-                if (!isProduction || !file.match(/[.](css|js)$/)) {
-                    // console.log("   added");
+                //if (isProduction || file.match(/[.](css|png)$/)) {
                     list.push(fullPath);
-                }
+                //}
             } else if (stats.isDirectory()) {
                 var scan = deepScan(fullPath);
                 if (scan.list.length > 0)
@@ -38,44 +48,56 @@ function deepScan(directory) {
 }
 
 
-function buildManifest() {
+function buildManifest(req) {
     var scan = deepScan(__dirname + "/public");
-
     var homeLen = (__dirname + "/public/").length;
-
     var relativePaths = scan.list.map(function (fullPath) { return fullPath.substr(homeLen); });
 
-    var manifestLines = ["CACHE MANIFEST","NETWORK:","*","CACHE:"].concat(relativePaths);
+    var manifestLines = ["CACHE MANIFEST"].concat(relativePaths);
     manifestLines.push("# " + scan.lastModification);
 
     if (isProduction) {
         manifestLines.push("js/mythstreams.js", "js/wait.js", "js/all.js");
     }
 
+    var paths = { };
+    app.routes.all().forEach(function (route) {
+        if (route.hasOwnProperty("path")) {
+            paths[route.path.split("/")[1]] = true;
+        }
+    });
+    var whitelist = [ "NETWORK:", "*", "http://*", "#" ];
+    // Object.keys(paths).forEach(function (path) {
+    //     if (path.length > 0)
+    //         whitelist.push(path + "*");
+    // });
+
     var cssPath = isProduction ? "css/dark-hive/" : "css/";
 
     manifest = {
-        WebApp : manifestLines.concat([cssPath + "webapp.css"]).join("\n"),
-        Browser : manifestLines.concat([cssPath + "browser.css"]).join("\n")
+        WebApp : manifestLines.concat([cssPath + "webapp.css"].concat(whitelist)).join("\n"),
+        Browser : manifestLines.concat([cssPath + "browser.css"].concat(whitelist)).join("\n")
     };
 
     console.log("manifest built with last time @ " + scan.lastModification);
 }
 
 
-app.get("/mythexpress.manifest", function (req, res) {
+app.get("/mythexpress.appcache", MX, function (req, res) {
     if (!manifest)
-        buildManifest();
+        buildManifest(req);
 
     res.header("Content-Type", "text/cache-manifest");
-    res.send(res._locals.isWebApp ? manifest.WebApp : manifest.Browser);
+    res.header("Cache-Control", "no-cache");
+    res.send(res.local("isWebApp") ? manifest.WebApp : manifest.Browser);
+    console.log("sent manifest to " + req.headers["user-agent"]);
 });
 
 
 function watchEvent (event, filename) {
     console.log("watchEvent: " + event + " " + filename);
     // on OS/X filename isn't coming through so just reload on any change
-    buildManifest();
+    manifest = false;
 }
 
 function scanAndWatch(directory) {
@@ -85,7 +107,7 @@ function scanAndWatch(directory) {
         if (file.match(/[.](js|css)$/)) {
             fs.watch(fullPath, function (event, filename) {
                 console.log("WatchEvent " + event + " on " + file);
-                buildManifest();
+                manifest = false;
             });
         } else {
             if (stats.isDirectory())
