@@ -5,6 +5,7 @@ html(manifest="mythexpress.appcache")
     //- <link rel="apple-touch-startup-image" href="/startup.png">
     if isIOS
       meta(name="apple-mobile-web-app-capable", content="yes")
+      meta(name="viewport", content="width=device-width,user-scalable=no")
     if isWebApp
       meta(name="apple-mobile-web-app-status-bar-style", content="black")
       link(rel="apple-touch-startup-image", href="img/splash/Banksy-Portrait.png", media="(max-device-width: 768px) and (orientation: portrait)")
