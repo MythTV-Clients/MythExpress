@@ -613,41 +613,49 @@ $(document).ready(function() {
     // Initialization
     // ////////////////////////////////////////////////////////////////////////
 
+    // http://www.w3.org/TR/html5/offline.html#appcacheevents
+
+    // window.applicationCache.addEventListener("checking",  function() {
+    //     applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
+    //                   Message : "Hold on, checking cached resources" });
+    // }, false);
+
+    window.applicationCache.addEventListener("noupdate",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Cancel : true });
+    }, false);
+
+    window.applicationCache.addEventListener("downloading",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
+                      Message : "Hold on, cached resources are being updated" });
+    }, false);
+
+    window.applicationCache.addEventListener("cached",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Cancel : true });
+    }, false);
+
+    window.applicationCache.addEventListener("updateready",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
+                      Message : "Please reload MythExpress to enable the updates" });
+    }, false);
+
+    window.applicationCache.addEventListener("obsolete",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert", Decay: 5,
+                      Message : "App cache was deleted" });
+    }, false);
+
+    window.applicationCache.addEventListener("error",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert", Decay: 5,
+                      Message : "There was an error updating the app cache" });
+    }, false);
+
     $.get("/ui/views", function (viewsData) {
         viewsMap = viewsData.Map;
-        // console.log(viewsMap);
-        $("#ViewsPopup")
-            .html(viewsData.Markup);
+        $("#ViewsPopup").html(viewsData.Markup);
     });
 
     $.get("/frontend/list", function (newFEs) {
         processFrontendChange({ Frontends : newFEs });
     });
-
-    (function () {
-        if (false) {
-            var context = $("#Context");
-            if (context.length > 0) {
-                context = JSON.parse(context.html());
-                var newTitle = document.title;
-                if (context.hasOwnProperty("Title")) {
-                    newTitle = context.Title;
-                    delete context.Title;
-                }
-                // save initial state so back button has somewhere to go
-                History.pushState(context.View, newTitle, window.location.pathname);
-                $("#Title").text(newTitle);
-                //updateButtons(context.View);
-                // console.log("initial context");
-                // console.log(History.getState());
-            }
-        }
-    })();
-
-    // save initial state so back button has somewhere to go
-    //History.pushState({ }, document.title, window.location.pathname);
-    //console.log(History.getState());
-    //loadCurrentView(History.getState());
 
     $.get("/seconds", { Message : "Requesting" }, function (html) {
         requestingMessage = html;
@@ -673,10 +681,9 @@ $(document).ready(function() {
                 delete context.Title;
             }
             // save initial state so back button has somewhere to go
-            History.pushState(context.View, newTitle, window.location.pathname);
+            History.pushState(context, newTitle, window.location.pathname);
             $("#Buttons").attr("data-View", "force an update")
             loadCurrentView(History.getState());
-            //$.get("/recordings", function (markup) { console.log(markup); });
             webSocket.init();
         }})();
 

@@ -4,7 +4,7 @@ app.get("/ui/buttons", function(req, res) {
         req.query.View = "Programs";
     console.log("buttons for " + req.query.View);
     console.log(req.query)
-    res.partial("ui/button", mythtv.viewButtons[req.query.View]);
+    res.partial("ui/button", mythtv.viewButtons[req.query.View] || [ ]);
 });
 
 
