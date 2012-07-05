@@ -168,8 +168,8 @@ module.exports = function(args) {
             {
                 Class    : "mx-About",
                 href     : "/about",
-                recGroup : "intro",
-                Title    : "Introduction"
+                recGroup : "overview",
+                Title    : "Overview"
             },
             {
                 Class    : "mx-About",
