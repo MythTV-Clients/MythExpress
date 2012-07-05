@@ -114,8 +114,8 @@ $(document).ready(function() {
     var updateButtons;  // this is a forward reference for the function
 
     function loadCurrentView(State) {
-        //console.log("get " + State.url);
-        //console.log(State);
+        console.log("get " + State.url);
+        console.log(State);
         if (State.url.substr(-8) === "/streams" && (State.data.hasOwnProperty("FileName") || State.data.hasOwnProperty("VideoId"))) {
             $("#Content").html(requestingMessage);
         } else {
@@ -378,14 +378,11 @@ $(document).ready(function() {
 
             // console.log("button click " + title + " = " + href);
 
-            if (href === "/recordings") {
-                title = title + " Recording Group";
-                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
-                //target.text().sanitized();
-            } else if (href === "/properties") {
-                title = title + " Recordings";
-                args.Group = currentRecGroup = target.dataAttrs(["RecGroup"]).RecGroup;
-            }
+            if (href === "/recordings") title = title + " Recording Group";
+            else if (href === "/properties") title = title + " Recordings";
+            else if (href === "/about") title = "MythExpress " + title;
+
+            args.Group = target.dataAttrs(["RecGroup"]).RecGroup;
 
             History.pushState(args, title, href);
 
@@ -615,10 +612,10 @@ $(document).ready(function() {
 
     // http://www.w3.org/TR/html5/offline.html#appcacheevents
 
-    // window.applicationCache.addEventListener("checking",  function() {
-    //     applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
-    //                   Message : "Hold on, checking cached resources" });
-    // }, false);
+    window.applicationCache.addEventListener("checking",  function() {
+        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
+                      Message : "Verifying cached resources…" });
+    }, false);
 
     window.applicationCache.addEventListener("noupdate",  function() {
         applyUpdate({ Alert : true, Category : "Cache", Cancel : true });
@@ -626,7 +623,7 @@ $(document).ready(function() {
 
     window.applicationCache.addEventListener("downloading",  function() {
         applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
-                      Message : "Hold on, cached resources are being updated" });
+                      Message : "Updating cached resources…" });
     }, false);
 
     window.applicationCache.addEventListener("cached",  function() {

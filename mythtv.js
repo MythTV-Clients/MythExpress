@@ -163,7 +163,27 @@ module.exports = function(args) {
 
     var viewButtons = {
         Programs : [ ],
-        Properties : [ ]
+        Properties : [ ],
+        About : [
+            {
+                Class    : "mx-About",
+                href     : "/about",
+                recGroup : "intro",
+                Title    : "Introduction"
+            },
+            {
+                Class    : "mx-About",
+                href     : "/about",
+                recGroup : "terms",
+                Title    : "Terms & Credits"
+            },
+            {
+                Class    : "mx-About",
+                href     : "/about",
+                recGroup : "gplv3",
+                Title    : "GPLv3"
+            }
+        ]
     };
 
     var byRecGroup = { "All" : [ ], "Default" : [ ] };

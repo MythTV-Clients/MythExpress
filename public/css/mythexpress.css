@@ -10,6 +10,7 @@ body {
 
 :link,:visited,ins {
     text-decoration: none;
+    border-bottom: 1px dotted;
     color: white !important;
 }
 
@@ -26,7 +27,7 @@ body {
 }
 
 #Views                { position: absolute; top: 0px; left: 0px;
-                        width: 100%; height: 100%; 
+                        width: 100%; height: 100%;
                         z-index: 20; }
 #ViewsIcon            { position: relative; top: 5px; left: 4px; }
 #ViewsPopup           { position: fixed; top: 24px; left: 24px;
@@ -121,6 +122,7 @@ li.mx-PopupItem:hover { font-weight: bold; }
 }
 
 .mx-TextColumn    { float: left; width: 45%; }
+.mx-MiddleColumn  { margin-left: 8% !important; width: 80%; }
 .mx-TextBubble    { font-size: 1.2em;
                     margin: 1%; margin-right: 0em;
                     padding: 1em;
@@ -132,3 +134,31 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-ControlBubble { margin: 1%; margin-right: 0em;
                     padding: 1em;
                     border-radius: 15px; background: #333; }
+
+.mxx-GPL ul {
+    list-style: lower-latin;
+}
+.mxx-GPL li:before {
+    display: marker;
+    content: counter(counter, lower-latin) ")";
+    counter-increment: counter;
+    width: 6em;
+    text-align: left;
+}
+.mx-GPL ul {
+    counter-reset: item;
+    margin-left: 0;
+    padding-left: 0;
+}
+.mx-GPL li {
+    display: block;
+    margin-bottom: .5em;
+    margin-left: 2em;
+}
+.mx-GPL li:before {
+    display: inline-block;
+    content: counter(item, lower-latin) ") ";
+    counter-increment: item;
+    width: 1.5em;
+    margin-left: -1.5em;
+}
