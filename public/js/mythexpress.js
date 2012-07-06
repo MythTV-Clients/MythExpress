@@ -114,8 +114,8 @@ $(document).ready(function() {
     var updateButtons;  // this is a forward reference for the function
 
     function loadCurrentView(State) {
-        console.log("get " + State.url);
-        console.log(State);
+        //console.log("get " + State.url);
+        //console.log(State);
         if (State.url.substr(-8) === "/streams" && (State.data.hasOwnProperty("FileName") || State.data.hasOwnProperty("VideoId"))) {
             $("#Content").html(requestingMessage);
         } else {
@@ -574,7 +574,7 @@ $(document).ready(function() {
         showOffline : function () {
             if (!webSocket.showingOffline) {
                 webSocket.showingOffline = true;
-                applyUpdate({ Alert : true, Category : "MythExpress", Class : "Alert",
+                applyUpdate({ Alert : true, Category : "Servers", Class : "Alert",
                               Message : "MythExpress is offline" });
             }
         },
@@ -582,7 +582,7 @@ $(document).ready(function() {
             if (WebSocket) {
                 var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
                 ws.onopen = function () {
-                    applyUpdate({ Alert : true, Category : "MythExpress", Cancel : true });
+                    applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
                     if ($("#Context").length > 0) {
                         // loadCurrentView(History.getState());
                     }
