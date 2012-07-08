@@ -580,12 +580,14 @@ $(document).ready(function() {
         },
         init : function () {
             if (WebSocket) {
-                var ws = new WebSocket('ws://' + window.location.hostname + ':6566/');
+                var ws = new WebSocket("ws://" + window.location.host);
                 ws.onopen = function () {
                     applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
                     if ($("#Context").length > 0) {
                         // loadCurrentView(History.getState());
                     }
+                    if ($.cookie("MythExpress"))
+                        ws.send(JSON.stringify({ Cookie : $.cookie("MythExpress") }));
                 }
                 ws.onmessage = function (msg) {
                     //console.log(msg.data);
@@ -612,10 +614,10 @@ $(document).ready(function() {
 
     // http://www.w3.org/TR/html5/offline.html#appcacheevents
 
-    window.applicationCache.addEventListener("checking",  function() {
-        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
-                      Message : "Verifying cached resources…" });
-    }, false);
+    // window.applicationCache.addEventListener("checking",  function() {
+    //     applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
+    //                   Message : "Verifying cached resources…" });
+    // }, false);
 
     window.applicationCache.addEventListener("noupdate",  function() {
         applyUpdate({ Alert : true, Category : "Cache", Cancel : true });

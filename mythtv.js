@@ -268,7 +268,7 @@ module.exports = function(args) {
 
     var eventSocket = (function () {
 
-        var wss = new WebSocketServer({ host : '0.0.0.0', port : 6566 });
+        var wss = new WebSocketServer({ server : args.app });
         wssClients = [ ];
 
         function blast(msg, clientNum) {
@@ -420,12 +420,19 @@ module.exports = function(args) {
             }
         };
 
-        wss.on('connection', function(ws) {
+        wss.on("connection", function(ws) {
             ws.isAlive = true;
-            ws.on('close', function () {
+
+            ws.on("close", function () {
                 ws.isAlive = false;
                 console.log('ws client closed');
             });
+
+            ws.on("message", function (message) {
+                var msg = JSON.parse(message);
+                ws.mxCookie = msg.Cookie;
+            });
+
             wssClients.push(ws);
             console.log('new client (' + wssClients.length + ')');
 

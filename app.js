@@ -42,6 +42,16 @@ app.configure(function() {
     app.set("view engine", "jade");
     app.use(express.bodyParser());
     app.use(express.methodOverride());
+    app.use(express.cookieParser());
+    app.use(express.session({
+        secret   : "sauce",
+        key      : "MythExpress",
+        path     : null,
+        cookie   : {
+            httpOnly : false,
+            maxAge   : null
+        }
+    }));
 });
 
 app.configure("development", function() {
@@ -69,6 +79,7 @@ app.configure("production", function() {
                 "jquery-ui-1.8.17.custom.js",
                 "history.js",
                 "history.adapter.jquery.js",
+                "jquery.cookie.js",
                 "mythexpress.js"
             ]
         },
@@ -115,7 +126,7 @@ app.sendHeaders = function (req, res) {
 
 // MythTV
 
-var mythArgs = { };
+var mythArgs = { app : app };
 if (process.env["MX_AFFINITY"]) {
     mythArgs.affinity = process.env["MX_AFFINITY"];
 }
