@@ -138,9 +138,9 @@ var backends = [ ];
 module.exports = function(args) {
 
     var myth = {
-        connected : false,
+        isUp : false,               // true = BE has announced itself on bonjour
+        connected : false,          // true = we're connected to BE's event socket
         connectPending : false,
-        isUp : false,
         bonjour : undefined
     };
 
@@ -441,12 +441,12 @@ module.exports = function(args) {
 
             if (false && backends.length == 0)
                 changeAPI.alertNoServers(clientNum);
+            else if (!myth.isUp)
+                changeAPI.alertOffline(clientNum);
             else if (myth.connectPending)
                 changeAPI.alertConnecting(clientNum);
             else if (myth.connected && backends.length > 1)
                 changeAPI.alertConnected(clientNum);
-            else if (!myth.isUp)
-                changeAPI.alertOffline(clientNum);
             else if (shutdownSeconds >= 0)
                 changeAPI.alertShutdown(shutdownSeconds, clientNum);
         });
@@ -1103,15 +1103,16 @@ module.exports = function(args) {
         //});
 
         socket.on('close', function (hadError) {
-            myth.connected = false;
+            myth.connected = myth.connectPending = false;
+            eventSocket.alertOffline();
             console.log('socket closed (withError: ' + hadError + ')');
             doConnect();
         });
 
         socket.on('end', function () {
-            myth.connected = false;
+            myth.connected = myth.connectPending = false;
             console.log('myth event socket end');
-            doConnect();
+            eventSocket.alertOffline();
         });
 
         socket.on('error', function (err) {
@@ -1119,8 +1120,9 @@ module.exports = function(args) {
             console.log(err);
             if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED') {
                 // probably the myth host is down
-                myth.connected = false;
-                myth.bonjourService.restart();
+                myth.connected = myth.connectPending = false;
+                eventSocket.alertOffline();
+                doConnect();
             }
         });
 
@@ -1220,6 +1222,8 @@ module.exports = function(args) {
             //console.log("mythtv down: ", service.name);
             if (myth.connected) {
                 myth.isUp = service.name === myth.bonjour.name;
+                if (!myth.isUp)
+                    eventSocket.alertOffline();
             }
         });
 
