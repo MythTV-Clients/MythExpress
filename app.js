@@ -89,7 +89,7 @@ app.configure("production", function() {
                 "history.js",
                 "history.adapter.jquery.js",
                 "jquery.cookie.js",
-                "js/lightbox.js",
+                "lightbox.js",
                 "mythexpress.js"
             ]
         },
