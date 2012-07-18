@@ -52,6 +52,15 @@ app.configure(function() {
             maxAge   : null
         }
     }));
+
+    // no cookie with these files
+    ["/js/all.js", "/css/dark-hive/browser.css", "/css/dark-hive/webapp.css",
+     "/ui/views", "/ui/buttons", "/seconds",
+     "/recordinginfo", "/videoinfo", "/streaminfo",
+     "/streams", "/streamstatus", "/deletestream",
+     "/frontend/list"].forEach(function (path) {
+         express.session.ignore.push("/js/all.js");
+     });
 });
 
 app.configure("development", function() {
@@ -63,7 +72,7 @@ app.configure("development", function() {
 app.configure("production", function() {
     app.use(express.errorHandler()); 
     app.use(gzip.gzip());
-    app.use(gzip.staticGzip(__dirname + "/public", { maxAge: 18 * 60 * 60 }));
+    app.use(gzip.staticGzip(__dirname + "/public", { maxAge: 18 * 24 * 60 * 60 }));
 
     // we only minify in production
     var assetManager = require("connect-assetmanager");
