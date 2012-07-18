@@ -16,6 +16,8 @@ html(manifest="mythexpress.appcache")
     else
       link(rel="stylesheet", href="css/HTML5Reset.css")
       link(rel="stylesheet", href="css/dark-hive/jquery-ui-1.8.17.custom.css")
+      //- link(rel="stylesheet", href="css/jquery.lightbox-0.5.css")
+      link(rel="stylesheet", href="css/lightbox.css")
       link(rel="stylesheet", href="css/mythexpress.css")
       link(rel="stylesheet", href=(isWebApp ? "css/webapp.css" : "css/browser.css"))
     if app.settings.env === "production"
@@ -26,6 +28,8 @@ html(manifest="mythexpress.appcache")
       script(type="text/javascript", src="js/history.js")
       script(type="text/javascript", src="js/history.adapter.jquery.js")
       script(type="text/javascript", src="js/jquery.cookie.js")
+      //- script(type="text/javascript", src="js/jquery.lightbox-0.5.js")
+      script(type="text/javascript", src="js/lightbox.js")
       script(type="text/javascript", src="js/mythexpress.js")
   body
     #Content

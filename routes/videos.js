@@ -31,5 +31,8 @@ app.get("/videos", MX, function (req, res) {
 
 app.get("/videoinfo", function (req, res) {
     console.log("/videoinfo " + req.query.VideoId);
-    res.partial("info/video", { video : mythtv.byVideoId[req.query.VideoId] });
+    res.partial("info/video", {
+        MythBackend : mythtv.MythServiceHost(req),
+        video       : mythtv.byVideoId[req.query.VideoId]
+    });
 });

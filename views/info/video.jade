@@ -7,3 +7,8 @@ if video.ReleaseDate
   p
     span Released:
     span= video.ReleaseDate
+if video.Artwork.ArtworkInfos.length > 0
+  .mx-Artwork
+    each pic in video.Artwork.ArtworkInfos
+      a(href="http://" + MythBackend + pic.URL, rel="lightbox[video]")
+        img(src="http://" + MythBackend + pic.URL + "&Height=128", data-big="http://" + MythBackend + pic.URL)
