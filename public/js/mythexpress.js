@@ -116,8 +116,9 @@ $(document).ready(function() {
     function loadCurrentView(State) {
         //console.log("get " + State.url);
         //console.log(State);
-        if (State.url.substr(-8) === "/streams" && (State.data.hasOwnProperty("FileName") || State.data.hasOwnProperty("VideoId"))) {
+        if (State.url.substr(-8) === "/streams" && State.data.hasOwnProperty("VideoCookie")) {
             $("#Content").html(requestingMessage);
+            $("#VideoCookie").text(State.data.VideoCookie);
         } else {
             //$("#Content").hide("blind", { }, 500);
             $("#Content").html("");
@@ -128,8 +129,12 @@ $(document).ready(function() {
             url        : State.url,
             data       : State.data,
             cache      : false,
+            //xhrFields  : {
+            //    withCredentials: true
+            //},
             beforeSend : function (xhr) {
                 xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.withCredentials = true;
                 return true;
             },
             success    : function(markup, textStatus, jqXHR) {
@@ -232,7 +237,8 @@ $(document).ready(function() {
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                History.pushState(target.dataAttrs(["FileName"]),
+                History.pushState($.extend(target.dataAttrs(["FileName"]),
+                                           { VideoCookie : Math.random() }),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -261,7 +267,8 @@ $(document).ready(function() {
             click : function () {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                History.pushState(target.dataAttrs(["VideoId"]),
+                History.pushState($.extend(target.dataAttrs(["VideoId"]),
+                                           { VideoCookie : Math.random() }),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -290,9 +297,9 @@ $(document).ready(function() {
             click : function (ev) {
                 $(this).dialog("close");
                 var target = $("#InfoDialog").find(".mx-Data");
-                var pushData = target.dataAttrs(["StreamId"]);
-                pushData.View = $("#Buttons").attr("data-View");
-                History.pushState(pushData,
+                History.pushState($.extend(target.dataAttrs(["StreamId"]),
+                                           { View : $("#Buttons").attr("data-View") },
+                                           { VideoCookie : Math.random() }),
                                   target.dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -423,7 +430,8 @@ $(document).ready(function() {
 
             else if (target.hasClass("mx-Recording")) {
                 if (isTopHalf) {
-                    History.pushState(target.dataAttrs(["FileName"]),
+                    History.pushState($.extend(target.dataAttrs(["FileName"]),
+                                               { VideoCookie : Math.random() }),
                                       target.dataAttrs(["Title"]).Title,
                                       "/streams");
                 } else {
@@ -446,7 +454,8 @@ $(document).ready(function() {
 
             else if (target.hasClass("mx-Video")) {
                 if (isTopHalf) {
-                    History.pushState(target.dataAttrs(["VideoId"]),
+                    History.pushState($.extend(target.dataAttrs(["VideoId"]),
+                                               { VideoCookie : Math.random() }),
                                       target.parent().dataText(["Title"]).Title,
                                       "/streams");
                 } else {
@@ -462,9 +471,8 @@ $(document).ready(function() {
             }
 
             else if (target.hasClass("mx-StreamPreview")) {
-                var pushData = target.dataAttrs(["StreamId"]);
-                pushData.View = $("#Buttons").attr("data-View");
-                History.pushState(pushData,
+                History.pushState($.extend(target.dataAttrs(["StreamId"]),
+                                           { View : $("#Buttons").attr("data-View") }),
                                   target.parent().dataText(["Title"]).Title,
                                   "/streams");
             }
@@ -533,6 +541,7 @@ $(document).ready(function() {
 
     function applyUpdate(event) {
         var State = History.getState();
+
         if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.Group)) {
             var insideTitle = State.data.hasOwnProperty("Title");
             if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
@@ -546,6 +555,22 @@ $(document).ready(function() {
 
         else if (event.hasOwnProperty("RecordingGroups")) {
             updateButtons();
+        }
+
+        else if (event.hasOwnProperty("Stream")) {
+
+            if (event.Stream === $("#VideoCookie").text()) {
+                if (event.hasOwnProperty("Message")) {
+                    $("#Message").text(event.Message);
+                }
+                else if (event.hasOwnProperty("StreamId")) {
+                    $.get("/streams", { StreamId : event.StreamId }, function (markup) {
+                        $("#Content").html(markup);
+                        $("#Content .mx-ControlBubble button").button();
+                    });
+                }
+            }
+
         }
 
         else if (event.hasOwnProperty("Alert")) {
@@ -586,11 +611,10 @@ $(document).ready(function() {
                     if ($("#Context").length > 0) {
                         // loadCurrentView(History.getState());
                     }
-                    if ($.cookie("MythExpress"))
-                        ws.send(JSON.stringify({ Cookie : $.cookie("MythExpress") }));
+                    ws.send(JSON.stringify({ Cookie : $.cookie("mythexpress") }));
                 }
                 ws.onmessage = function (msg) {
-                    //console.log(msg.data);
+                    console.log(msg.data);
                     applyUpdate($.parseJSON(msg.data));
                     webSocket.showingOffline = false;
                 };

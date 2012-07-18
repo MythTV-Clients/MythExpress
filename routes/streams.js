@@ -25,7 +25,7 @@ function normalizeMetadata(req, stream) {
 }
 
 
-function renderPlayerControl(req, res, stream) {
+function renderPlayerControl (req, res, stream) {
     normalizeMetadata(req, stream);
     res.partial("stream/play", {
         FullURL : stream.FullURL,
@@ -36,7 +36,7 @@ function renderPlayerControl(req, res, stream) {
 }
 
 
-function renderPlayerForStream(req, res, streamId, waitForSegments) {
+function renderPlayerForStream (req, res, streamId, waitForSegments) {
     mythtv.GetLiveStream(streamId, function(reply) {
         var stream = reply.LiveStreamInfo;
         if (waitForSegments && Number(stream.SegmentCount) < 3) {
@@ -48,12 +48,29 @@ function renderPlayerForStream(req, res, streamId, waitForSegments) {
 }
 
 
-function renderIfStreamExists(req, res, fileName, noStreamCallback) {
+function renderIfStreamExists (req, res, fileName, noStreamCallback) {
     mythtv.FilteredStreamList(fileName, function(reply) {
         if (reply.LiveStreamInfoList.LiveStreamInfos.length == 0) {
             noStreamCallback();
         } else {
             renderPlayerControl(req, res, reply.LiveStreamInfoList.LiveStreamInfos[0]);
+        }
+    });
+}
+
+
+function broadcastStreamProgress (streamId, clientCookie, videoCookie) {
+    mythtv.GetLiveStream(streamId, function(reply) {
+        var stream = reply.LiveStreamInfo;
+        if (Number(stream.SegmentCount) > 2) {
+            mythtv.blast({
+                Stream   : videoCookie,
+                StreamId : streamId
+            }, clientCookie);
+        } else {
+            setTimeout(function () {
+                broadcastStreamProgress(streamId, clientCookie, videoCookie);
+            }, 2000);
         }
     });
 }
@@ -122,16 +139,28 @@ app.get("/streams", MX, function(req, res) {
             //     }
             // }
 
-            console.log('encoding parameters from props ' + recording.VideoProps);
-            console.log(props);
-            console.log(encoding);
+            // console.log('encoding parameters from props ' + recording.VideoProps);
+            // console.log(props);
+            // console.log(encoding);
 
             mythtv.StreamRecording(req.query.FileName, encoding, function(reply) {
                 console.log('Streaming reply:');
                 console.log(reply);
 
-                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id,
-                                             Message : "Buffering" });
+                if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
+
+                    mythtv.blast({
+                        Stream  : req.query.VideoCookie,
+                        Message : "Buffering…"
+                    }, req.cookies.mythexpress);
+
+                    setTimeout(function () {
+                        broadcastStreamProgress(reply.LiveStreamInfo.Id,
+                                                req.cookies.mythexpress,
+                                                req.query.VideoCookie);
+                    }, 2000);
+
+                }
             });
         });
     }
@@ -147,8 +176,21 @@ app.get("/streams", MX, function(req, res) {
                 console.log('Streaming reply:');
                 console.log(reply);
 
-                res.partial("stream/wait", { StreamId : reply.LiveStreamInfo.Id,
-                                             Message : "Buffering" });
+                if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
+
+                    mythtv.blast({
+                        Stream  : req.query.VideoCookie,
+                        Message : "Buffering…"
+                    }, req.cookies.mythexpress);
+
+                    setTimeout(function () {
+                        broadcastStreamProgress(reply.LiveStreamInfo.Id,
+                                                req.cookies.mythexpress,
+                                                req.query.VideoCookie);
+                    }, 2000);
+
+                }
+
             });
         });
     }

@@ -271,16 +271,22 @@ module.exports = function(args) {
         var wss = new WebSocketServer({ server : args.app });
         wssClients = [ ];
 
-        function blast(msg, clientNum) {
+        function blast(msg, client) {
             var msgStr = JSON.stringify(msg);
-            console.log('blast ' + msgStr);
-            if (typeof(clientNum) == "undefined")
-                clientNum = -1;
+
+            var allClients = typeof(client) === "undefined";
+            var byIndex = typeof(client) === "number";
+            var byCookie = "string";
+
+            if (allClients) console.log('blast ' + msgStr);
+            else console.log('blast ' + msgStr + " (" + client + ")");
+
             var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
                 if (webSocket.isAlive) {
-                    if (clientNum == -1 || idx == clientNum)
-                        webSocket.send(msgStr);
+                    if (allClients) webSocket.send(msgStr);
+                    if (byIndex && idx == client) webSocket.send(msgStr);
+                    if (byCookie && webSocket.mxCookie === client) webSocket.send(msgStr);
                 } else {
                     closed.unshift(idx);
                 }
@@ -299,6 +305,8 @@ module.exports = function(args) {
         var recGroupsChanged = false;
 
         var changeAPI = {
+            blast : blast,
+
             resettingRecordings : function (startingReset) {
                 if (inReset && !startingReset)
                     recordingsWereReset = true;
@@ -431,6 +439,7 @@ module.exports = function(args) {
             ws.on("message", function (message) {
                 var msg = JSON.parse(message);
                 ws.mxCookie = msg.Cookie;
+                console.log(wssClients.length - 1 + " has cookie " + ws.mxCookie);
             });
 
             wssClients.push(ws);
@@ -1324,6 +1333,7 @@ module.exports = function(args) {
         byVideoFolder : byVideoFolder,
         byVideoId : byVideoId,
 
+        blast     : eventSocket.blast,
 
         StreamRecording : function (fileName, encoding, callback) {
             var recording = byFilename[fileName];

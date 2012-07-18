@@ -45,8 +45,8 @@ app.configure(function() {
     app.use(express.cookieParser());
     app.use(express.session({
         secret   : "sauce",
-        key      : "MythExpress",
-        path     : null,
+        key      : "mythexpress",
+        path     : "/",
         cookie   : {
             httpOnly : false,
             maxAge   : null
