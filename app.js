@@ -89,6 +89,7 @@ app.configure("production", function() {
                 "history.js",
                 "history.adapter.jquery.js",
                 "jquery.cookie.js",
+                "js/lightbox.js",
                 "mythexpress.js"
             ]
         },
@@ -100,6 +101,7 @@ app.configure("production", function() {
             "files" : [
                 "HTML5Reset.css",
                 "dark-hive/jquery-ui-1.8.17.custom.css",
+                "lightbox.css",
                 "mythexpress.css",
                 "browser.css"
             ]
@@ -112,6 +114,7 @@ app.configure("production", function() {
             "files" : [
                 "HTML5Reset.css",
                 "dark-hive/jquery-ui-1.8.17.custom.css",
+                "lightbox.css",
                 "mythexpress.css",
                 "webapp.css"
             ]
