@@ -57,7 +57,7 @@ function buildManifest(req) {
     manifestLines.push("# " + scan.lastModification);
 
     if (isProduction) {
-        manifestLines.push("js/mythstreams.js", "js/wait.js", "js/all.js");
+        manifestLines.push("js/all.js");
     }
 
     var paths = { };
