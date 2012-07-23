@@ -559,11 +559,13 @@ $(document).ready(function() {
 
         else if (event.hasOwnProperty("Stream")) {
 
-            if (event.Stream === $("#VideoCookie").text()) {
+            var videoCookie = $("#VideoCookie");
+            if (videoCookie.length > 0 && event.Stream === videoCookie.text()) {
                 if (event.hasOwnProperty("Message")) {
                     $("#Message").text(event.Message);
                 }
                 else if (event.hasOwnProperty("StreamId")) {
+                    console.log("play video " + videoCookie + " === " + event.Stream);
                     $.get("/streams", { StreamId : event.StreamId }, function (markup) {
                         $("#Content").html(markup);
                         $("#Content .mx-ControlBubble button").button();
