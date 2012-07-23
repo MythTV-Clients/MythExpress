@@ -12,7 +12,7 @@ $(document).ready(function() {
     // for webapps
     // console.log = function (msg) { $.post("/log", { msg : msg }); }
 
-    var infoDialog;
+    var infoDialog, confirmDeleteDialog;
     var viewsMap;              // maps view name -> initial url
     var requestingMessage;     // html of clock with "Requesting..." message
     var updateStreamStatus;    // forward declaration
@@ -182,6 +182,26 @@ $(document).ready(function() {
     // View management
     // ////////////////////////////////////////////////////////////////////////
 
+    function confirmDelete(deleteClickedCallback) {
+        confirmDeleteDialog
+            .dialog("option", "buttons", [
+                {
+                    text : "Delete",
+                    click : function () {
+                        $(this).dialog("close");
+                        deleteClickedCallback();
+                    }
+                },
+                {
+                    text : "Cancel",
+                    click : function () {
+                        $(this).dialog("close");
+                    }
+                }
+            ])
+            .dialog("open");
+    }
+
     updateButtons = function (newView) {
         var buttons = $("#Buttons");
         var view = typeof(newView) === "undefined" ? buttons.attr("data-View") : newView;
@@ -251,6 +271,17 @@ $(document).ready(function() {
                 History.pushState(target.dataAttrs(["FileName"]),
                                   target.dataText(["Title"]).Title,
                                   "/watch");
+            }
+        },
+        {
+            text : "Delete",
+            click : function () {
+                var that = this;
+                confirmDelete(function () {
+                    var target = $("#InfoDialog").find(".mx-Data");
+                    $.get("/deleterecording", target.dataAttrs(["ChanId", "StartTs"]));
+                    $(that).dialog("close");
+                })
             }
         },
         {
@@ -531,6 +562,20 @@ $(document).ready(function() {
                 }
             }
 
+            else if (target.hasClass("mx-DeleteRecording")) {
+                var parms = target.dataAttrs(["ChanId","StartTs"]);
+                confirmDelete(function () {
+                    History.back();
+                    $.get("/deleterecording", parms);
+                });
+            }
+
+            else if (target.hasClass("mx-DeleteStream")) {
+                var parms = target.dataAttrs(["StreamId"]);
+                History.back();
+                $.get("/deletestream", parms);
+            }
+
             return false;
         });
 
@@ -693,6 +738,17 @@ $(document).ready(function() {
         width : 800, height : 600,
         open : function (event, ui) {
             $("#InfoDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
+        }
+    });
+
+    confirmDeleteDialog = $("#DeleteDialog").dialog({
+        autoOpen : false,
+        modal : true,
+        title : "Please confirm:",
+        dialogClass : "mx-InfoDialog",
+        width : 600, height : 300,
+        open : function (event, ui) {
+            $("#DeleteDialog").parent().find(".ui-dialog-buttonpane button:last").focus();
         }
     });
 

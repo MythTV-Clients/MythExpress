@@ -134,6 +134,8 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-ControlBubble { margin: 1%; margin-right: 0em;
                     padding: 1em;
                     border-radius: 15px; background: #333; }
+.mx-DeleteConfirm { padding-top: 1em; }
+
 #Artwork a        { padding-left: .25em; padding-right: .25em;
                     border-bottom: none; }
 

@@ -24,3 +24,8 @@ if Info
     button.mx-Clickable.mx-Original Normal
     button.mx-Clickable.mx-Zoom Zoom
     button.mx-Clickable.mx-Max Max
+  div
+    if typeof(Info) !== "undefined" && Info.Recording
+      button.mx-Clickable.mx-DeleteRecording.mx-Data(data-ChanId=Info.Channel.ChanId, data-StartTs=Info.Recording.StartTs) Delete Recording
+    if typeof(stream) !== "undefined" && stream.Id
+      button.mx-Clickable.mx-DeleteStream.mx-Data(data-StreamId=stream.Id) Delete Stream

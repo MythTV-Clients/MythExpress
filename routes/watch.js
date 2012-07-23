@@ -4,11 +4,7 @@ app.get("/watch", MX, function (req, res) {
         if (mythtv.byFilename[req.query.FileName]) {
 
             var recording = mythtv.byFilename[req.query.FileName];
-            var info = {
-                Title : recording.Title,
-                SubTitle : recording.SubTitle,
-                Description : recording.Description
-            };
+            var info = recording;
 
             res.local("Context").Title = recording.Title;
             app.sendHeaders(req, res);

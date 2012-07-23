@@ -262,6 +262,14 @@ module.exports = function(args) {
     }
 
 
+    function getChanKey(arg1, arg2) {
+        if (typeof(arg1) === "object")
+            return arg1.Channel.ChanId + ' ' + localFromUTCString(arg1.Recording.StartTs);
+        else
+            return arg1 + ' ' + arg2;
+    }
+
+
     // ////////////////////////////////////////////////////////////////////////
     // events to the browser
     // ////////////////////////////////////////////////////////////////////////
@@ -470,13 +478,6 @@ module.exports = function(args) {
     // ////////////////////////////////////////////////////////////////////////
 
     var mythMessageHandler = (function () {
-
-        function getChanKey(arg1, arg2) {
-            if (typeof(arg1) === "object")
-                return arg1.Channel.ChanId + ' ' + localFromUTCString(arg1.Recording.StartTs);
-            else
-                return arg1 + ' ' + arg2;
-        }
 
         function eventTimeToString(eventTime, override) {
             var t = new Date(eventTime * 1000);
@@ -1335,6 +1336,10 @@ module.exports = function(args) {
 
         blast     : eventSocket.blast,
 
+        GetRecordingRecord : function (chanId, startTs) {
+            return byChanId[getChanKey(chanId, startTs)];
+        },
+
         StreamRecording : function (fileName, encoding, callback) {
             var recording = byFilename[fileName];
 
@@ -1344,6 +1349,18 @@ module.exports = function(args) {
             reqJSON(
                 {
                     path : "/Content/AddRecordingLiveStream?ChanId=" + recording.Channel.ChanId + "&StartTime=" + recording.Recording.StartTs + "&Width=" + encoding.Width + "&Bitrate=" + encoding.Bitrate
+                },
+                function (reply) {
+                    callback(reply);
+                }
+            );
+        },
+
+
+        RemoveRecording : function (ChanId, StartTs, callback) {
+            reqJSON(
+                {
+                    path : "/Dvr/RemoveRecorded?ChanId=" + ChanId + "&StartTime=" + StartTs
                 },
                 function (reply) {
                     callback(reply);

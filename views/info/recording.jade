@@ -6,8 +6,8 @@ if recording.Description
 if recording.Airdate
   p= "Airdate: " + recording.Airdate
 p= flags
-if recording.Artwork.ArtworkInfos.length > 0
-  .mx-Artwork
+if !!recording.Artwork && recording.Artwork.ArtworkInfos.length > 0
+  #Artwork
     each pic in recording.Artwork.ArtworkInfos
       a(href="http://" + MythBackend + pic.URL, rel="lightbox[recording]")
         img(src="http://" + MythBackend + pic.URL + "&Height=128", data-big="http://" + MythBackend + pic.URL)

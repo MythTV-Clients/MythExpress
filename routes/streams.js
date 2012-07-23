@@ -28,6 +28,7 @@ function normalizeMetadata(req, stream) {
 function renderPlayerControl (req, res, stream) {
     normalizeMetadata(req, stream);
     res.partial("stream/play", {
+        stream : stream,
         FullURL : stream.FullURL,
         Width : stream.Width,
         Height : stream.Height,

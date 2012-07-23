@@ -70,6 +70,26 @@ app.get("/properties", MX, function (req, res) {
 });
 
 
+app.get("/deleterecording", function (req, res) {
+    mythtv.RemoveRecording(req.query.ChanId, req.query.StartTs, function (reply) {
+        console.log("Reply from /Dvr/RemoveRecorded?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs);
+        console.log(reply);
+        if (!reply.bool) {
+            mythtv.blast({
+                Alert : true,
+                Category : "Recording Delete",
+                Class : "Alert",
+                Message : "Delete failed",
+                Decay : 3
+            }, req.cookies.mythexpress);
+        }
+    });
+
+    res.writeHead(200);
+    res.end();
+});
+
+
 app.get("/recordinginfo", function (req, res) {
     var program = mythtv.byFilename[req.query.FileName];
 
