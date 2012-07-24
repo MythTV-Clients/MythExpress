@@ -10,8 +10,9 @@ app.get("/about", MX, function (req, res) {
     });
 
     res.local("Context", {
-        View : "About",
-        Group : group
+        View  : "About",
+        Group : group,
+        Title : "MythExpress " + button.Title
     });
 
     app.sendHeaders(req, res);

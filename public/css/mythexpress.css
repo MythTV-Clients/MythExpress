@@ -121,7 +121,7 @@ li.mx-PopupItem:hover { font-weight: bold; }
     margin-bottom: 0.75em;
 }
 
-.mx-TextColumn    { float: left; width: 45%; }
+.mx-TextColumn    { float: left; width: 49.5%; }
 .mx-MiddleColumn  { margin-left: 8% !important; width: 80%; }
 .mx-TextBubble    { font-size: 1.2em;
                     margin: 1%; margin-right: 0em;

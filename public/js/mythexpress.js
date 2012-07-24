@@ -142,7 +142,7 @@ $(document).ready(function() {
                     .css("display","block")
                     .html(markup);
 
-                // console.log(jqXHR.getAllResponseHeaders());
+                //console.log(jqXHR.getAllResponseHeaders());
 
                 var newState;
                 if (newState = getDataFromHeaders(jqXHR.getAllResponseHeaders())) {
