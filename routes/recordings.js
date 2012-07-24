@@ -102,6 +102,7 @@ app.get("/recordinginfo", function (req, res) {
     }
 
     res.partial("info/recording", {
+        mythtv      : mythtv,
         MythBackend : mythtv.MythServiceHost(req),
         recording   : program,
         flags       : flags.join(' ')

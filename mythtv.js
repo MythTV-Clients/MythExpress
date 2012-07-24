@@ -1351,6 +1351,15 @@ module.exports = function(args) {
 
         blast     : eventSocket.blast,
 
+        FormatAirdate : function(airdate) {
+            var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));
+            return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]
+                + ", "
+                + ["January","February","March","April","May","June","July",
+                   "August","September","October","November","December"][d.getMonth()]
+                + " " + d.getDate() + ", " + d.getFullYear();
+        },
+
         GetRecordingRecord : function (chanId, startTs) {
             return byChanId[getChanKey(chanId, startTs)];
         },

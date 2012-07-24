@@ -4,7 +4,12 @@ if recording.SubTitle
 if recording.Description
   p= recording.Description
 if recording.Airdate
-  p= "Airdate: " + recording.Airdate
+  p= "Originally aired on " + mythtv.FormatAirdate(recording.Airdate)
+if recording.Inetref.length > 0
+  if recording.ProgramId.substr(0,2) === "MV"
+    p: a(href="http://www.themoviedb.org/movie/"+recording.Inetref, target="tmdb"+recording.Inetref) TheMovieDB.org
+  if recording.ProgramId.substr(0,2) === "SH" || recording.ProgramId.substr(0,2) === "EP"
+    p: a(href="http://thetvdb.com/?tab=series&id="+recording.Inetref, target="tvdb"+recording.Inetref) TheTVDB.com
 p= flags
 if !!recording.Artwork && recording.Artwork.ArtworkInfos.length > 0
   #Artwork

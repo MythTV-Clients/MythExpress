@@ -32,6 +32,7 @@ app.get("/videos", MX, function (req, res) {
 app.get("/videoinfo", function (req, res) {
     console.log("/videoinfo " + req.query.VideoId);
     res.partial("info/video", {
+        mythtv      : mythtv,
         MythBackend : mythtv.MythServiceHost(req),
         video       : mythtv.byVideoId[req.query.VideoId]
     });
