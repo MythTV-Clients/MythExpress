@@ -872,6 +872,10 @@ module.exports = function(args) {
                             delete sortedTitles[group];
                         });
 
+                        Object.keys(byRecGroup).forEach(function (group) {
+                            delete byRecGroup[group];
+                        });
+
                         byRecGroup.All = [ ];
                         byRecGroup.Default = [ ];
                         byRecGroup.Recordings = byRecGroup.Default;  // an alias for when we have only one group
