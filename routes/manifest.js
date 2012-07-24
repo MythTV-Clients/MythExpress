@@ -32,9 +32,10 @@ function deepScan(directory) {
                 if (modTime > lastModification) {
                     lastModification = modTime;
                 }
-                //if (isProduction || file.match(/[.](css|png)$/)) {
+                // no css or js for production - they're combined & minified in app.js
+                if (!isProduction || !file.match(/[.](css|js)$/)) {
                     list.push(fullPath);
-                //}
+                }
             } else if (stats.isDirectory()) {
                 var scan = deepScan(fullPath);
                 if (scan.list.length > 0)
