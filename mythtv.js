@@ -226,6 +226,7 @@ module.exports = function(args) {
                 try {
                     callback(JSON.parse(response.replace(/[\r\n]/g,'')));
                 } catch (err) {
+                    console.log("reqJSON error:");
                     console.log(err);
                     callback({ });
                 }
@@ -813,6 +814,48 @@ module.exports = function(args) {
             }
         }
 
+        function resetVideoList() {
+            Object.keys(byVideoFolder).forEach(function (folder) {
+                delete byVideoFolder[folder];
+            });
+            byVideoId.length = 0;
+
+            byVideoFolder["/"] = { Title : "Videos", List : [ ] };
+        }
+
+        function loadVideoList(callback) {
+            reqJSON(
+                { path : '/Video/GetVideoList' },
+                function (videos) {
+                    videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
+                        byVideoId[video.Id] = video;
+                        byFilename[video.FileName] = video;
+                        var curPath = "";
+                        var curList = byVideoFolder["/"];
+                        path.dirname(video.FileName).split(slashPattern).forEach(function (folder) {
+                            if (folder !== ".") {
+                                var newPath = curPath + "/" + folder;
+                                var newList = byVideoFolder[newPath];
+                                if (!newList) {
+                                    newList = { Title : folder, List : [ ], VideoFolder : newPath };
+                                    byVideoFolder[newPath] = newList;
+                                    curList.List.push(newList);
+                                }
+                                curPath = newPath;
+                                curList = newList;
+                            }
+                        });
+                        curList.List.push(video);
+                    });
+
+                    Object.keys(byVideoFolder).forEach(function (path) {
+                        byVideoFolder[path].List.sort(videoCompare);
+                    });
+
+                    callback();
+                });
+        }
+
         function init () {
             async.auto({
 
@@ -837,12 +880,7 @@ module.exports = function(args) {
                             delete byFilename[fileName];
                         });
 
-                        Object.keys(byVideoFolder).forEach(function (folder) {
-                            delete byVideoFolder[folder];
-                        });
-                        byVideoId.length = 0;
-
-                        byVideoFolder["/"] = { Title : "Videos", List : [ ] };
+                        resetVideoList();
 
                         finished(null);
                     }
@@ -873,40 +911,10 @@ module.exports = function(args) {
                 loadVideos : [
                     "resetStructures",
                     function (finished) {
-                        reqJSON(
-                            { path : '/Video/GetVideoList' },
-                            function (videos) {
-                                videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
-                                    byVideoId[video.Id] = video;
-                                    byFilename[video.FileName] = video;
-                                    var curPath = "";
-                                    var curList = byVideoFolder["/"];
-                                    path.dirname(video.FileName).split(slashPattern).forEach(function (folder) {
-                                        if (folder !== ".") {
-                                            var newPath = curPath + "/" + folder;
-                                            var newList = byVideoFolder[newPath];
-                                            if (!newList) {
-                                                newList = { Title : folder, List : [ ], VideoFolder : newPath };
-                                                byVideoFolder[newPath] = newList;
-                                                curList.List.push(newList);
-                                            }
-                                            curPath = newPath;
-                                            curList = newList;
-                                        }
-                                    });
-                                    curList.List.push(video);
-                                });
-
-                                Object.keys(byVideoFolder).forEach(function (path) {
-                                    byVideoFolder[path].List.sort(videoCompare);
-                                });
-
-                                eventSocket.videoChange();
-
-                                finished(null);
-                            });
-
-                        finished(null);
+                        loadVideoList(function () {
+                            eventSocket.videoChange();
+                            finished(null);
+                        });
                     }
                 ],
 
@@ -1031,6 +1039,13 @@ module.exports = function(args) {
                     //console.log(change);
                     //console.log(program);
                     recordingListChange(change,program);
+                }
+
+                else if (msgType === "VIDEO_LIST_CHANGE") {
+                    resetVideoList();
+                    loadVideoList(function () {
+                        eventSocket.videoChange();
+                    });
                 }
 
                 else if (msgType === "SHUTDOWN_COUNTDOWN") {

@@ -594,6 +594,10 @@ $(document).ready(function() {
             }
         }
 
+        if (event.hasOwnProperty("Videos") && State.cleanUrl.substr(-7) === "/videos") {
+            loadCurrentView(State);
+        }
+
         else if (event.hasOwnProperty("Frontends")) {
             processFrontendChange(event);
         }
