@@ -457,7 +457,9 @@ $(document).ready(function() {
             if (target.hasClass("mx-Folder")) {
                 var showTitle = target.dataText(["Title"]).Title;
                 // console.log(History.getState().data);
-                var currentRecGroup = History.getState().data.Group;
+                var state = History.getState();
+                var currentRecGroup = state.data.Group;
+                var currentPath = "/" + state.url.split("/").pop();
                 History.pushState(
                     {
                         Group : currentRecGroup,
@@ -465,7 +467,7 @@ $(document).ready(function() {
                         View : $("#Buttons").attr("data-View")
                     },
                     currentRecGroup + " • " + showTitle,
-                    "/recordings");
+                    currentPath);
             }
 
             else if (target.hasClass("mx-Recording")) {
