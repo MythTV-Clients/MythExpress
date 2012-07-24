@@ -56,7 +56,7 @@ $(document).ready(function() {
 
     function getVideoParameters() {
         var res = { };
-        res.vid = $("#Content .nm-VideoBox");
+        res.vid = $("#Content .mx-VideoBox");
         if (res.vid.length == 1) {
             res.W = Number(res.vid.attr("width"));
             res.H = Number(res.vid.attr("height"));
@@ -183,11 +183,18 @@ $(document).ready(function() {
     // ////////////////////////////////////////////////////////////////////////
 
     function confirmDelete(deleteClickedCallback) {
+        // http://stackoverflow.com/a/3488052/595327
+        var videoBox = $("#Content .mx-VideoBox");
+        if (videoBox.length > 0)
+            videoBox.removeAttr("controls");
+
         confirmDeleteDialog
             .dialog("option", "buttons", [
                 {
                     text : "Delete",
                     click : function () {
+                        if (videoBox.length > 0)
+                            videoBox.attr("controls", true);
                         $(this).dialog("close");
                         deleteClickedCallback();
                     }
@@ -195,6 +202,8 @@ $(document).ready(function() {
                 {
                     text : "Cancel",
                     click : function () {
+                        if (videoBox.length > 0)
+                            videoBox.attr("controls", true);
                         $(this).dialog("close");
                     }
                 }
@@ -554,7 +563,7 @@ $(document).ready(function() {
 
             else if (target.hasClass("mx-Move")) {
                 var offset = Number(target.attr("data-offset"));
-                var vid = $("#Content .nm-VideoBox");
+                var vid = $("#Content .mx-VideoBox");
                 if (vid.length == 1) {
                     var newTime = vid[0].currentTime + offset;
                     if (newTime < 0) newTime = 0;
