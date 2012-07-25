@@ -138,9 +138,12 @@ $(document).ready(function() {
                 return true;
             },
             success    : function(markup, textStatus, jqXHR) {
-                $("#Content")
-                    .css("display","block")
-                    .html(markup);
+                console.log(textStatus);
+                if (jqXHR.status != 204) {
+                    $("#Content")
+                        .css("display","block")
+                        .html(markup);
+                }
 
                 //console.log(jqXHR.getAllResponseHeaders());
 

@@ -163,6 +163,8 @@ app.get("/streams", MX, function(req, res) {
 
                 }
             });
+            res.writeHead(204);
+            res.end();
         });
     }
 
@@ -193,6 +195,8 @@ app.get("/streams", MX, function(req, res) {
                 }
 
             });
+            res.writeHead(204);
+            res.end();
         });
     }
 
