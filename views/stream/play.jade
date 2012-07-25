@@ -8,8 +8,8 @@ if Info
     .mx-TextBubble
       p= Info.SubTitle
       p= Info.Description
-      if Info.Airdate
-        p= "Airdate: " + Info.Airdate
+      if typeof(Info) !== "undefined" && Info.Airdate
+        p= "Originally aired or released on " + mythtv.FormatAirdate(Info.Airdate)
 
 .mx-TextColumn
   .mx-ControlBubble

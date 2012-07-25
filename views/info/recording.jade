@@ -5,7 +5,7 @@ if recording.Description
   p= recording.Description
 if recording.Airdate
   p= "Originally aired on " + mythtv.FormatAirdate(recording.Airdate)
-if recording.Inetref.length > 0
+if recording.Inetref.length > 0 && recording.Inetref !== '00000000'
   if recording.ProgramId.substr(0,2) === "MV"
     p: a(href="http://www.themoviedb.org/movie/"+recording.Inetref, target="tmdb"+recording.Inetref) TheMovieDB.org
   if recording.ProgramId.substr(0,2) === "SH" || recording.ProgramId.substr(0,2) === "EP"

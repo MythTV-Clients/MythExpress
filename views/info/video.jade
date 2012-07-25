@@ -5,7 +5,7 @@ if video.Description
   p= video.Description
 if video.ReleaseDate
   p= "Released on " +  mythtv.FormatAirdate(video.ReleaseDate)
-if video.Inetref.length > 0
+if video.Inetref.length > 0 && video.Inetref !== '00000000'
   p: a(href="http://www.themoviedb.org/movie/"+video.Inetref, target="tmdb"+video.Inetref) TheMovieDB.org
 if !!video.Artwork && video.Artwork.ArtworkInfos.length > 0
   #Artwork
