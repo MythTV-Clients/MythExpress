@@ -138,7 +138,6 @@ $(document).ready(function() {
                 return true;
             },
             success    : function(markup, textStatus, jqXHR) {
-                console.log(textStatus);
                 if (jqXHR.status != 204) {
                     $("#Content")
                         .css("display","block")
