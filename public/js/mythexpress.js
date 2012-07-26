@@ -56,8 +56,16 @@ $(document).ready(function() {
 
     function getVideoParameters() {
         var res = { };
-        res.vid = $("#Content .mx-VideoBox");
+        res.vid = $("#VideoPlayer");
         if (res.vid.length == 1) {
+            if (!res.vid.attr("width")) {
+                // direct play videos have no width/height. synthesize
+                res.vid
+                    .attr("width", document.getElementById("VideoPlayer").offsetWidth)
+                    .attr("height", document.getElementById("VideoPlayer").offsetHeight)
+                    .attr("data-W", document.getElementById("VideoPlayer").offsetWidth)
+                    .attr("data-H", document.getElementById("VideoPlayer").offsetHeight);
+            }
             res.W = Number(res.vid.attr("width"));
             res.H = Number(res.vid.attr("height"));
             res.baseW = Number(res.vid.attr("data-W"));
@@ -138,11 +146,12 @@ $(document).ready(function() {
                 return true;
             },
             success    : function(markup, textStatus, jqXHR) {
-                if (jqXHR.status != 204) {
-                    $("#Content")
-                        .css("display","block")
-                        .html(markup);
-                }
+                if (jqXHR.status == 204) // 204 == NoContent
+                    return;
+
+                $("#Content")
+                    .css("display","block")
+                    .html(markup);
 
                 //console.log(jqXHR.getAllResponseHeaders());
 
@@ -186,7 +195,7 @@ $(document).ready(function() {
 
     function confirmDelete(deleteClickedCallback) {
         // http://stackoverflow.com/a/3488052/595327
-        var videoBox = $("#Content .mx-VideoBox");
+        var videoBox = $("#VideoPlayer");
         if (videoBox.length > 0)
             videoBox.removeAttr("controls");
 
@@ -567,7 +576,7 @@ $(document).ready(function() {
 
             else if (target.hasClass("mx-Move")) {
                 var offset = Number(target.attr("data-offset"));
-                var vid = $("#Content .mx-VideoBox");
+                var vid = $("#VideoPlayer");
                 if (vid.length == 1) {
                     var newTime = vid[0].currentTime + offset;
                     if (newTime < 0) newTime = 0;

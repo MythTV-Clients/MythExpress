@@ -1,7 +1,7 @@
 if typeof(Width) === "undefined"
-  video.mx-VideoBox(controls,autoplay,src=FullURL)
+  video#VideoPlayer(controls,autoplay,src=FullURL)
 else
-  video.mx-VideoBox(controls,autoplay,src=FullURL,width=Width,height=Height,data-W=Width,data-H=Height)
+  video#VideoPlayer(controls,autoplay,src=FullURL,width=Width,height=Height,data-W=Width,data-H=Height)
 
 if Info
   .mx-TextColumn

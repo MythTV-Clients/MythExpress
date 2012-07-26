@@ -99,7 +99,6 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-Show           { width: 40%; }
 .mx-Status         { width: 8em; }
 .mx-Parameters     { width: 12em; }
-.mx-VideoBox       { margin: auto; clear: both; margin-bottom: 0.5em; }
 .mx-Hidden         { display: none !important; }
 .mx-Dimmed         { background-color: grey75; }
 
@@ -111,6 +110,8 @@ li.mx-PopupItem:hover { font-weight: bold; }
 
 .mx-Wait img       { float: left; margin-left: 48px; margin-right: 12px; }
 .mx-Wait p         { padding-top: 100px; font-size: 2em; }
+
+#VideoPlayer       { display: block; margin-bottom: 0.5em; }
 
 #InfoDialog {
     width: 800px;
