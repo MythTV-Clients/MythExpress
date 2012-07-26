@@ -59,12 +59,13 @@ $(document).ready(function() {
         res.vid = $("#VideoPlayer");
         if (res.vid.length == 1) {
             if (!res.vid.attr("width")) {
-                // direct play videos have no width/height. synthesize
+                // direct play videos have no given width/height. synthesize
+                // https://developer.mozilla.org/en/Determining_the_dimensions_of_elements
                 res.vid
-                    .attr("width", document.getElementById("VideoPlayer").offsetWidth)
-                    .attr("height", document.getElementById("VideoPlayer").offsetHeight)
-                    .attr("data-W", document.getElementById("VideoPlayer").offsetWidth)
-                    .attr("data-H", document.getElementById("VideoPlayer").offsetHeight);
+                    .attr("width", document.getElementById("VideoPlayer").scrollWidth)
+                    .attr("height", document.getElementById("VideoPlayer").scrollHeight)
+                    .attr("data-W", document.getElementById("VideoPlayer").scrollWidth)
+                    .attr("data-H", document.getElementById("VideoPlayer").scrollHeight);
             }
             res.W = Number(res.vid.attr("width"));
             res.H = Number(res.vid.attr("height"));
