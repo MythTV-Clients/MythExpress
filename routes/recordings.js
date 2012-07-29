@@ -16,7 +16,7 @@ function doRender(req, res, headerData) {
 
         jadeFile = "episodes";
 
-        locals.Recordings = mythtv.byRecGroup[recGroup].hasOwnProperty(req.query.Title)
+        locals.Recordings = mythtv.byRecGroup.hasOwnProperty(recGroup) && mythtv.byRecGroup[recGroup].hasOwnProperty(req.query.Title)
             ? mythtv.byRecGroup[recGroup][req.query.Title]
             : [ ];
 

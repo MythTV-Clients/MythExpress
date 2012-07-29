@@ -86,6 +86,16 @@ function copyProperties (src, dst) {
     return dst;
 }
 
+function mythCommand(args) {
+    var cmd = args.join(' ');
+    var buf = new Buffer(cmd);  // utf8 encoding by default
+    var len = new Buffer((buf.length + "        ").substr(0,8));
+    var cmdBuf = new Buffer(8 + buf.length);
+    len.copy(cmdBuf);
+    buf.copy(cmdBuf, 8);
+    return cmdBuf;
+}
+
 function getProgramFlags(programFlags) {
     return {
         InUse          : !!(programFlags & 0x00700000),
@@ -269,6 +279,11 @@ module.exports = function(args) {
         else
             return arg1 + ' ' + arg2;
     }
+
+
+    // ////////////////////////////////////////////////////////////////////////
+    // old skoole MythProtocol connection
+    // ////////////////////////////////////////////////////////////////////////
 
 
     // ////////////////////////////////////////////////////////////////////////
@@ -1090,16 +1105,6 @@ module.exports = function(args) {
 
     function backendConnect(mythMessageHandler) {
 
-        function mythCommand(args) {
-            var cmd = args.join(' ');
-            var buf = new Buffer(cmd);
-            var len = new Buffer((cmd.length + "        ").substr(0,8));
-            var cmdBuf = new Buffer(8 + buf.length);
-            len.copy(cmdBuf);
-            buf.copy(cmdBuf, 8);
-            return cmdBuf;
-        }
-
         var socket = new net.Socket();
 
         var heartbeatSeconds = 6;
@@ -1478,6 +1483,14 @@ module.exports = function(args) {
             return getVideoProps(recording.VideoProps);
         },
 
+
+        CustomHost : function () {
+            if (backend.customHost) {
+                return backend.host;
+            } else {
+                return false;
+            }
+        },
 
         MythServiceHost : function (request) {
             if (backend.customHost) {

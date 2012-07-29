@@ -22,6 +22,15 @@ function normalizeMetadata(req, stream) {
                 + "/Content/GetImageFile?StorageGroup=Coverart&FileName=" + stream.Info.Coverart + "&Width=128";
         }
     }
+
+    if (mythtv.CustomHost()) {
+        var parts = url.parse(stream.FullURL);
+        parts.hostname = mythtv.CustomHost();
+        delete parts.host;  // hostname is ignored when host is present
+        stream.mxURL = url.format(parts);
+    } else {
+        stream.mxURL = stream.FullURL;
+    }
 }
 
 
@@ -30,7 +39,7 @@ function renderPlayerControl (req, res, stream) {
     res.partial("stream/play", {
         mythtv : mythtv,
         stream : stream,
-        FullURL : stream.FullURL,
+        FullURL : stream.mxURL,
         Width : stream.Width,
         Height : stream.Height,
         Info : stream.Info
