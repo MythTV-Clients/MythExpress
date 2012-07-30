@@ -3,7 +3,7 @@
 // and receives myth messages which are (length)(message) and not
 // much else
 
-net = require("net");
+var net = require("net");
 var util = require("util");
 var events = require("events");
 
@@ -97,6 +97,10 @@ module.exports = function () {
 
     this.write = function (tokens) {
         socket.write(mythCommand(tokens));
+    };
+
+    this.close = function () {
+        socket.end();
     };
 };
 

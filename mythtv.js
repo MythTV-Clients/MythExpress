@@ -6,7 +6,7 @@ var WebSocketServer = require('ws').Server;
 var fs = require('fs');
 var mdns = require('mdns');
 var async = require('async');
-var mythsocket = require("./mythtv/mythsocket");
+var mythprotocol = require("./mythtv/mythprotocol");
 
 
 // ////////////////////////////////////////////////////////////////////////
@@ -1096,100 +1096,33 @@ module.exports = function(args) {
 
     function backendConnect(mythMessageHandler) {
 
-        var socket = new mythsocket();
+        var BE = new mythprotocol();
 
-        var heartbeatSeconds = 6;
-        var lastConnect = new Date();
-
-        function makeConnection() {
-            console.log("open myth events connection " + backend.host + " " + lastConnect.toString());
-            socket.connect(6543, backend.host);
-            lastConnect = new Date();
-        }
-
-        function doConnect() {
-            if (myth.isUp && !myth.connectPending) {
-                myth.connectPending = true;
-                var msecToWait = (heartbeatSeconds * 1000) - ((new Date()).valueOf() - lastConnect.valueOf());
-                if (msecToWait < 0) msecToWait = 0;
-                setTimeout(makeConnection, msecToWait);
-            }
-        }
-
-        //socket.on("timeout", function () {
-        //    console.log("myth event socket timeout/refresh");
-        //    socket.write(mythCommand(["OK"]));
-        //});
-
-        socket.on("close", function (hadError) {
-            myth.connected = myth.connectPending = false;
-            eventSocket.alertOffline();
-            console.log("socket closed (withError: " + hadError + ")");
-            doConnect();
+        BE.connect({
+            host       : backend.host,
+            clientName : "MythExpress.EventListener",
+            mode       : BE.Monitor,
+            eventMode  : BE.AllEvents
         });
 
-        socket.on("end", function () {
-            myth.connected = myth.connectPending = false;
-            console.log("myth event socket end");
+        BE.on("connect", function () {
+            eventSocket.alertConnection();
+            mythMessageHandler.init();
+        });
+
+        BE.on("protocolVersion", function (version) {
+            changeAPI.alertProtocol(versionl);
+        });
+
+        BE.on("disconnect", function () {
             eventSocket.alertOffline();
         });
 
-        socket.on("error", function (err) {
-            console.log("myth event socket error");
-            console.log(err);
-            if (err.code === "ETIMEDOUT" || err.code === "ECONNREFUSED") {
-                // probably the myth host is down
-                myth.connected = myth.connectPending = false;
-                eventSocket.alertOffline();
-                doConnect();
-            }
+        BE.on("BACKEND_MESSAGE", function(message) {
+            mythMessageHandler.handleMessage(message);
+            mythMessageHandler.updateStructures();
+            eventSocket.sendChanges();
         });
-
-        socket.on("message", function(message) {
-
-            var handled = true;
-
-            if (message[0] === "BACKEND_MESSAGE") {
-                message.shift();
-                mythMessageHandler.handleMessage(message);
-            }
-
-            else if (message[0] === "ACCEPT") {
-                socket.write(["ANN", "Monitor", "MythExpress.EventListener", 1]);
-                mythMessageHandler.init();
-            }
-
-            else if (message[0] === "REJECT") {
-                backendProtocol = message[1];
-                if (mythProtocolTokens[backendProtocol]) {
-                    doConnect();
-                } else {
-                    console.log("Unknown protocol version '" + backendProtocol + "'");
-                    changeAPI.alertProtocol(backendProtocol);
-                }
-            }
-
-            else {
-                handled = false;
-            }
-
-            if (handled && !eventSocket.isDoingReset()) {
-                mythMessageHandler.updateStructures();
-                eventSocket.sendChanges();
-            }
-
-        });
-
-        socket.on("connect", function () {
-            myth.connectPending = false;
-            myth.connected = true;
-
-            console.log("myth event socket connect");
-            socket.write(["MYTH_PROTO_VERSION", backendProtocol, mythProtocolTokens[backendProtocol]]);
-
-        });
-
-        doConnect();
 
     }
 
