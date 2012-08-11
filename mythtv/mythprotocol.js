@@ -70,6 +70,153 @@ module.exports = function () {
         });
     }
 
+    function eventTimeToString(eventTime, override) {
+        var t = new Date(eventTime * 1000);
+        if (backend.protocolVersion > "74" && !override)
+            return t.getFullYear() + "-" + ("0" + (t.getMonth()+1)).substr(-2) + "-" + ("0" + t.getDate()).substr(-2) + "T" + ("0" + t.getHours()).substr(-2) + ":" + ("0" + t.getMinutes()).substr(-2) + ":" + ("0" + t.getSeconds()).substr(-2);
+        else
+            return t.getUTCFullYear() + "-" + ("0" + (t.getUTCMonth()+1)).substr(-2) + "-" + ("0" + t.getUTCDate()).substr(-2) + "T" + ("0" + t.getUTCHours()).substr(-2) + ":" + ("0" + t.getUTCMinutes()).substr(-2) + ":" + ("0" + t.getUTCSeconds()).substr(-2);
+    }
+
+    function getProgramFlags(programFlags) {
+        return {
+            InUse          : !!(programFlags & 0x00700000),
+            InUsePlaying   : !!(programFlags & 0x00200000),
+            CommercialFree : !!(programFlags & 0x00000800),
+            HasCutlist     : !!(programFlags & 0x00000002),
+            BookmarkSet    : !!(programFlags & 0x00000010),
+            Watched        : !!(programFlags & 0x00000200),
+            AutoExpirable  : !!(programFlags & 0x00000004),
+            Preserved      : !!(programFlags & 0x00000400),
+            Repeat         : !!(programFlags & 0x00001000),
+            Duplicate      : !!(programFlags & 0x00002000),
+            Reactivated    : !!(programFlags & 0x00004000),
+            DeletePending  : !!(programFlags & 0x00000080)
+        };
+    }
+
+    function getVideoProps(propMask) {
+        return {
+            HDTV       : !!(propMask & 0x01),
+            Widescreen : !!(propMask & 0x02),
+            AVC        : !!(propMask & 0x04),
+            "720p"     : !!(propMask & 0x08),
+            "1080p"    : !!(propMask & 0x10),
+            Damaged    : !!(propMask & 0x20)
+        };
+    }
+
+    var pullProgramInfo = function (message) {
+        program = { };
+
+        program.Title = message.shift();
+        program.SubTitle = message.shift();
+        program.Description = message.shift();
+        if (backend.protocolVersion >= "67") {
+            program.Season = message.shift();
+            program.Episode = message.shift();
+        }
+        program.Category = message.shift();
+        program.Channel = { };
+        program.Channel.ChanId = message.shift();
+        program.Channel.ChanNum = message.shift();
+        program.Channel.CallSign = message.shift();
+        program.Channel.ChanName = message.shift();
+        program.FileName = message.shift();
+        program.FileSize = message.shift();
+        program.StartTime = eventTimeToString(message.shift(), true);
+        program.EndTime = eventTimeToString(message.shift(), true);
+        program.FindId = message.shift();
+        program.HostName = message.shift();
+        program.SourceId = message.shift();
+        program.CardId = message.shift();
+        program.Channel.InputId = message.shift();
+        program.Recording = { };
+        program.Recording.Priority = message.shift();
+        program.Recording.Status = message.shift();
+        program.Recording.RecordId = message.shift();
+        program.Recording.RecType = message.shift();
+        program.Recording.DupInType = message.shift();
+        program.Recording.DupMethod = message.shift();
+        program.Recording.StartTs = eventTimeToString(message.shift(), true);
+        program.Recording.EndTs = eventTimeToString(message.shift(), true);
+        program.ProgramFlags = message.shift();
+        program.ProgramFlags_ = getProgramFlags(program.ProgramFlags);
+        program.Recording.RecGroup = message.shift();
+        program.OutputFilters = message.shift();
+        program.SeriesId = message.shift();
+        program.ProgramId = message.shift();
+        if (backend.protocolVersion >= "67") {
+            program.Inetref = message.shift();
+        }
+        program.LastModified = eventTimeToString(message.shift(), true);
+        program.Stars = message.shift();
+        program.Airdate = message.shift();
+        program.PlayGroup = message.shift();
+        program.Recording.Priority2 = message.shift();
+        program.ParentId = message.shift();
+        program.StorageGroup = message.shift();
+        program.AudioProps = message.shift();
+        program.VideoProps = message.shift();
+        program.SubProps = message.shift();
+        program.Year = message.shift();
+
+        return program;
+    };
+
+    var pushProgramInfo = function (message, program) {
+        message.push(program.Title);
+        message.push(program.SubTitle);
+        message.push(program.Description);
+        if (backend.protocolVersion >= "67") {
+            message.push(program.Season);
+            message.push(program.Episode);
+        }
+        message.push(program.Category);
+        message.push(program.Channel.ChanId);
+        message.push(program.Channel.ChanNum);
+        message.push(program.Channel.CallSign);
+        message.push(program.Channel.ChanName);
+        message.push(program.FileName);
+        message.push(program.FileSize);
+        message.push(program.StartTime);
+        message.push(program.EndTime);
+        message.push(program.FindId);
+        message.push(program.HostName);
+        message.push(program.SourceId);
+        message.push(program.CardId);
+        message.push(program.Channel.InputId);
+        message.push(program.Recording.Priority);
+        message.push(program.Recording.Status);
+        message.push(program.Recording.RecordId);
+        message.push(program.Recording.RecType);
+        message.push(program.Recording.DupInType);
+        message.push(program.Recording.DupMethod);
+        message.push(program.Recording.StartTs);
+        message.push(program.Recording.EndTs);
+        message.push(program.ProgramFlags);
+        message.push(program.Recording.RecGroup);
+        message.push(program.OutputFilters);
+        message.push(program.SeriesId);
+        message.push(program.ProgramId);
+        if (backend.protocolVersion >= "67") {
+            message.push(program.Inetref);
+        }
+        message.push(program.LastModified);
+        message.push(program.Stars);
+        message.push(program.Airdate);
+        message.push(program.PlayGroup);
+        message.push(program.Recording.Priority2);
+        message.push(program.ParentId);
+        message.push(program.StorageGroup);
+        message.push(program.AudioProps);
+        message.push(program.VideoProps);
+        message.push(program.SubProps);
+        message.push(program.Year);
+
+        return message;
+    };
+
     // ////////////////////////////////////////////////
     // myth connection management
     // ////////////////////////////////////////////////
@@ -112,8 +259,8 @@ module.exports = function () {
 
     socket.on("error", function (error) {
         console.log("myth event socket error");
-        console.log(err);
-        if (err.code === "ETIMEDOUT" || err.code === "ECONNREFUSED") {
+        console.log(error);
+        if (error.code === "ETIMEDOUT" || error.code === "ECONNREFUSED") {
             // probably the myth host is down
             backend.connected = backend.connectionPending = false;
             emitDisconnect();
@@ -130,7 +277,93 @@ module.exports = function () {
 
         if (message[0] === "BACKEND_MESSAGE") {
             message.shift();
-            This.emit("BACKEND_MESSAGE", message);
+
+            if (message[0].substr(0,13) === "SYSTEM_EVENT ") {
+                var args = message[0].split(/ /);
+                args.shift();
+                var event = { };
+                event.name = args.shift();
+                while (args.length > 0) {
+                    var data = args.shift();
+                    event[data.toLowerCase()] = args.shift();
+                }
+
+                if (event.name === "REC_EXPIRED") {
+                    process.nextTick(function () {
+                        This.emit("REC_EXPIRED", event);
+                    });
+                }
+
+                else if (event.name === "CLIENT_CONNECTED" ||
+                         event.name === "CLIENT_DISCONNECTED" ||
+                         event.name === "SCHEDULER_RAN" ||
+                         event.name === "SCHEDULE_CHANGE" ||
+                         event.name === "REC_PENDING" ||
+                         event.name === "REC_STARTED" ||
+                         event.name === "REC_FINISHED" ||
+                         event.name === "REC_DELETED") {
+                    console.log('Ignored System event:');
+                    console.log(event);
+                    // do nothing
+                }
+
+                else {
+                    console.log('System event:');
+                    console.log(event);
+                }
+            }
+
+            else if (message[0].substr(0,20) === "SYSTEM_EVENT_RESULT ") {
+            }
+
+            else {
+                var head = message[0].split(/[ ]/);
+                var msgType = head[0];
+                if (msgType === "RECORDING_LIST_CHANGE") {
+                    var change = message.shift().substring(22).split(/[ ]/);
+                    var program = pullProgramInfo(message);
+                    var event = {
+                        changeType : change[0]
+                    };
+                    if (event.changeType === "ADD" || event.changeType === "DELETE") {
+                        event.ChanId = change[1];
+                        event.StartTs = change[2];
+                    }
+                    process.nextTick(function () {
+                        This.emit("RECORDING_LIST_CHANGE", event, program);
+                    });
+                }
+
+                else if (msgType === "VIDEO_LIST_CHANGE") {
+                    process.nextTick(function () {
+                        This.emit("VIDEO_LIST_CHANGE");
+                    });
+                }
+
+                else if (msgType === "SHUTDOWN_COUNTDOWN") {
+                    process.nextTick(function () {
+                        This.emit("SHUTDOWN_COUNTDOWN", head[1]);
+                    });
+                }
+
+                else if (msgType === "SHUTDOWN_NOW") {
+                    process.nextTick(function () {
+                        This.emit("SHUTDOWN_NOW");
+                    });
+                }
+
+                else if (msgType === "UPDATE_FILE_SIZE" ||
+                         msgType === "ASK_RECORDING" ||
+                         msgType === "COMMFLAG_START" ||
+                         msgType === "COMMFLAG_UPDATE" ||
+                         msgType === "SCHEDULE_CHANGE") {
+                }
+
+                else {
+                    console.log('Non system event:');
+                    console.log(message);
+                }
+            }
         }
 
         else if (message[0] === "ACCEPT") {
@@ -172,6 +405,9 @@ module.exports = function () {
         backend.keepOpen = false;
         socket.close();
     };
+
+    this.getProgramFlags = getProgramFlags;
+    this.getVideoProps = getVideoProps;
 
     this.Monitor = "Monitor";
     this.Playback = "Playback";
