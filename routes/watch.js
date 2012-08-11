@@ -11,7 +11,8 @@ app.get("/watch", MX, function (req, res) {
 
             res.partial("stream/play", {
                 Info : info,
-                FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetRecording?ChanId=" + recording.Channel.ChanId + "&StartTime=" + recording.Recording.StartTs
+                FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetRecording?ChanId=" + recording.Channel.ChanId + "&StartTime=" + recording.Recording.StartTs,
+                mythtv : mythtv
             });
 
         } else {
@@ -39,7 +40,8 @@ app.get("/watch", MX, function (req, res) {
 
             res.partial("stream/play", {
                 Info : info,
-                FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetVideo?Id=" + video.Id
+                FullURL : "http://" + mythtv.MythServiceHost(req) + "/Content/GetVideo?Id=" + video.Id,
+                mythtv : mythtv
             });
         }
 
