@@ -2,7 +2,7 @@
 
 app.get("/frontend/list", function (req, res) {
 
-    res.json(mythtv.GetFrontendList());
+    res.json(frontends.FrontendList());
 
 });
 
