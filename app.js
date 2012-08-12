@@ -152,14 +152,15 @@ var mythtv = require("./mythtv")(mythArgs);
 
 // Routes
 
-require("./boot")({ app: app,
-                    url : url,
-                    os : os,
-                    fs : fs,
-                    util : util,
+require("./boot")({ app       : app,
+                    url       : url,
+                    os        : os,
+                    fs        : fs,
+                    util      : util,
                     __dirname : __dirname,
-                    mythtv: mythtv,
-                    MX : require("./frontpage")
+                    mythtv    : mythtv,
+                    MX        : require("./frontpage"),
+                    frontends : new (require("./mythtv/frontends.js"))
                   });
 
 if (app.settings.env === "development") {

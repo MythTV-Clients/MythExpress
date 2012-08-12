@@ -6,7 +6,9 @@ var WebSocketServer = require('ws').Server;
 var fs = require('fs');
 var mdns = require('mdns');
 var async = require('async');
+var mxutils = require("./mxutils");
 var mythprotocol = require("./mythtv/mythprotocol");
+var frontends = new (require("./mythtv/frontends"));
 
 
 // ////////////////////////////////////////////////////////////////////////
@@ -87,20 +89,6 @@ function copyProperties (src, dst) {
     return dst;
 }
 
-function filterIPv4(addressList) {
-    var ip4 = [ ];
-    addressList.forEach(function (address) {
-        if (address.match(/^[.0-9]+$/))
-            ip4.push(address);
-    });
-    return ip4;
-}
-
-function hostFromService(service) {
-    var parts = service.name.split(/[ ]/);
-    return parts[parts.length - 1];
-}
-
 
 // ////////////////////////////////////////////////////////////////////////
 // Globals
@@ -115,11 +103,6 @@ module.exports = function(args) {
         connected : false,          // true = we're connected to BE's event socket
         connectPending : false,
         bonjour : undefined
-    };
-
-    var frontends = {
-        byHost : { },
-        byName : { }
     };
 
     var backendProtocol = mythProtocolTokens.Latest;
@@ -246,11 +229,6 @@ module.exports = function(args) {
 
 
     // ////////////////////////////////////////////////////////////////////////
-    // old skoole MythProtocol connection
-    // ////////////////////////////////////////////////////////////////////////
-
-
-    // ////////////////////////////////////////////////////////////////////////
     // events to the browser
     // ////////////////////////////////////////////////////////////////////////
 
@@ -327,8 +305,8 @@ module.exports = function(args) {
                 return recGroupsChanged;
             },
 
-            frontendChange : function (clientNum) {
-                blast({ Frontends : Object.keys(frontends.byHost) }, clientNum);
+            frontendChange : function (feList, clientNum) {
+                blast({ Frontends : feList }, clientNum);
             },
 
             groupChanges : function () {
@@ -434,7 +412,7 @@ module.exports = function(args) {
             console.log('new client (' + wssClients.length + ')');
 
             var clientNum = wssClients.length-1;
-            changeAPI.frontendChange(clientNum);
+            changeAPI.frontendChange(frontends.FrontendList(), clientNum);
 
             if (false && backends.length == 0)
                 changeAPI.alertNoServers(clientNum);
@@ -1010,7 +988,7 @@ module.exports = function(args) {
                 if (myth.affinity && myth.affinity !== service.host)
                     return;
                 myth.isUp = true;
-                var addr = filterIPv4(service.addresses);
+                var addr = mxutils.filterIPv4(service.addresses);
                 if (addr.length > 0) {
                     myth.bonjour = service;
                     myth.up = true;
@@ -1037,41 +1015,10 @@ module.exports = function(args) {
 
         backendBrowser.start();
 
-        var frontendBrowser = mdns.createBrowser(mdns.tcp('mythfrontend'));
-
-        frontendBrowser.on('serviceUp', function(service) {
-            //console.log("frontend up: ", service);
-            var addr = filterIPv4(service.addresses);
-            if (addr.length > 0) {
-                service.ipv4 = addr[0];
-                service.shortHost = hostFromService(service);
-                frontends.byName[service.name] = service;
-                frontends.byHost[service.shortHost] = { fullname : service.name, address : addr[0] };
-                eventSocket.frontendChange();
-            }
-        });
-
-        frontendBrowser.on('serviceDown', function(service) {
-            //console.log("frontend down: ", service);
-            if (frontends.byName.hasOwnProperty(service.name)) {
-                var serv = frontends.byName[service.name];
-                delete frontends.byHost[serv.shortHost];
-                delete frontends.byName[serv.name];
-                eventSocket.frontendChange();
-            }
-        });
-
-        frontendBrowser.start();
-
         return {
             restart : function () {
                 myth.up = false;
                 if (false) {
-                    Object.keys(frontends.byName).forEach(function (name) {
-                        delete frontends.byHost[frontends.byName[name].shortHost];
-                        delete frontends.byName[name];
-                    });
-
                     backendBrowser.stop();  frontendBrowser.stop();
                     backendBrowser.start(); frontendBrowser.start();
                 }
@@ -1079,40 +1026,9 @@ module.exports = function(args) {
         };
     })();
 
-
-    // ////////////////////////////////////////////////////////////////////////
-    // Frontend Control
-    // ////////////////////////////////////////////////////////////////////////
-
-    frontendControl = (function () {
-        return {
-            SendMessage : function (host, message) {
-                if (frontends.byHost.hasOwnProperty(host)) {
-
-                    var fe = frontends.byName[frontends.byHost[host].fullname];
-
-                    (function (host) {
-                        var socket = new net.Socket();
-                        var reply = "";
-                        socket.on('data', function (data) {
-                            reply = reply + data.toString();
-                            if (reply.match(/OK/)) {
-                                socket.end("exit\n");
-                            } else if (reply.match(/ERROR/)) {
-                                console.log(message);
-                                console.log(reply);
-                                socket.end("exit\n");
-                            } else if (reply.match(/[#]/)) {
-                                reply = "";
-                                socket.write(message + "\n");
-                            }
-                        });
-                        socket.connect(6546, host);
-                    })(fe.ipv4);
-                }
-            }
-        };
-    })();
+    frontends.on("change", function (feList) {
+        eventSocket.frontendChange(feList);
+    });
 
     // ////////////////////////////////////////////////////////////////////////
     // what routes see
@@ -1272,23 +1188,6 @@ module.exports = function(args) {
             } else {
                 // use the client's path to us
                 return request.headers.host.split(/:/)[0] + ":" + backend.port;
-            }
-        },
-
-        GetFrontendList : function () {
-            return Object.keys(frontends.byHost);
-        },
-
-        SendToFrontend : function (args) {
-            var message;
-            if (args.hasOwnProperty("FileName") && byFilename.hasOwnProperty(args.FileName)) {
-                var prog = byFilename[args.FileName];
-                message = "play program " + prog.Channel.ChanId + " " + localFromUTCString(prog.Recording.StartTs) + " resume";
-            } else if (args.hasOwnProperty("VideoId") && byVideoId[args.VideoId]) {
-                message = "play file myth://Videos/" + byVideoId[args.VideoId].FileName.toString("utf8").replace(/ /g, "%20");
-            }
-            if (message.length > 0) {
-                frontendControl.SendMessage(args.Host, message);
             }
         }
 
