@@ -53,7 +53,9 @@ function titleCompare (t1,t2) {
 function episodeCompare (t1,t2) {
     var t1Val = !!t1.Airdate ? t1.Airdate : (t1.StartTime || t1.SubTitle || t1.FileName);
     var t2Val = !!t2.Airdate ? t2.Airdate : (t2.StartTime || t2.SubTitle || t2.FileName);
-    return t1Val === t2Val ? 0 : (t1Val > t2Val ? -1 : 1);
+    return t1Val === t2Val
+        ? (t1.StartTime > t2.StartTime ? -1 : 1)
+        : (t1Val > t2Val ? -1 : 1);
 }
 
 function videoCompare (v1,v2) {
