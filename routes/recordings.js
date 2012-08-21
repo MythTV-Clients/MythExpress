@@ -108,3 +108,39 @@ app.get("/recordinginfo", function (req, res) {
         flags       : flags.join(' ')
     });
 });
+
+
+app.get("/recordingedit", function (req, res) {
+    var program = mythtv.byFilename[req.query.FileName];
+
+    res.partial("info/recordingedit", {
+        mythtv      : mythtv,
+        MythBackend : mythtv.MythServiceHost(req),
+        recording   : program,
+    });
+});
+
+
+app.post("/recordingedit", function (req, res) {
+    console.log("/recordingedit:");
+    console.log(req.body);
+
+    var updates = { };
+    if (!!req.body.Title)
+        updates.Title = req.body.Title;
+    if (!!req.body.SubTitle)
+        updates.SubTitle = req.body.SubTitle;
+    if (!!req.body.Description)
+        updates.Description = req.body.Description;
+
+    var current = mythtv.GetRecordingRecord(req.body.ChanId, req.body.StartTs);
+    var updated = { };
+    mxutils.copyProperties(current, updated);
+    mxutils.copyProperties(updates, updated);
+
+    console.log(updated);
+    mythtv.FillProgramInfo(updated);
+
+    res.writeHead(200);
+    res.end();
+});

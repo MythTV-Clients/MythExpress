@@ -74,23 +74,6 @@ function stringCompare (g1,g2) {
     return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1;
 }
 
-// similar to jQuery extend
-function copyProperties (src, dst) {
-    Object.keys(src).forEach(function (property) {
-        if (src.hasOwnProperty(property)) { // don't copy properties from parent objects
-            if (typeof(src[property]) === "object" && !src[property].hasOwnProperty("length")) {
-                // property is an object but not an array
-                if (!dst.hasOwnProperty(property))
-                    dst[property] = { };
-                copyProperties(src[property], dst[property]);
-            } else {
-                dst[property] = src[property];
-            }
-        }
-    });
-    return dst;
-}
-
 
 // ////////////////////////////////////////////////////////////////////////
 // Globals
@@ -525,8 +508,8 @@ module.exports = function(args) {
         var oldProg = { }, isExistingProgram;
 
         if (isExistingProgram = byFilename.hasOwnProperty(newProg.FileName)) {
-            copyProperties(byFilename[newProg.FileName], oldProg);
-            copyProperties(newProg, byFilename[newProg.FileName]);
+            mxutils.copyProperties(byFilename[newProg.FileName], oldProg);
+            mxutils.copyProperties(newProg, byFilename[newProg.FileName]);
             newProg = byFilename[newProg.FileName];
         } else {
             oldProg = emptyProgram();
@@ -1061,9 +1044,11 @@ module.exports = function(args) {
                 + " " + d.getDate() + ", " + d.getFullYear();
         },
 
+
         GetRecordingRecord : function (chanId, startTs) {
-            return byChanId[getChanKey(chanId, startTs)];
+            return byFilename[byChanId[getChanKey(chanId, startTs)]];
         },
+
 
         StreamRecording : function (fileName, encoding, callback) {
             var recording = byFilename[fileName];

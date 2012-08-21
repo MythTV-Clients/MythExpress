@@ -223,7 +223,7 @@ $(document).ready(function() {
             .dialog("open");
     }
 
-    updateButtons = function (newView) {
+    function updateButtons (newView) {
         var buttons = $("#Buttons");
         var view = typeof(newView) === "undefined" ? buttons.attr("data-View") : newView;
         $.get("/ui/buttons", { View : view }, function (buttonList) {
@@ -234,7 +234,7 @@ $(document).ready(function() {
         });
     };
 
-    updateStreamStatus = function () {
+    function updateStreamStatus () {
         if ($("#Content .mx-StreamList").length == 0) {
             // there's an empty streamlist div acting as a sentinal.
             // its absence indicates we've moved way from the stream list
@@ -302,11 +302,44 @@ $(document).ready(function() {
                     var target = $("#InfoDialog").find(".mx-Data");
                     $.get("/deleterecording", target.dataAttrs(["ChanId", "StartTs"]));
                     $(that).dialog("close");
-                })
+                });
+            }
+        },
+        // {
+        //     text : "…",
+        //     click : function (event) {
+        //         console.log(event);
+        //         showPopup("RecordingPopup");
+        //         var rp = $("#RecordingPopup");
+        //         var rpHeight = Number(rp.css("height").replace(/[a-z]/g,""));
+        //         var rpWidth = Number(rp.css("width").replace(/[a-z]/g,""))/2;
+        //         rp.css("top", event.clientY - rpHeight)
+        //             .css("left", event.clientX - rpWidth);
+        //     }
+        // },
+        {
+            text : "Close",
+            click : function () {
+                $(this).dialog("close");
+            }
+        }
+    ];
+
+    var editRecordingMetadataButtons = [
+        {
+            text : "Save",
+            click : function () {
+                var attrs = $("#InfoDialog").find(".mx-Data").dataAttrs(["ChanId","StartTs"]);
+                $.each($("#InfoDialog [name]"), function(index, html) {
+                    var control = $(html);
+                    attrs[control.attr("name")] = control.val();
+                });
+                $.post("/recordingedit", attrs);
+                $(this).dialog("close");
             }
         },
         {
-            text : "Close",
+            text : "Cancel",
             click : function () {
                 $(this).dialog("close");
             }
@@ -357,7 +390,7 @@ $(document).ready(function() {
             }
         },
         {
-            text : "Delete",
+            text : "Delete Stream",
             click : function () {
                 $(this).dialog("close");
                 var parms = $("#InfoDialog").find(".mx-Data").dataAttrs(["StreamId"]);
@@ -371,6 +404,7 @@ $(document).ready(function() {
             }
         }
     ];
+
 
     // manage list of frontends we can throw to
 
@@ -415,9 +449,19 @@ $(document).ready(function() {
     // Ajax
     // ////////////////////////////////////////////////////////////////////////
 
+    function showPopup(popupId) {
+        $("#Popups").removeClass("mx-Hidden");
+        $("#" + popupId).removeClass("mx-Hidden");
+    }
+
+    function hidePopups() {
+        $("#Popups").addClass("mx-Hidden");
+        $("#Popups .mx-PopupMenu").addClass("mx-Hidden");
+    }
+
     $("#Header")
         .on("click", "#ViewsIcon", function () {
-            $("#Views").removeClass("mx-Hidden");
+            showPopup("ViewsPopup");
             return false;
         })
         .on("click", "#BackButton", function () {
@@ -448,16 +492,39 @@ $(document).ready(function() {
             return false;
         });
 
-    $("#Views")
-        .on("click", ".mx-ViewsBackground", function () {
-            $("#Views").addClass("mx-Hidden");
+    $("#Popups")
+        .on("click", ".mx-PopupsBackground", function () {
+            hidePopups();
             return false;
         })
-        .on("click", ".mx-PopupItem", function () {
+        .on("click", ".mx-ViewItem", function () {
             var view = $(this).text().sanitized();
-            $("#Views").addClass("mx-Hidden");
+            hidePopups();
             //console.log("clicked " + view + " for /" + viewsMap[view]);
             History.pushState({ }, "Loading " + view + "\u2026", "/" + viewsMap[view]);
+            return false;
+        })
+        .on("click", ".mx-DeleteRecording", function () {
+            var parms = $("#InfoDialogContent p").dataAttrs(["ChanId","StartTs"]);
+            //$("#RecordingPopup").addClass("mx-Hidden");
+            hidePopups();
+            $("#InfoDialog").dialog("close");
+            confirmDelete(function () {
+                $.get("/deleterecording", parms);
+            });
+            return false;
+        })
+        .on("click", ".mx-RecordingMetadata", function () {
+            var parms = $("#InfoDialogContent p").dataAttrs(["FileName"]);
+            //$("#RecordingPopup").addClass("mx-Hidden");
+            hidePopups();
+            infoDialog
+                .dialog("option", "buttons", editRecordingMetadataButtons)
+                .dialog("open");
+            $.get("/recordingedit", parms,
+                  function (info, textStatus, jqXHR) {
+                      $("#InfoDialogContent").html(info);
+                  });
             return false;
         });
 
@@ -585,14 +652,6 @@ $(document).ready(function() {
                 }
             }
 
-            else if (target.hasClass("mx-DeleteRecording")) {
-                var parms = target.dataAttrs(["ChanId","StartTs"]);
-                confirmDelete(function () {
-                    History.back();
-                    $.get("/deleterecording", parms);
-                });
-            }
-
             else if (target.hasClass("mx-DeleteStream")) {
                 var parms = target.dataAttrs(["StreamId"]);
                 History.back();
@@ -610,7 +669,10 @@ $(document).ready(function() {
     function applyUpdate(event) {
         var State = History.getState();
 
-        if (event.hasOwnProperty("Recordings") && State.cleanUrl.substr(-11) === "/recordings" && (event.Reset || event.Group === State.data.Group)) {
+        if (event.hasOwnProperty("Recordings")
+            && (State.cleanUrl.substr(-11) === "/recordings" || State.cleanUrl.substr(-11) === "/properties")
+            && (event.Reset || event.Group === State.data.Group))
+        {
             var insideTitle = State.data.hasOwnProperty("Title");
             if (event.Reset || (insideTitle && event.Title === State.data.Title) || (!insideTitle && event.Title === "*")) {
                 loadCurrentView(State);
@@ -748,6 +810,7 @@ $(document).ready(function() {
     $.get("/ui/views", function (viewsData) {
         viewsMap = viewsData.Map;
         $("#ViewsPopup").html(viewsData.Markup);
+        $("#Popups button").button();
     });
 
     $.get("/frontend/list", function (newFEs) {

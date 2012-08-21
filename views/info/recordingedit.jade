@@ -1,0 +1,11 @@
+p.mx-Hidden.mx-Data(data-FileName=recording.FileName, data-ChanId=recording.Channel.ChanId, data-StartTs=recording.Recording.StartTs)
+.mx-EditBox.mx-EditBoxFull
+  p
+    span Title
+    input.mx-EditBoxFull(type="text",name="Title",value=recording.Title,size=42)
+  p
+    span Subtitle
+    input.mx-EditBoxFull(type="text",name="SubTitle",value=recording.SubTitle,size=42)
+  p
+    span Description
+    textarea.mx-EditBoxFull(type="text",name="Description",rows=2,cols=42)= recording.Description

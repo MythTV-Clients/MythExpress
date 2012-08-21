@@ -30,18 +30,40 @@ body {
                         width: 100%; height: 100%;
                         z-index: 20; }
 #ViewsIcon            { position: relative; top: 5px; left: 4px; }
-#ViewsPopup           { position: fixed; top: 24px; left: 24px;
-                        border: outset; // border-radius: 15px;
-                        background-color: rgb(20,20,20);
-                        padding: 0.5em 1.2em 0.7em 1em;
-                        z-index: 22; }
 li.mx-PopupItem       { font-size: 2em; width: 8em;
                         color: rgb(240,240,240);
                         list-style-type: none;
                       }
+.mx-PopupMenu         {
+                        //border: outset; // border-radius: 15px;
+                        //background-color: rgb(20,20,20);
+                        //padding: 0.5em 1.2em 0.7em 1em;
+                        position: fixed;
+                        z-index: 1022; // jQuery dialogs use 1000
+                        // article
+                        outline-style: solid;
+                        outline-color: #555;
+                        outline-width: medium;
+                        padding: .5em;
+                        background-color: #111;
+                      }
+#ViewsPopup           { top: 24px; left: 24px; }
+.mx-PopupItem         {
+                        float: left; clear: both; width: 100%;
+                        // article
+                        border-top: 1px solid #333;
+                        border-bottom: 1px solid #111;
+                      }
+
+.mx-PopupItem:first-child {border-top: none;}
+.mx-PopupItem:last-child {border-bottom: none;}
+
 li.mx-PopupItem:hover { font-weight: bold; }
-.mx-ViewsBackground   { position: fixed; top: 0px; left: 0px;
-                        display: block; width: 100%; height: 100%; }
+.mx-PopupsBackground  { position: fixed; top: 0px; left: 0px;
+                        display: block; width: 100%; height: 100%;
+                        background-color: #333;
+                        opacity: 0.75;
+                        z-index: 1020; }
 
 #Buttons {
     overflow: none;
@@ -135,10 +157,24 @@ li.mx-PopupItem:hover { font-weight: bold; }
 .mx-TextBubble li { margin-top: .25em; margin-bottom: .25em; line-height: 1.2em; margin-left: 1.5em;}
 .mx-ControlBubble { padding: 0.5em;
                     border-radius: 15px; background: #333; }
-.mx-DeleteConfirm { padding-top: 1em; }
+.mx-DeleteConfirm { padding-top: 1em; z-index: 1021; }
 
 #Artwork a        { padding-left: .25em; padding-right: .25em;
                     border-bottom: none; }
+
+.mx-EditBox       { display: block; width: 100%; }
+.mx-EditBox p     { height: 1em; vertical-align: middle; padding-bottom: .5em; }
+.mx-EditBox span  { float: left; display: inline-block; width: 15%; text-align: right; padding-right: 0.25em; padding-top: .5em; }
+.mx-EditBox input,textarea
+                  { float: left; display: block; width: 80%; }
+.mx-EditBoxFull {
+    // http://stackoverflow.com/a/1033745/595327
+    box-sizing: border-box; /* css3 rec */
+    -moz-box-sizing: border-box; /* ff2 */
+    -ms-box-sizing: border-box; /* ie8 */
+    -webkit-box-sizing: border-box; /* safari3 */
+    -khtml-box-sizing: border-box; /* konqueror */
+}
 
 .mxx-GPL ul {
     list-style: lower-latin;

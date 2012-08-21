@@ -8,8 +8,11 @@ var util = require("util");
 var events = require("events");
 
 
-function mythCommand(args) {
+function mythCommand(args,lists) {
     var cmd = args.join(" ");
+    if (typeof(lists) === "object") {
+        cmd = cmd + "[]:[]" + lists.join("[]:[]") + "[]:[]";
+    }
     var buf = new Buffer(cmd);  // utf8 encoding by default
     var len = new Buffer((buf.length + "        ").substr(0,8));
     var cmdBuf = new Buffer(8 + buf.length);
@@ -95,8 +98,10 @@ module.exports = function () {
         socket.connect(port || 6543, host || "localhost");
     };
 
-    this.write = function (tokens) {
-        socket.write(mythCommand(tokens));
+    this.write = function (commandArguments, listArguments) {
+        if (commandArguments[0] === "FILL_PROGRAM_INFO")
+            console.log(mythCommand(commandArguments,listArguments).toString("utf8"));
+        socket.write(mythCommand(commandArguments,listArguments));
     };
 
     this.close = function () {

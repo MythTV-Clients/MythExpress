@@ -160,7 +160,8 @@ require("./boot")({ app       : app,
                     __dirname : __dirname,
                     mythtv    : mythtv,
                     MX        : require("./frontpage"),
-                    frontends : new (require("./mythtv/frontends.js"))
+                    frontends : new (require("./mythtv/frontends.js")),
+                    mxutils   : require("./mxutils")
                   });
 
 if (app.settings.env === "development") {
