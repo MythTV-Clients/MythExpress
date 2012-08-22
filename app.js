@@ -84,8 +84,8 @@ app.configure("production", function() {
             "dataType" : "javascript",
             "stale" : true,
             "files" : [
-                "jquery-1.7.1.js",
-                "jquery-ui-1.8.17.custom.js",
+                "jquery-1.8.0.js",
+                "jquery-ui-1.8.23.custom.js",
                 "history.options.js",
                 "history.js",
                 "history.adapter.jquery.js",
@@ -101,7 +101,7 @@ app.configure("production", function() {
             "stale" : true,
             "files" : [
                 "HTML5Reset.css",
-                "dark-hive/jquery-ui-1.8.17.custom.css",
+                "dark-hive/jquery-ui-1.8.23.custom.css",
                 "lightbox.css",
                 "mythexpress.css",
                 "browser.css"
@@ -114,7 +114,7 @@ app.configure("production", function() {
             "stale" : true,
             "files" : [
                 "HTML5Reset.css",
-                "dark-hive/jquery-ui-1.8.17.custom.css",
+                "dark-hive/jquery-ui-1.8.23.custom.css",
                 "lightbox.css",
                 "mythexpress.css",
                 "webapp.css"
