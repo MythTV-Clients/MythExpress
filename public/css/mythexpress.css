@@ -116,7 +116,8 @@ li.mx-PopupItem:hover { font-weight: bold; }
     clear: both;
 }
 
-.mx-StreamPreview  { width: 128px; }
+.mx-StreamPreview  { width: 128px; height: 72px; }
+.mx-HasStream      { position: absolute; width: 128px; height: 72px; }
 .mx-StreamTitles   { width: 60%; vertical-align: middle; }
 .mx-Show           { width: 40%; }
 .mx-Status         { width: 8em; }

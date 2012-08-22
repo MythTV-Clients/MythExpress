@@ -134,6 +134,7 @@ module.exports = function(args) {
     var sortedTitles = { };
     var groupNames = [ ];
     var traitNames = [ ];
+    var fileHasStream = { };
 
     var byVideoFolder = { };
     var byVideoId = [ ];
@@ -420,6 +421,20 @@ module.exports = function(args) {
     // data model maintenance
     // ////////////////////////////////////////////////////////////////////////
 
+    function updateStreamExistence(streamInfoList) {
+        // we don't get notifications of stream create/deletes so we
+        // compensate by calling this function anytime we're
+        // requesting a list of streams in other contexts
+        Object.keys(fileHasStream).forEach(function (fileName) {
+            delete fileHasStream[fileName];
+        });
+        streamInfoList.LiveStreamInfos.forEach(function (stream) {
+            var fileName = stream.SourceFile.split("/").pop();
+            fileHasStream[fileName] = true;
+            fileHasStream[stream.SourceFile] = true;
+        });
+    }
+
     function addRecordingToRecGroup (recording, recGroup) {
         if (!byRecGroup.hasOwnProperty(recGroup)) {
             byRecGroup[recGroup] = { };
@@ -625,6 +640,7 @@ module.exports = function(args) {
             // get rid of stranded streams here until the BE does it
             reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + byChanId[chanKey] },
                     function (reply) {
+                        updateStreamExistence(reply.LiveStreamInfoList);
                         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
                             console.log("remove stream " + stream.Id);
                             reqJSON({ path : "/Content/RemoveLiveStream?Id=" + stream.Id },
@@ -795,6 +811,17 @@ module.exports = function(args) {
                 }
             ],
 
+            detectStreamedRecordings : function (finished) {
+                reqJSON(
+                    {
+                        path : "/Content/GetLiveStreamList"
+                    },
+                    function (reply) {
+                        updateStreamExistence(reply.LiveStreamInfoList);
+                        finished(null);
+                    });
+            },
+
             loadRecordings : [
                 "resetStructures",
                 function (finished) {
@@ -828,7 +855,7 @@ module.exports = function(args) {
             ],
 
             initializeFinished : [
-                "loadRecordings", "loadVideos",
+                "detectStreamedRecordings", "loadRecordings", "loadVideos",
                 function (finished) {
                     updateStructures();
                     eventSocket.resettingRecordings(false);
@@ -1032,6 +1059,7 @@ module.exports = function(args) {
 
         byVideoFolder : byVideoFolder,
         byVideoId : byVideoId,
+        fileHasStream : fileHasStream,
 
         blast     : eventSocket.blast,
 
@@ -1115,6 +1143,7 @@ module.exports = function(args) {
                     path : "/Content/GetLiveStreamList"
                 },
                 function (reply) {
+                    updateStreamExistence(reply.LiveStreamInfoList);
                     callback(reply);
                 }
             );

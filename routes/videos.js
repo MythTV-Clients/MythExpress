@@ -24,7 +24,8 @@ app.get("/videos", MX, function (req, res) {
         url : url,
         MythBackend : mythtv.MythServiceHost(req),
         Title : res.local("Context").Title,
-        Videos : videoFolder.List
+        Videos : videoFolder.List,
+        fileHasStream : mythtv.fileHasStream
     });
 });
 

@@ -6,7 +6,8 @@ function doRender(req, res, headerData) {
     var locals = {
         MythBackend : mythtv.MythServiceHost(req),
         RecGroup : req.query.Group,
-        Recordings : undefined
+        Recordings : undefined,
+        fileHasStream : mythtv.fileHasStream
     };
 
     var recGroup = req.query.Group;
