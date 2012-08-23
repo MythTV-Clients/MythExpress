@@ -15,22 +15,6 @@ var frontends = new (require("./mythtv/frontends"));
 // Helpers
 // ////////////////////////////////////////////////////////////////////////
 
-var mythProtocolTokens = {
-    "64" : "8675309J",
-    "65" : "D2BB94C2",
-    "66" : "0C0FFEE0",
-    "67" : "0G0G0G0",
-    "68" : "90094EAD",
-    "69" : "63835135",
-    "70" : "53153836",
-    "71" : "05e82186",
-    "72" : "D78EFD6F",
-    "73" : "D7FE8D6F",
-    "74" : "SingingPotato",
-    "75" : "SweetRock",
-    "Latest" : "75"
-};
-
 var traitOrder = {
     Bookmarked : 1,
     CutList    : 2,
@@ -90,7 +74,7 @@ module.exports = function(args) {
         bonjour : undefined
     };
 
-    var backendProtocol = mythProtocolTokens.Latest;
+    var backendProtocol;
 
     var backend = {
         events : new mythprotocol(),
@@ -928,7 +912,8 @@ module.exports = function(args) {
     });
 
     backend.events.on("protocolVersion", function (version) {
-        changeAPI.alertProtocol(versionl);
+        changeAPI.alertProtocol(version);
+        backendProtocol = version;
     });
 
     backend.events.on("disconnect", function () {

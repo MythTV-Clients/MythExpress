@@ -264,7 +264,8 @@ module.exports = function () {
             // probably the myth host is down
             backend.connected = backend.connectionPending = false;
             emitDisconnect();
-            doConnect();
+            //close event will follow and reconnect will happen there
+            //doConnect();
         }
     });
 
@@ -372,14 +373,14 @@ module.exports = function () {
         }
 
         else if (message[0] === "REJECT") {
-            backendProtocol = message[1];
-            if (mythProtocolTokens[backendProtocol]) {
+            backend.protocolVersion = message[1];
+            if (protocolTokens[backend.protocolVersion]) {
                 doConnect();
             } else {
                 backend.keepOpen = false;
-                console.log("Unknown protocol version '" + backendProtocol + "'");
+                console.log("Unknown protocol version '" + backend.protocolVersion + "'");
                 process.nextTick(function () {
-                    This.emit("protocolVersion", backendProtocol);
+                    This.emit("protocolVersion", backend.protocolVersion);
                 });
             }
         }
@@ -406,6 +407,7 @@ module.exports = function () {
         socket.close();
     };
 
+    this.GetProtocolVersion = function () { return backend.protocolVersion; };
     this.getProgramFlags = getProgramFlags;
     this.getVideoProps = getVideoProps;
 
