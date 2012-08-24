@@ -657,6 +657,14 @@ $(document).ready(function() {
                 }
             }
 
+            else if (target.hasClass("mx-DeleteRecording")) {
+                var parms = target.dataAttrs(["ChanId","StartTs"]);
+                confirmDelete(function () {
+                    History.back();
+                    $.get("/deleterecording", parms);
+                });
+            }
+
             else if (target.hasClass("mx-DeleteStream")) {
                 var parms = target.dataAttrs(["StreamId"]);
                 History.back();
