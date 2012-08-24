@@ -17,6 +17,8 @@ $(document).ready(function() {
     var requestingMessage;     // html of clock with "Requesting..." message
     var updateStreamStatus;    // forward declaration
 
+    var checkCookie = function (cookie) { };
+
     // ////////////////////////////////////////////////////////////////////////
     // Helpers
     // ////////////////////////////////////////////////////////////////////////
@@ -150,11 +152,14 @@ $(document).ready(function() {
                 if (jqXHR.status == 204) // 204 == NoContent
                     return;
 
+                checkCookie($.cookie("mythexpress"));
+
                 $("#Content")
                     .css("display","block")
                     .html(markup);
 
                 //console.log(jqXHR.getAllResponseHeaders());
+                //console.log("MX cookie: " + $.cookie("mythexpress"));
 
                 var newState;
                 if (newState = getDataFromHeaders(jqXHR.getAllResponseHeaders())) {
@@ -742,12 +747,13 @@ $(document).ready(function() {
         init : function () {
             if (WebSocket) {
                 var ws = new WebSocket("ws://" + window.location.host);
+                var mxCookie = $.cookie("mythexpress");
                 ws.onopen = function () {
                     applyUpdate({ Alert : true, Category : "Servers", Cancel : true });
                     if ($("#Context").length > 0) {
                         // loadCurrentView(History.getState());
                     }
-                    ws.send(JSON.stringify({ Cookie : $.cookie("mythexpress") }));
+                    ws.send(JSON.stringify({ Cookie : mxCookie }));
                 }
                 ws.onmessage = function (msg) {
                     console.log(msg.data);
@@ -762,6 +768,12 @@ $(document).ready(function() {
                     console.log('web socket closed, retry in 6 seconds');
                     webSocket.showOffline();
                     setTimeout(function () { webSocket.init(); }, 6000);
+                };
+                checkCookie = function (cookie) {
+                    if (cookie.length > 0 && cookie !== mxCookie) {
+                        mxCookie = cookie;
+                        ws.send(JSON.stringify({ Cookie : mxCookie }));
+                    }
                 };
             }
         }
