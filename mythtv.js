@@ -212,7 +212,7 @@ module.exports = function(args) {
 
             var allClients = typeof(client) === "undefined";
             var byIndex = typeof(client) === "number";
-            var byCookie = "string";
+            var byCookie = typeof(client) === "string";
 
             if (allClients) console.log('blast ' + msgStr);
             else console.log('blast ' + msgStr + " (" + client + ")");
@@ -375,7 +375,6 @@ module.exports = function(args) {
             ws.on("message", function (message) {
                 var msg = JSON.parse(message);
                 ws.mxCookie = msg.Cookie;
-                console.log(wssClients.length - 1 + " has cookie " + ws.mxCookie);
             });
 
             wssClients.push(ws);

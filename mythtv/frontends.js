@@ -15,7 +15,7 @@ var frontends = {
 };
 
 var frontendBrowser = mdns.createBrowser(mdns.tcp('mythfrontend'));
-var frontendWatcher = new events.EventEmitter();
+var frontendEvents = new events.EventEmitter();
 
 frontendBrowser.on('serviceUp', function(service) {
     //console.log("frontend up: ", service);
@@ -25,8 +25,7 @@ frontendBrowser.on('serviceUp', function(service) {
         service.shortHost = mxutils.hostFromService(service);
         frontends.byName[service.name] = service;
         frontends.byHost[service.shortHost] = { fullname : service.name, address : addr[0] };
-        frontendWatcher.emit("change", Object.keys(frontends.byHost));
-        //eventSocket.frontendChange();
+        frontendEvents.emit("change", Object.keys(frontends.byHost));
     }
 });
 
@@ -36,22 +35,21 @@ frontendBrowser.on('serviceDown', function(service) {
         var serv = frontends.byName[service.name];
         delete frontends.byHost[serv.shortHost];
         delete frontends.byName[serv.name];
-        frontendWatcher.emit("change", Object.keys(frontends.byHost));
-        //eventSocket.frontendChange();
+        frontendEvents.emit("change", Object.keys(frontends.byHost));
     }
 });
 
 frontendBrowser.start();
 
-function SendMessage(host, message) {
+function SendMessage(host, message, senderCookie) {
     if (frontends.byHost.hasOwnProperty(host)) {
 
         var fe = frontends.byName[frontends.byHost[host].fullname];
 
-        (function (host) {
+        (function (hostIP) {
             var socket = new net.Socket();
             var reply = "";
-            socket.on('data', function (data) {
+            socket.on("data", function (data) {
                 reply = reply + data.toString();
                 if (reply.match(/OK/)) {
                     socket.end("exit\n");
@@ -64,7 +62,10 @@ function SendMessage(host, message) {
                     socket.write(message + "\n");
                 }
             });
-            socket.connect(6546, host);
+            socket.on("error", function (error) {
+                frontendEvents.emit("senderror", { Host: host, SenderCookie : senderCookie });
+            });
+            socket.connect(6546, hostIP);
         })(fe.ipv4);
     }
 }
@@ -79,7 +80,7 @@ function SendToFrontend (args, mythtv) {
         message = "play file myth://Videos/" + mythtv.byVideoId[args.VideoId].FileName.toString("utf8").replace(/ /g, "%20");
     }
     if (message.length > 0) {
-        SendMessage(args.Host, message);
+        SendMessage(args.Host, message, args.SenderCookie);
     }
 }
 
@@ -96,11 +97,17 @@ module.exports = function () {
     this.SendToFrontend = SendToFrontend;
     this.FrontendList = function () { return Object.keys(frontends.byHost); };
 
-    // frontendWatcher.on("change", function (feList) {
-    //     process.nextTick(function () {
-    //         This.emit("change", feList);
-    //     });
-    // });
+    frontendEvents.on("change", function (feList) {
+        process.nextTick(function () {
+            This.emit("change", feList);
+        });
+    });
+
+    frontendEvents.on("senderror", function (details) {
+        process.nextTick(function () {
+            This.emit("senderror", details);
+        });
+    });
 };
 
 

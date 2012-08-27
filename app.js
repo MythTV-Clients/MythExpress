@@ -43,24 +43,6 @@ app.configure(function() {
     app.use(express.bodyParser());
     app.use(express.methodOverride());
     app.use(express.cookieParser());
-    app.use(express.session({
-        secret   : "sauce",
-        key      : "mythexpress",
-        path     : "/",
-        cookie   : {
-            httpOnly : false,
-            maxAge   : null
-        }
-    }));
-
-    // no cookie with these files
-    ["/js/all.js", "/css/dark-hive/browser.css", "/css/dark-hive/webapp.css",
-     "/ui/views", "/ui/buttons", "/seconds",
-     "/recordinginfo", "/videoinfo", "/streaminfo",
-     "/streams", "/streamstatus", "/deletestream",
-     "/frontend/list"].forEach(function (path) {
-         express.session.ignore.push("/js/all.js");
-     });
 });
 
 app.configure("development", function() {

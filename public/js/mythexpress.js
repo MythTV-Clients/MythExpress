@@ -778,11 +778,12 @@ $(document).ready(function() {
                     setTimeout(function () { webSocket.init(); }, 6000);
                 };
                 checkCookie = function (cookie) {
-                    if (cookie.length > 0 && cookie !== mxCookie) {
+                    if (cookie && cookie.length > 0 && cookie !== mxCookie) {
                         mxCookie = cookie;
                         ws.send(JSON.stringify({ Cookie : mxCookie }));
                     }
                 };
+                checkCookie($.cookie("mythexpress"));
             }
         }
     };

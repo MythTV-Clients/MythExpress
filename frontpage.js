@@ -1,4 +1,6 @@
 
+var cookieTicker = +new Date();
+
 module.exports = function (req, res, next) {
 
     res.local("Title", "MythExpress");
@@ -23,6 +25,12 @@ module.exports = function (req, res, next) {
 
     if (req.isXMLHttpRequest) {
         res.local("layout", false);
+    } else {
+        //console.log("all request cookies:");
+        //console.log(req.cookies);
+        if (!req.cookies.mythexpress) {
+            res.cookie("mythexpress", cookieTicker++, { expires: null, path : "/" });
+        }
     }
     //console.log(req.url);
     //console.log(req.headers);
