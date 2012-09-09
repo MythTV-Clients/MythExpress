@@ -369,19 +369,21 @@ module.exports = function () {
 
         else if (message[0] === "ACCEPT") {
             socket.write(["ANN", backend.mode, backend.clientName, backend.eventMode]);
-            This.emit("connect");
+            process.nextTick(function () {
+                This.emit("connect", backend.protocolVersion);
+            });
         }
 
         else if (message[0] === "REJECT") {
             backend.protocolVersion = message[1];
             if (protocolTokens[backend.protocolVersion]) {
                 doConnect();
-            } else {
-                backend.keepOpen = false;
-                console.log("Unknown protocol version '" + backend.protocolVersion + "'");
                 process.nextTick(function () {
                     This.emit("protocolVersion", backend.protocolVersion);
                 });
+            } else {
+                backend.keepOpen = false;
+                console.log("Unknown protocol version '" + backend.protocolVersion + "'");
             }
         }
 

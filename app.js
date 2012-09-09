@@ -7,12 +7,13 @@ var os = require("os");
 var fs = require("fs");
 var util = require("util");
 var express = require("express");
-var app = module.exports = express.createServer();
+var app = module.exports = express();
 var http = require("http");
 var url = require("url");
 var gzip = require("connect-gzip");
 var path = require("path");
 var mdns = require("mdns");
+var ws = require("ws");
 
 // Array Remove - By John Resig (MIT Licensed)
 // http://ejohn.org/blog/javascript-array-remove/
@@ -46,7 +47,7 @@ app.configure(function() {
 });
 
 app.configure("development", function() {
-    app.set("view options", { pretty: true });
+    app.locals.pretty = true;
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
     app.use(express.static(__dirname + "/public"));
 });
@@ -107,26 +108,13 @@ app.configure("production", function() {
     app.use(assetManager(assetManagerGroups));
 });
 
-// app.configure(function() {
-//     app.use(require("./frontpage"));
-// });
-
 app.sendHeaders = function (req, res) {
-    var context = res.local("Context");
+    var context = res.locals.Context;
     for (var key in context)
         res.header("X-MX-" + key, context[key]);
     res.header("Cache-Control", "no-cache");
 };
 
-
-// MythTV
-
-var mythArgs = { app : app };
-if (process.env["MX_AFFINITY"]) {
-    mythArgs.affinity = process.env["MX_AFFINITY"];
-}
-
-var mythtv = require("./mythtv")(mythArgs);
 
 //var frontPage = require("./frontpage");
 //app.use(frontPage);
@@ -140,7 +128,6 @@ require("./boot")({ app       : app,
                     fs        : fs,
                     util      : util,
                     __dirname : __dirname,
-                    mythtv    : mythtv,
                     MX        : require("./frontpage"),
                     frontends : new (require("./mythtv/frontends.js")),
                     mxutils   : require("./mxutils")
@@ -154,15 +141,39 @@ if (app.settings.env === "development") {
     });
 }
 
+GLOBAL.appEnv = app.settings.env || "development";
+
 
 // Server
 
-app.listen(process.env["MX_LISTEN"] || 6565);
-console.log("MythTV Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+var websocket;
+var webserver = http.createServer(app)
+    .listen(process.env["MX_LISTEN"] || 6565,
+            function () {
+                console.log("create a socket server on:");
+                console.log(webserver.address());
+                websocket = new ws.Server({ server : webserver });
 
-var ad = mdns.createAdvertisement(mdns.tcp("http"),
-                                  app.address().port,
-                                  {
-                                      name : "MythExpress on " + os.hostname()
-                                  });
-ad.start();
+                console.log("MythTV Express server listening on port %d in %s mode",
+                            webserver.address().port, app.get("env") || "development");
+
+                // MythTV model
+
+                var mythArgs = {
+                    app : app,
+                    websocket : websocket
+                };
+                if (process.env["MX_AFFINITY"]) {
+                    mythArgs.affinity = process.env["MX_AFFINITY"];
+                }
+
+                app.mythtv = require("./mythtv")(mythArgs);
+
+                // Tell the world we're here
+
+                var ad = mdns.createAdvertisement(mdns.tcp("http"),
+                                                  webserver.address().port,
+                                                  {
+                                                      name : "MythExpress on " + os.hostname()
+                                                  });
+            });

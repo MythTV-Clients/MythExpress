@@ -6,14 +6,14 @@ app.get("/frontend/list", function (req, res) {
 
 
 app.get("/frontend/play", function (req, res) {
-    frontends.SendToFrontend(mxutils.copyProperties(req.query, { SenderCookie : req.cookies.mythexpress }), mythtv);
+    frontends.SendToFrontend(mxutils.copyProperties(req.query, { SenderCookie : req.cookies.mythexpress }), app.mythtv);
 
     res.writeHead(200);
     res.end();
 });
 
 frontends.on("senderror", function (details) {
-    mythtv.blast({ Alert : true, Category : "Frontend", Class : "Alert", Decay  : 5,
-                   Message : details.Host + " refused network control" },
-                 details.SenderCookie);
+    app.mythtv.blast({ Alert : true, Category : "Frontend", Class : "Alert", Decay  : 5,
+                       Message : details.Host + " refused network control" },
+                     details.SenderCookie);
 });

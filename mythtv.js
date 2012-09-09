@@ -2,7 +2,6 @@
 var http = require('http');
 var path = require('path');
 var net = require('net');
-var WebSocketServer = require('ws').Server;
 var fs = require('fs');
 var mdns = require('mdns');
 var async = require('async');
@@ -202,9 +201,9 @@ module.exports = function(args) {
     // events to the browser
     // ////////////////////////////////////////////////////////////////////////
 
-    var eventSocket = (function () {
+    var eventSocket = (function() {
 
-        var wss = new WebSocketServer({ server : args.app });
+        var wss = args.websocket;
         wssClients = [ ];
 
         function blast(msg, client) {
@@ -513,6 +512,7 @@ module.exports = function(args) {
             oldProg = emptyProgram();
             byFilename[newProg.FileName] = newProg;
             byChanId[getChanKey(newProg)] = newProg.FileName;
+            //console.log(getChanKey(newProg) + " = " + newProg.Title + " / " + newProg.SubTitle);
         }
 
         assignProperties(newProg);
@@ -594,6 +594,7 @@ module.exports = function(args) {
     function deleteByChanId (chanKey) {
         if (byChanId.hasOwnProperty(chanKey)) {
             var fileName = byChanId[chanKey];
+            console.log("  chanKey " + chanKey + " maps to " + fileName);
 
             if (byFilename.hasOwnProperty(fileName)) {
                 var prog = byFilename[fileName];
@@ -621,7 +622,7 @@ module.exports = function(args) {
             }
 
             // get rid of stranded streams here until the BE does it
-            reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + byChanId[chanKey] },
+            reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName },
                     function (reply) {
                         updateStreamExistence(reply.LiveStreamInfoList);
                         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
@@ -635,6 +636,13 @@ module.exports = function(args) {
 
             delete byChanId[chanKey];
         }
+        // else {
+        //     console.log("no entry for " + chanKey + " but");
+        //     Object.keys(byChanId).forEach(function (chKey) {
+        //         if (chKey.substr(0,4) === chanKey.substr(0,4))
+        //             console.log("    " + chKey);
+        //     });
+        // }
     }
 
     function updateStructures() {
@@ -905,13 +913,14 @@ module.exports = function(args) {
         eventSocket.sendChanges();
     }
 
-    backend.events.on("connect", function () {
+    backend.events.on("connect", function (protocolVersion) {
+        backendProtocol = protocolVersion;
         eventSocket.alertConnection();
         initModel();
     });
 
     backend.events.on("protocolVersion", function (version) {
-        changeAPI.alertProtocol(version);
+        eventSocket.alertProtocol(version);
         backendProtocol = version;
     });
 
@@ -922,7 +931,7 @@ module.exports = function(args) {
     backend.events.on("RECORDING_LIST_CHANGE", function (event, program) {
 
         if (event.changeType === "ADD") {
-            console.log("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.startTs);
+            console.log("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.StartTs);
             retrieveAndAddRecording(event.ChanId, event.StartTs)
         }
 
@@ -936,8 +945,8 @@ module.exports = function(args) {
             // deletes are typically handled with update's
             // change to recgroup = Deleted but here we handle
             // other delete paths such as expiry.
-            console.log("RECORDING_LIST_CHANGE delete " + event.ChanId + " / " + event.startTs);
-            deleteByChanId(event.ChanId + ' ' + event.StartTs);
+            console.log("RECORDING_LIST_CHANGE delete " + event.ChanId + " / " + event.StartTs);
+            deleteByChanId(getChanKey(event.ChanId, event.StartTs));
         }
 
         else {
@@ -951,7 +960,7 @@ module.exports = function(args) {
 
     backend.events.on("REC_EXPIRED", function (event) {
         console.log(event);
-        deleteByChanId(event.chanid + ' ' + event.starttime);
+        deleteByChanId(getChanKey(event.chanid, event.starttime));
         updateModelAndPublish();
     });
 
@@ -1023,7 +1032,8 @@ module.exports = function(args) {
     })();
 
     frontends.on("change", function (feList) {
-        eventSocket.frontendChange(feList);
+        if (eventSocket)
+            eventSocket.frontendChange(feList);
     });
 
     // ////////////////////////////////////////////////////////////////////////
@@ -1045,7 +1055,7 @@ module.exports = function(args) {
         byVideoId : byVideoId,
         fileHasStream : fileHasStream,
 
-        blast     : eventSocket.blast,
+        blast : eventSocket.blast,
 
         FormatAirdate : function(airdate) {
             var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));

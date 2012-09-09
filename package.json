@@ -1,15 +1,15 @@
 {
     "name" : "MythExpress",
-    "version" : "0.2.0",
+    "version" : "0.8.0",
     "private" : true,
     "dependencies" : {
-        "express" : "2.5.4",
+        "express" : ">= 3.0.0 && < 4.0.0",
         "jade" : ">= 0.0.1",
-        "connect-gzip" : "0.1.5",
+        "connect-gzip" : ">= 0.1.5",
         "connect-assetmanager" : ">= 0.0.26",
         "nopt" : ">=1.0.10",
-        "ws" : ">=0.4.15",
-        "mdns" : ">=0.0.6",
-        "async" : ">=0.1.22"
+        "ws" : ">= 0.4.15",
+        "mdns" : ">= 0.0.6",
+        "async" : ">= 0.1.22"
     }
 }

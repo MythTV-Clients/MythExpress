@@ -1,4 +1,5 @@
 if Videos && Videos.length > 0
-  != partial('video', Videos)
+  each video in Videos
+    include video
 else
   .mx-TextBubble.mx-TextColumn.mx-InfoMessage No videos are present

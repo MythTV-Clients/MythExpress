@@ -62,11 +62,11 @@ function buildManifest(req) {
     }
 
     var paths = { };
-    app.routes.all().forEach(function (route) {
-        if (route.hasOwnProperty("path")) {
-            paths[route.path.split("/")[1]] = true;
-        }
-    });
+    //app.routes.all().forEach(function (route) {
+    //    if (route.hasOwnProperty("path")) {
+    //        paths[route.path.split("/")[1]] = true;
+    //    }
+    //});
     var whitelist = [ "NETWORK:", "*", "http://*", "#" ];
     // Object.keys(paths).forEach(function (path) {
     //     if (path.length > 0)
@@ -90,7 +90,7 @@ app.get("/mythexpress.appcache", MX, function (req, res) {
 
     res.header("Content-Type", "text/cache-manifest");
     res.header("Cache-Control", "no-cache");
-    res.send(res.local("isWebApp") ? manifest.WebApp : manifest.Browser);
+    res.send(res.locals.isWebApp ? manifest.WebApp : manifest.Browser);
     console.log("sent manifest to " + req.headers["user-agent"]);
 });
 

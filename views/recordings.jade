@@ -1,4 +1,5 @@
 if Recordings && Recordings.length > 0
-  != partial('recording', Recordings)
+  each recording in Recordings
+    include recording
 else
   .mx-TextBubble.mx-TextColumn.mx-InfoMessage No recordings are present

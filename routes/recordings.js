@@ -3,6 +3,8 @@ function doRender(req, res, headerData) {
 
     console.log(req.query);
 
+    var mythtv = app.mythtv;
+
     var locals = {
         MythBackend : mythtv.MythServiceHost(req),
         RecGroup : req.query.Group,
@@ -21,7 +23,7 @@ function doRender(req, res, headerData) {
             ? mythtv.byRecGroup[recGroup][req.query.Title]
             : [ ];
 
-        res.local("Context").Title = recGroup + " \u2022 " + req.query.Title;
+        res.locals.Context.Title = recGroup + " \u2022 " + req.query.Title;
 
     } else {
 
@@ -32,7 +34,7 @@ function doRender(req, res, headerData) {
             locals.Recordings.push(mythtv.byRecGroup[recGroup][title]);
         });
 
-        res.local("Context").Title = (recGroup || "No") + (res.local("Context").View === "Programs" ? " Recording Group" : " Recordings");
+        res.locals.Context.Title = (recGroup || "No") + (res.locals.Context.View === "Programs" ? " Recording Group" : " Recordings");
 
     }
 
@@ -41,20 +43,21 @@ function doRender(req, res, headerData) {
     // console.log(locals);
 
     app.sendHeaders(req, res);
-    res.render(jadeFile, locals);
+    res.render(req.xhr ? jadeFile : "layout", locals);
 
 }
 
 
 app.get("/recordings", MX, function (req, res) {
+    var mythtv = app.mythtv;
     // return "Default" or "Recordings" depending if there are >1 groups
     if (!req.query.hasOwnProperty("Group"))
         req.query.Group = mythtv.groupNames.length > 1 ? mythtv.groupNames[1] : mythtv.groupNames[0];
 
-    if (!res.local("Context").hasOwnProperty("View"))
-        res.local("Context").View = "Programs";
-    if (!res.local("Context").hasOwnProperty("Group"))
-        res.local("Context").Group = req.query.Group;
+    if (!res.locals.Context.hasOwnProperty("View"))
+        res.locals.Context.View = "Programs";
+    if (!res.locals.Context.hasOwnProperty("Group"))
+        res.locals.Context.Group = req.query.Group;
 
     doRender(req, res);
 });
@@ -62,21 +65,21 @@ app.get("/recordings", MX, function (req, res) {
 
 app.get("/properties", MX, function (req, res) {
     if (!req.query.hasOwnProperty("Group"))
-        req.query.Group = mythtv.traitNames[0];
+        req.query.Group = app.mythtv.traitNames[0];
 
-    res.local("Context").View = "Properties";
-    res.local("Context").Group = req.query.Group;
+    res.locals.Context.View = "Properties";
+    res.locals.Context.Group = req.query.Group;
 
     doRender(req, res);
 });
 
 
 app.get("/deleterecording", function (req, res) {
-    mythtv.RemoveRecording(req.query.ChanId, req.query.StartTs, function (reply) {
+    app.mythtv.RemoveRecording(req.query.ChanId, req.query.StartTs, function (reply) {
         console.log("Reply from /Dvr/RemoveRecorded?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs);
         console.log(reply);
         if (!reply.bool) {
-            mythtv.blast({
+            app.mythtv.blast({
                 Alert : true,
                 Category : "Recording Delete",
                 Class : "Alert",
@@ -92,7 +95,7 @@ app.get("/deleterecording", function (req, res) {
 
 
 app.get("/recordinginfo", function (req, res) {
-    var program = mythtv.byFilename[req.query.FileName];
+    var program = app.mythtv.byFilename[req.query.FileName];
 
     var flags = [ ];
     if (program.hasOwnProperty("ProgramFlags_")) {
@@ -102,9 +105,9 @@ app.get("/recordinginfo", function (req, res) {
         });
     }
 
-    res.partial("info/recording", {
-        mythtv      : mythtv,
-        MythBackend : mythtv.MythServiceHost(req),
+    res.render("info/recording", {
+        mythtv      : app.mythtv,
+        MythBackend : app.mythtv.MythServiceHost(req),
         recording   : program,
         flags       : flags.join(' ')
     });
@@ -112,11 +115,11 @@ app.get("/recordinginfo", function (req, res) {
 
 
 app.get("/recordingedit", function (req, res) {
-    var program = mythtv.byFilename[req.query.FileName];
+    var program = app.mythtv.byFilename[req.query.FileName];
 
-    res.partial("info/recordingedit", {
-        mythtv      : mythtv,
-        MythBackend : mythtv.MythServiceHost(req),
+    res.render("info/recordingedit", {
+        mythtv      : app.mythtv,
+        MythBackend : app.mythtv.MythServiceHost(req),
         recording   : program,
     });
 });
@@ -134,13 +137,13 @@ app.post("/recordingedit", function (req, res) {
     if (!!req.body.Description)
         updates.Description = req.body.Description;
 
-    var current = mythtv.GetRecordingRecord(req.body.ChanId, req.body.StartTs);
+    var current = app.mythtv.GetRecordingRecord(req.body.ChanId, req.body.StartTs);
     var updated = { };
     mxutils.copyProperties(current, updated);
     mxutils.copyProperties(updates, updated);
 
     console.log(updated);
-    mythtv.FillProgramInfo(updated);
+    app.mythtv.FillProgramInfo(updated);
 
     res.writeHead(200);
     res.end();

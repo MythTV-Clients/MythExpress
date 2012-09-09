@@ -4,7 +4,9 @@ app.get("/ui/buttons", function(req, res) {
         req.query.View = "Programs";
     console.log("buttons for " + req.query.View);
     console.log(req.query)
-    res.partial("ui/button", mythtv.viewButtons[req.query.View] || [ ]);
+    res.render("ui/buttons", {
+        buttons : app.mythtv.viewButtons[req.query.View] || [ ]
+    });
 });
 
 var views = {
@@ -14,7 +16,7 @@ var views = {
 };
 
 app.get("/ui/views", function (req, res) {
-    res.partial("ui/views",
+    res.render("ui/views",
                 {
                     views : Object.keys(views),
                 },

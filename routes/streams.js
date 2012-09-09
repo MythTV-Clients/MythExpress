@@ -3,6 +3,7 @@
 // Mozilla/5.0 (iPad; CPU OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3
 
 function normalizeMetadata(req, stream) {
+    var mythtv = app.mythtv;
     // metadata comes with relative filepaths while streamdata comes
     // with full paths so we peel folders off the front until we get
     // a hit... or not
@@ -36,22 +37,22 @@ function normalizeMetadata(req, stream) {
 
 function renderPlayerControl (req, res, stream) {
     normalizeMetadata(req, stream);
-    res.partial("stream/play", {
-        mythtv : mythtv,
-        stream : stream,
+    res.render("stream/play", {
+        mythtv  : app.mythtv,
+        stream  : stream,
         FullURL : stream.mxURL,
-        Width : stream.Width,
-        Height : stream.Height,
-        Info : stream.Info
+        Width   : stream.Width,
+        Height  : stream.Height,
+        Info    : stream.Info
     });
 }
 
 
 function renderPlayerForStream (req, res, streamId, waitForSegments) {
-    mythtv.GetLiveStream(streamId, function(reply) {
+    app.mythtv.GetLiveStream(streamId, function(reply) {
         var stream = reply.LiveStreamInfo;
         if (waitForSegments && Number(stream.SegmentCount) < 3) {
-            res.partial("stream/empty");
+            res.render("stream/empty");
         } else {
             renderPlayerControl(req, res, stream);
         }
@@ -60,7 +61,7 @@ function renderPlayerForStream (req, res, streamId, waitForSegments) {
 
 
 function renderIfStreamExists (req, res, fileName, noStreamCallback) {
-    mythtv.FilteredStreamList(fileName, function(reply) {
+    app.mythtv.FilteredStreamList(fileName, function(reply) {
         if (reply.LiveStreamInfoList.LiveStreamInfos.length == 0) {
             noStreamCallback();
         } else {
@@ -71,16 +72,16 @@ function renderIfStreamExists (req, res, fileName, noStreamCallback) {
 
 
 function broadcastStreamProgress (parms) {
-    mythtv.GetLiveStream(parms.streamId, function(reply) {
+    app.mythtv.GetLiveStream(parms.streamId, function(reply) {
         var stream = reply.LiveStreamInfo;
         if (Number(stream.SegmentCount) > 2) {
-            mythtv.blast({
+            app.mythtv.blast({
                 Stream   : parms.videoCookie,
                 StreamId : parms.streamId
             }, parms.mxCookie);
         } else {
             if (parms.isQueued && reply.LiveStreamInfo.StatusStr !== "Queued") {
-                mythtv.blast({
+                app.mythtv.blast({
                     Stream  : parms.videoCookie,
                     Message : "Buffering…"
                 }, parms.mxCookie);
@@ -99,7 +100,9 @@ app.get("/streams", MX, function(req, res) {
     console.log("/streams");
     console.log(req.query);
 
-    var resContext = res.local("Context");
+    var mythtv = app.mythtv;
+
+    var resContext = res.locals.Context;
 
     if (req.query.hasOwnProperty("View")) {
         resContext.View = req.query.View;
@@ -230,6 +233,18 @@ app.get("/streams", MX, function(req, res) {
         });
     }
 
+    else if (!req.xhr) {
+
+            resContext.Title = "Streams";
+            resContext.Group = "Programs";
+
+            app.sendHeaders(req, res);
+
+            res.render("layout", {
+                Title : resContext.Title,
+            });
+    }
+
     else {
 
         mythtv.StreamList(function(reply) {
@@ -242,10 +257,10 @@ app.get("/streams", MX, function(req, res) {
 
             app.sendHeaders(req, res);
 
-            res.partial("streams", {
-                MythBackend : mythtv.MythServiceHost(req),
-                Title : resContext.Title,
-                //RecGroups : mythtv.viewButtons.Programs,
+            res.render("streams", {
+                MythBackend     : mythtv.MythServiceHost(req),
+                Title           : resContext.Title,
+                //RecGroups     : mythtv.viewButtons.Programs,
                 LiveStreamInfos : reply.LiveStreamInfoList.LiveStreamInfos
             });
         });
@@ -256,13 +271,13 @@ app.get("/streams", MX, function(req, res) {
 
 
 app.get("/streamstatus", function(req, res) {
-    mythtv.StreamList(function(reply) {
+    app.mythtv.StreamList(function(reply) {
         var streams = [ ];
-        var backend = mythtv.MythServiceHost(req);
+        var backend = app.mythtv.MythServiceHost(req);
 
         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function(stream) {
             normalizeMetadata(req, stream);
-            res.partial("stream", { layout : false, stream : stream, MythBackend : backend },
+            res.render("stream", { stream : stream, MythBackend : backend },
                        function(err,html) {
                            if (err) console.log(err);
                            else streams.push(html);
@@ -281,23 +296,23 @@ app.get("/streamplayer", function(req, res) {
 
 
 app.get("/seconds", function(req, res) {
-    res.partial("stream/seconds", { Message : req.query.Message, StreamId : 0 });
+    res.render("stream/seconds", { Message : req.query.Message, StreamId : 0 });
 });
 
 
 app.get("/streaminfo", function(req, res) {
     console.log("/streaminfo " + req.query.StreamId);
-    mythtv.GetLiveStream(req.query.StreamId, function(reply) {
+    app.mythtv.GetLiveStream(req.query.StreamId, function(reply) {
         console.log(reply);
         var stream = reply.LiveStreamInfo;
         normalizeMetadata(req, stream);
-        res.partial("stream/description", { stream : stream });
+        res.render("stream/description", { stream : stream });
     });
 });
 
 
 app.get("/deletestream", function(req, res) {
-    mythtv.RemoveLiveStream(req.query.StreamId, function(reply) {
-        res.partial("stream/empty");
+    app.mythtv.RemoveLiveStream(req.query.StreamId, function(reply) {
+        res.render("stream/empty");
     });
 });

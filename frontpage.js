@@ -3,29 +3,28 @@ var cookieTicker = +new Date();
 
 module.exports = function (req, res, next) {
 
-    res.local("Title", "MythExpress");
+    res.locals.Title = "MythExpress";
+    res.locals.appEnv = appEnv;
 
     if (req.headers.hasOwnProperty("user-agent")) {
         var browser = req.headers["user-agent"];
         var isIOS = browser.search(/iPad|iPod|iPhone/) != -1;
         var isWebApp = isIOS && browser.search(/Mobile/) != -1 && browser.search(/Safari/) == -1;
-        res.local("isIOS", isIOS);
-        res.local("isWebApp", isWebApp);
+        res.locals.isIOS = isIOS;
+        res.locals.isWebApp = isWebApp;
     } else {
-        res.local("isIOS", false);
-        res.local("isWebApp", false);
+        res.locals.isIOS = false;
+        res.locals.isWebApp = false;
     }
 
     // so browser can orient on page load, view transitions, etc.
     // some individual routes will change these defaults
-    res.local("Context", {
+    res.locals.Context = {
         View : req.query.View || "Programs",
         Group : req.query.Group || "Default"
-    });
+    };
 
-    if (req.isXMLHttpRequest) {
-        res.local("layout", false);
-    } else {
+    if (!req.xhr) {
         //console.log("all request cookies:");
         //console.log(req.cookies);
         if (!req.cookies.mythexpress) {

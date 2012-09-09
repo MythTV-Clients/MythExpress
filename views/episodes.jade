@@ -1,4 +1,5 @@
 if Recordings
-  != partial('episode', Recordings)
+  each episode in Recordings
+    include episode
 else
   .mx-TextBubble.mx-TextColumn.mx-InfoMessage No episodes are present

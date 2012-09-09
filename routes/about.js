@@ -5,17 +5,17 @@ app.get("/about", MX, function (req, res) {
 
     var group = req.query.hasOwnProperty("Group") ? req.query.Group : "overview";
 
-    var button = mythtv.viewButtons.About.reduce(function(previousValue, currentValue) {
+    var button = app.mythtv.viewButtons.About.reduce(function(previousValue, currentValue) {
         return currentValue.recGroup === group ? currentValue : previousValue;
     });
 
-    res.local("Context", {
+    res.locals.Context = {
         View  : "About",
         Group : group,
         Title : "MythExpress " + button.Title
-    });
+    };
 
     app.sendHeaders(req, res);
-    res.render("about/" + group);
+    res.render(req.xhr ? "about/" + group : "layout");
 
 });
