@@ -3,7 +3,7 @@
     "version" : "0.8.0",
     "private" : true,
     "dependencies" : {
-        "express" : ">= 3.0.0 && < 4.0.0",
+        "express" : "3.x.x",
         "jade" : ">= 0.0.1",
         "connect-gzip" : ">= 0.1.5",
         "connect-assetmanager" : ">= 0.0.26",
@@ -11,5 +11,6 @@
         "ws" : ">= 0.4.15",
         "mdns" : ">= 0.0.6",
         "async" : ">= 0.1.22"
-    }
+    },
+    "engine" : "node 0.8.x"
 }
