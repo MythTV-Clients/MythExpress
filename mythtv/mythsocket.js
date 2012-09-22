@@ -34,8 +34,10 @@ module.exports = function () {
     // ////////////////////////////////////////////////
 
     var socket = new net.Socket();
+    var connecting = false;
 
     socket.on("connect", function () {
+        connecting = false;
         socket.setKeepAlive(true, heartbeatSeconds * 1000);
         This.emit("connect");
     });
@@ -45,6 +47,7 @@ module.exports = function () {
     });
 
     socket.on("close", function (hadError) {
+        connecting = false;
         This.emit("close", hadError);
     });
 
@@ -53,6 +56,7 @@ module.exports = function () {
     });
 
     socket.on("error", function (error) {
+        connecting = false;
         This.emit("error", error);
     });
 
@@ -95,7 +99,10 @@ module.exports = function () {
     // ////////////////////////////////////////////////
 
     this.connect = function (port, host) {
-        socket.connect(port || 6543, host || "localhost");
+        if (!connecting) {
+            connecting = true;
+            socket.connect(port || 6543, host || "localhost");
+        }
     };
 
     this.write = function (commandArguments, listArguments) {

@@ -77,6 +77,7 @@ module.exports = function(args) {
 
     var backend = {
         events : new mythprotocol(),
+        lock : new mythprotocol(),
         host : "127.0.0.1",
         customHost : false,
         port : 6544,
@@ -198,13 +199,76 @@ module.exports = function(args) {
 
 
     // ////////////////////////////////////////////////////////////////////////
+    // backend locking
+    // ////////////////////////////////////////////////////////////////////////
+
+    var backendLock = (function () {
+        // we lock the backend when:
+        // - first client connects & myth is up
+        // - myth comes up and we have > 0 clients
+        // we unlock when:
+        // - last client connects & myth is up
+        // - myth goes down (really a flag change)
+
+        var aClientIsConnected = false;
+        var mythIsUp = false;
+
+        var lockBackend = function () {
+            if (!backend.lock.isConnected() && !process.env["MX_PASSIVE"]) {
+                backend.lock.connect({
+                    host       : backend.host,
+                    clientName : "MythExpress.BackendLock",
+                    mode       : backend.events.Playback,
+                    eventMode  : backend.events.NoEvents
+                });
+                console.log("Backend locked");
+            }
+        }
+
+        var unlockBackend = function () {
+            if (backend.lock.isConnected()) {
+                backend.lock.disconnect();
+                console.log("Backend unlocked");
+            }
+        }
+
+        // backend status we do automatically while client presence
+        // via explicit calls
+
+        backend.events.on("connect", function () {
+            mythIsUp = true;
+            if (aClientIsConnected)
+                lockBackend();
+        });
+
+        backend.events.on("close", function () {
+            mythIsUp = false;
+        });
+
+        return {
+            clientConnect : function () {
+                if (!aClientIsConnected) {
+                    aClientIsConnected = true;
+                    if (mythIsUp)
+                        lockBackend();
+                }
+            },
+            noClientsLeft : function () {
+                if (mythIsUp)
+                    unlockBackend();
+                aClientIsConnected = false;
+            }
+        };
+    })();
+
+    // ////////////////////////////////////////////////////////////////////////
     // events to the browser
     // ////////////////////////////////////////////////////////////////////////
 
     var eventSocket = (function() {
 
         var wss = args.websocket;
-        wssClients = [ ];
+        var wssClients = [ ];
 
         function blast(msg, client) {
             var msgStr = JSON.stringify(msg);
@@ -368,6 +432,15 @@ module.exports = function(args) {
 
             ws.on("close", function () {
                 ws.isAlive = false;
+
+                var clientsRemaining = false;
+                wssClients.forEach(function (webSocket, idx) {
+                    if (webSocket.isAlive)
+                        clientsRemaining = true;
+                });
+                if (!clientsRemaining)
+                    backendLock.noClientsLeft();
+
                 console.log('ws client closed');
             });
 
@@ -378,6 +451,8 @@ module.exports = function(args) {
 
             wssClients.push(ws);
             console.log('new client (' + wssClients.length + ')');
+
+            backendLock.clientConnect();
 
             var clientNum = wssClients.length-1;
             changeAPI.frontendChange(frontends.FrontendList(), clientNum);

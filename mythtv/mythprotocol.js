@@ -10,7 +10,7 @@
 //
 // open(port,host)   - open a connection
 // close()           - close connection
-// FillProgramInfo() - update program from passed structure
+// isConnected()     - true when connected to a backend
 //
 // Events:
 //
@@ -62,7 +62,7 @@ module.exports = function () {
     events.EventEmitter.call(this);
 
     var socket = new mythsocket();
-    var backend;
+    var backend = { };
 
     function emitDisconnect() {
         process.nextTick(function () {
@@ -395,7 +395,8 @@ module.exports = function () {
     // ////////////////////////////////////////////////
 
     this.connect = function (options) {
-        backend = { };
+        for (prop in backend)
+            delete backend[prop];
         for (prop in backendDefaults)
             backend[prop] = backendDefaults[prop];
         for (prop in options)
@@ -404,10 +405,12 @@ module.exports = function () {
         process.nextTick(doConnect);
     };
 
-    this.close = function () {
+    this.disconnect = function () {
+        socket.write(["DONE"]);
         backend.keepOpen = false;
-        socket.close();
     };
+
+    this.isConnected = function () { return backend.connected; };
 
     this.GetProtocolVersion = function () { return backend.protocolVersion; };
     this.getProgramFlags = getProgramFlags;
