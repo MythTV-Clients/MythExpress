@@ -5,7 +5,6 @@
     "dependencies" : {
         "express" : "3.x.x",
         "jade" : ">= 0.0.1",
-        "connect-gzip" : ">= 0.1.5",
         "connect-assetmanager" : ">= 0.0.26",
         "nopt" : ">=1.0.10",
         "ws" : ">= 0.4.15",

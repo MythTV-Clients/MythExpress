@@ -10,7 +10,6 @@ var express = require("express");
 var app = module.exports = express();
 var http = require("http");
 var url = require("url");
-var gzip = require("connect-gzip");
 var path = require("path");
 var mdns = require("mdns");
 var ws = require("ws");
@@ -54,8 +53,9 @@ app.configure("development", function() {
 
 app.configure("production", function() {
     app.use(express.errorHandler());
-    app.use(gzip.gzip());
-    app.use(gzip.staticGzip(__dirname + "/public", { maxAge: 18 * 24 * 60 * 60 }));
+    app.use(express.compress());
+    app.use(express.staticCache());
+    app.use(express.static(__dirname + '/public', {maxAge: 18 * 24 * 60 * 60 }));
 
     // we only minify in production
     var assetManager = require("connect-assetmanager");
