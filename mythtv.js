@@ -68,7 +68,7 @@ module.exports = function(args) {
 
     var myth = {
         isUp : false,               // true = BE has announced itself on bonjour
-        connected : false,          // true = we're connected to BE's event socket
+        //connected : false,          // obsolete: true = we're connected to BE's event socket
         connectPending : false,
         bonjour : undefined
     };
@@ -463,7 +463,7 @@ module.exports = function(args) {
                 changeAPI.alertOffline(clientNum);
             else if (myth.connectPending)
                 changeAPI.alertConnecting(clientNum);
-            else if (myth.connected && backends.length > 1)
+            else if (backend.events.isConnected())
                 changeAPI.alertConnected(clientNum);
             else if (shutdownSeconds >= 0)
                 changeAPI.alertShutdown(shutdownSeconds, clientNum);
@@ -1064,7 +1064,7 @@ module.exports = function(args) {
 
         backendBrowser.on('serviceUp', function(service) {
             //console.log("mythtv up: ", service.name);
-            if (!myth.connected) {
+            if (!backend.events.isConnected()) {
                 if (myth.affinity && myth.affinity !== service.host)
                     return;
                 myth.isUp = true;
@@ -1085,11 +1085,15 @@ module.exports = function(args) {
         });
 
         backendBrowser.on('serviceDown', function(service) {
-            //console.log("mythtv down: ", service.name);
-            if (myth.connected) {
-                myth.isUp = service.name === myth.bonjour.name;
-                if (!myth.isUp)
+            console.log("mythtv down: ", service.name);
+            if (backend.events.isConnected()) {
+                if (service.name === myth.bonjour.name)
+                    myth.isUp = false;
+                if (!myth.isUp) {
                     eventSocket.alertOffline();
+                    backend.events.disconnect();
+                    backend.lock.disconnect();
+                }
             }
         });
 
@@ -1097,7 +1101,7 @@ module.exports = function(args) {
 
         return {
             restart : function () {
-                myth.up = false;
+                myth.isUp = false;
                 if (false) {
                     backendBrowser.stop();  frontendBrowser.stop();
                     backendBrowser.start(); frontendBrowser.start();

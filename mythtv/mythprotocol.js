@@ -406,8 +406,9 @@ module.exports = function () {
     };
 
     this.disconnect = function () {
-        socket.write(["DONE"]);
         backend.keepOpen = false;
+        if (backend.connected)
+            socket.write(["DONE"]);
     };
 
     this.isConnected = function () { return backend.connected; };
