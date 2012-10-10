@@ -1,0 +1,60 @@
+# common environment for MythExpress init & wrapper scripts
+#
+# be sure to do:
+#   mkdir /var/run/mythexpress
+#   chown mythtv:root /var/run/mythexpress
+# or whatever account you used for the install
+
+################################################
+# installation folders
+################################################
+
+# typically nvm & MythExpress are installed under the same folder
+export APP_ROOT=/var/lib/mythtv
+
+export NVMDIR=$APP_ROOT/.nvm
+
+# where app.js is located
+export APPDIR=$APP_ROOT/MythExpress
+
+export LOGDIR=/var/log/mythtv
+
+# the default "production" will cause MythExpress to concat, minify, and comress css/js files
+# "development" does not
+export NODE_ENV=production
+# export NODE_ENV=development
+
+export DAEMON=$APPDIR/extras/nvmrunner
+
+NODEUSER=mythtv:mythtv        # USER who OWNS the daemon process (no matter whoever runs the init script)
+                              # user:group (if no group is specified, the primary GID for that user is used)
+
+RUNDIR=/var/run/mythexpress   # in case the init script is run as non-root user, you need to
+                              # indicate a directory writeable by $NODEUSER to store the PID file
+                              # NB : 1) /usr/local/var/run does not exist by DEFAULT. Either create it
+                              #      or choose one of your own liking.
+                              #      2) node, npm,... are best NOT installed/run as ROOT.
+                              #         (see here: https://github.com/isaacs/npm/blob/master/README.md)
+
+################################################
+# server configuration
+################################################
+
+# restrict connections to this host. Useful when you have multiple
+# myth backends such as a master & secondary setup or a separate
+# development box. The value has to match Bonjour's host property
+# exactly, eg. "mythhost.local."
+
+# export MX_AFFINITY=backendhost.local.
+
+# port which MythExpress should use
+# export MX_LISTEN=6565
+
+# name or IP to use when supplying backend links to clients. If you
+# have MythTV running on HostA but MythExpress is on HostB you
+# should define MX_HOST=HostA
+# export MX_HOST=backendIP
+
+# setting any value causes MythExpress to refrain from locking the
+# backend while a browser client is connected.
+# export MX_PASSIVE=Yes
