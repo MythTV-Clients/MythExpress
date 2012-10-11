@@ -67,7 +67,6 @@ li.mx-PopupItem:hover { font-weight: bold; }
 
 #Buttons {
     overflow: none;
-    overflow-x: scroll;
     white-space: nowrap;
 }
 
