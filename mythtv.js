@@ -211,7 +211,6 @@ module.exports = function(args) {
         // - myth goes down (really a flag change)
 
         var aClientIsConnected = false;
-        var mythIsUp = false;
 
         var lockBackend = function () {
             if (!backend.lock.isConnected() && !process.env["MX_PASSIVE"]) {
@@ -236,25 +235,25 @@ module.exports = function(args) {
         // via explicit calls
 
         backend.events.on("connect", function () {
-            mythIsUp = true;
+            myth.isUp = true;
             if (aClientIsConnected)
                 lockBackend();
         });
 
         backend.events.on("close", function () {
-            mythIsUp = false;
+            myth.isUp = false;
         });
 
         return {
             clientConnect : function () {
                 if (!aClientIsConnected) {
                     aClientIsConnected = true;
-                    if (mythIsUp)
+                    if (myth.isUp)
                         lockBackend();
                 }
             },
             noClientsLeft : function () {
-                if (mythIsUp)
+                if (myth.isUp)
                     unlockBackend();
                 aClientIsConnected = false;
             }
