@@ -115,7 +115,7 @@ $(document).ready(function() {
         var data = { };
         headers.split(/[\r\n]/).forEach(function (header) {
             var half = header.split(/[:][ ]/);
-            if (half[0].substr(0,5).toLowerCase() === "x-mx-") {
+            if (half[0].substr(0,5) === "X-MX-") {
                 data[half[0].substr(5)] = decodeURIComponent(escape(half[1]));
             }
         });
@@ -183,12 +183,6 @@ $(document).ready(function() {
                 var videoControls = $("#Content .mx-ControlBubble button");
                 if (videoControls.length > 0) {
                     videoControls.button();
-                }
-
-                if (/iPod.*533.17.9/.test(navigator.userAgent)) {
-                    // http://bugs.jquery.com/ticket/5677
-                    $("div .mx-Clickable").attr("click", "");
-                    //console.log("set click for " + $("div .mx-Clickable").length + " elements");
                 }
             }
         });
