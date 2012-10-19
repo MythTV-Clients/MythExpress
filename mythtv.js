@@ -80,7 +80,9 @@ module.exports = function(args) {
         lock : new mythprotocol(),
         host : "127.0.0.1",
         customHost : false,
+        hostName : "localhost",      // for settings queries
         port : 6544,
+        protocolPort : 6543,
         method : 'GET',
         headers : { 'content-type': 'text/plain',
                     'connection': 'keep-alive',
@@ -851,6 +853,9 @@ module.exports = function(args) {
                 finished(null);
             },
 
+            getServerPort : function (finished) {
+            },
+
             resetStructures : [
                 "alertClients",
                 function (finished) {
@@ -1061,7 +1066,7 @@ module.exports = function(args) {
     myth.bonjourService = (function () {
         var backendBrowser = mdns.createBrowser(mdns.tcp('mythbackend'));
 
-        backendBrowser.on('serviceUp', function(service) {
+        backendBrowser.on("serviceUp", function(service) {
             //console.log("mythtv up: ", service.name);
             if (!backend.events.isConnected()) {
                 if (myth.affinity && myth.affinity !== service.host)
@@ -1072,18 +1077,54 @@ module.exports = function(args) {
                     myth.bonjour = service;
                     myth.up = true;
                     backend.host = addr[0];
+                    backend.port = service.port;
                     console.log(service.name + ': ' + backend.host);
-                    backend.events.connect({
-                        host       : backend.host,
-                        clientName : "MythExpress.EventListener",
-                        mode       : backend.events.Monitor,
-                        eventMode  : backend.events.AllEvents
+                    async.auto({
+                        getBackendHostName : function (finished) {
+                            reqJSON(
+                                {
+                                    path : "/Myth/GetHostName"
+                                },
+                                function (reply) {
+                                    backend.hostName = reply["String"];
+                                    finished(null);
+                                }
+                            );
+                        },
+                        getProtocolPort : [
+                            "getBackendHostName",
+                            function (finished) {
+                                reqJSON(
+                                    {
+                                        path : "/Myth/GetSetting?Key=BackendServerPort&Default=6543&" +
+                                            "HostName=" + backend.hostName
+                                    },
+                                    function (reply) {
+                                        backend.protocolPort = reply.SettingList.Settings.BackendServerPort;
+                                        finished(null);
+                                    }
+                                );
+                            }
+                        ],
+                        connectToBackend : [
+                            "getProtocolPort",
+                            function (finished) {
+                                backend.events.connect({
+                                    host       : backend.host,
+                                    port       : backend.protocolPort,
+                                    clientName : "MythExpress.EventListener",
+                                    mode       : backend.events.Monitor,
+                                    eventMode  : backend.events.AllEvents
+                                });
+                                finished(null);
+                            }
+                        ]
                     });
                 }
             }
         });
 
-        backendBrowser.on('serviceDown', function(service) {
+        backendBrowser.on("serviceDown", function(service) {
             console.log("mythtv down: ", service.name);
             if (backend.events.isConnected()) {
                 if (service.name === myth.bonjour.name)
