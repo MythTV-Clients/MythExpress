@@ -245,8 +245,10 @@ module.exports = function () {
     });
 
     socket.on("close", function (hadError) {
+        var wasConnected = backend.connected || backend.connectionPending;
         backend.connected = backend.connectionPending = false;
-        emitDisconnect();
+        if (wasConnected)
+            emitDisconnect();
         console.log("socket closed (withError: " + hadError + ")");
         doConnect();
     });
@@ -264,7 +266,7 @@ module.exports = function () {
             // probably the myth host is down
             backend.connected = backend.connectionPending = false;
             emitDisconnect();
-            //close event will follow and reconnect will happen there
+            // a close event will follow and reconnect will happen there
             //doConnect();
         }
     });
@@ -407,8 +409,12 @@ module.exports = function () {
 
     this.disconnect = function () {
         backend.keepOpen = false;
-        if (backend.connected)
+        if (backend.connected) {
             socket.write(["DONE"]);
+            // do this to avoid squelching a new connect requested
+            // while we're waiting for the socket to close
+            backend.connected = backend.connectionPending = false;
+        }
     };
 
     this.isConnected = function () { return backend.connected; };

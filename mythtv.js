@@ -1067,7 +1067,7 @@ module.exports = function(args) {
         var backendBrowser = mdns.createBrowser(mdns.tcp('mythbackend'));
 
         backendBrowser.on("serviceUp", function(service) {
-            //console.log("mythtv up: ", service.name);
+            console.log("serviceUp: ", service.name);
             if (!backend.events.isConnected()) {
                 if (myth.affinity && myth.affinity !== service.host)
                     return;
@@ -1125,7 +1125,7 @@ module.exports = function(args) {
         });
 
         backendBrowser.on("serviceDown", function(service) {
-            console.log("mythtv down: ", service.name);
+            console.log("serviceDown: ", service.name);
             if (backend.events.isConnected()) {
                 if (service.name === myth.bonjour.name)
                     myth.isUp = false;
