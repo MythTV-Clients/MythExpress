@@ -494,6 +494,9 @@ $(document).ready(function() {
 
             History.pushState(args, title, href);
 
+            // http://bugs.jqueryui.com/ticket/5295 & http://stackoverflow.com/questions/3861307
+            target.blur().removeClass("ui-state-hover");
+
             return false;
         });
 
@@ -670,6 +673,9 @@ $(document).ready(function() {
                 History.back();
                 $.get("/deletestream", parms);
             }
+
+            // http://bugs.jqueryui.com/ticket/5295 & http://stackoverflow.com/questions/3861307
+            target.blur().removeClass("ui-state-hover");
 
             return false;
         });
