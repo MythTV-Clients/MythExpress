@@ -283,11 +283,11 @@ module.exports = function(args) {
 
             var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
-                if (webSocket.readyState === args.websocket.OPEN) {
+                if (webSocket.readyState === args.ws.OPEN) {
                     if (allClients) webSocket.send(msgStr);
                     if (byIndex && idx == client) webSocket.send(msgStr);
                     if (byCookie && webSocket.mxCookie === client) webSocket.send(msgStr);
-                } else if (webSocket.readyState === args.websocket.CLOSED) {
+                } else if (webSocket.readyState === args.ws.CLOSED) {
                     closed.unshift(idx);
                 }
             });
@@ -432,7 +432,7 @@ module.exports = function(args) {
             ws.on("close", function () {
                 var clientsRemaining = false;
                 wssClients.forEach(function (webSocket, idx) {
-                    if (webSocket.readyState !== args.websocket.CLOSED)
+                    if (webSocket.readyState !== args.ws.CLOSED)
                         clientsRemaining = true;
                 });
                 if (!clientsRemaining)

@@ -161,7 +161,8 @@ var webserver = http.createServer(app)
 
                 var mythArgs = {
                     app : app,
-                    websocket : websocket
+                    websocket : websocket,
+                    ws : ws
                 };
                 if (process.env["MX_AFFINITY"]) {
                     mythArgs.affinity = process.env["MX_AFFINITY"];
