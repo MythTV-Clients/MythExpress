@@ -283,11 +283,11 @@ module.exports = function(args) {
 
             var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
-                if (webSocket.isAlive) {
+                if (webSocket.readyState === WebSocket.OPEN) {
                     if (allClients) webSocket.send(msgStr);
                     if (byIndex && idx == client) webSocket.send(msgStr);
                     if (byCookie && webSocket.mxCookie === client) webSocket.send(msgStr);
-                } else {
+                } else if (webSocket.readyState === WebSocket.CLOSED) {
                     closed.unshift(idx);
                 }
             });
@@ -429,20 +429,21 @@ module.exports = function(args) {
         };
 
         wss.on("connection", function(ws) {
-            ws.isAlive = true;
-
             ws.on("close", function () {
-                ws.isAlive = false;
-
                 var clientsRemaining = false;
                 wssClients.forEach(function (webSocket, idx) {
-                    if (webSocket.isAlive)
+                    if (webSocket.readyState !== WebSocket.CLOSED)
                         clientsRemaining = true;
                 });
                 if (!clientsRemaining)
                     backendLock.noClientsLeft();
 
                 console.log('ws client closed');
+            });
+
+            ws.on("error", function (error) {
+                console.log("WebSocket error:");
+                console.log(error);
             });
 
             ws.on("message", function (message) {
@@ -468,6 +469,11 @@ module.exports = function(args) {
                 changeAPI.alertConnected(clientNum);
             else if (shutdownSeconds >= 0)
                 changeAPI.alertShutdown(shutdownSeconds, clientNum);
+        });
+
+        wss.on("error", function (error) {
+            console.log("WebSocketServer error:");
+            console.log(error);
         });
 
         return changeAPI;
