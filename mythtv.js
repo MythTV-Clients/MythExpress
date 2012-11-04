@@ -491,6 +491,7 @@ module.exports = function(args) {
             fileHasStream[fileName] = true;
             fileHasStream[stream.SourceFile] = true;
         });
+        console.log("Stream flags updated");
     }
 
     function addRecordingToRecGroup (recording, recGroup) {
@@ -700,7 +701,6 @@ module.exports = function(args) {
             // get rid of stranded streams here until the BE does it
             reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName },
                     function (reply) {
-                        updateStreamExistence(reply.LiveStreamInfoList);
                         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
                             console.log("remove stream " + stream.Id);
                             reqJSON({ path : "/Content/RemoveLiveStream?Id=" + stream.Id },
@@ -1256,8 +1256,10 @@ module.exports = function(args) {
                     path : "/Content/GetLiveStreamList"
                 },
                 function (reply) {
-                    updateStreamExistence(reply.LiveStreamInfoList);
                     callback(reply);
+                    process.nextTick(function() {
+                        updateStreamExistence(reply.LiveStreamInfoList);
+                    });
                 }
             );
         },
