@@ -14,6 +14,6 @@ app.get("/frontend/play", function (req, res) {
 
 frontends.on("senderror", function (details) {
     app.mythtv.blast({ Alert : true, Category : "Frontend", Class : "Alert", Decay  : 5,
-                       Message : details.Host + " refused network control" },
+                       Message : details.Host + " " + (details.hasOwnProperty("Error") ? details.Error : "refused network control") },
                      details.SenderCookie);
 });

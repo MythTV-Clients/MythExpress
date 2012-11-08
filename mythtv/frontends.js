@@ -1,9 +1,11 @@
 
 var net = require("net");
+var http = require('http');
 var util = require("util");
 var mdns = require('mdns');
 var events = require("events");
 var mxutils = require("../mxutils");
+var querystring = require("querystring");
 
 // since the frontend list is network-wide rather than per-backend
 // we keep the list global and the only the accessors are per module
@@ -56,6 +58,8 @@ function SendMessage(host, message, senderCookie) {
                 } else if (reply.match(/ERROR/)) {
                     console.log(message);
                     console.log(reply);
+                    var lines = reply.split(/\n/);
+                    frontendEvents.emit("senderror", { Host: host, SenderCookie : senderCookie, Error : lines[0] });
                     socket.end("exit\n");
                 } else if (reply.match(/[#]/)) {
                     reply = "";
@@ -70,16 +74,56 @@ function SendMessage(host, message, senderCookie) {
     }
 }
 
+function SendRequest(host, req, senderCookie) {
+    console.log({
+        hostName : frontends.byName[frontends.byHost[host].fullname].ipv4,
+        path     : "/Frontend/" + req.Command + "?" + querystring.stringify(req.Args),
+        port     : 6547,
+        method   : 'GET'
+    });
+    var req = http.request({
+        hostName : frontends.byName[frontends.byHost[host].fullname].ipv4,
+        path     : "/Frontend/" + req.Command + "?" + querystring.stringify(req.Args),
+        port     : 6547,
+        method   : 'GET'
+    }, function (reply) {
+        // so far none of the play commands send back any info
+    });
+    req.end();
+}
+
 function SendToFrontend (args, mythtv) {
     var message;
+    var request;
     if (args.hasOwnProperty("FileName") && mythtv.byFilename.hasOwnProperty(args.FileName)) {
         var prog = mythtv.byFilename[args.FileName];
         // should be a UTC -> local transform for protocols < 75
         message = "play program " + prog.Channel.ChanId + " " + prog.Recording.StartTs + " resume";
+        request = {
+            Command : "PlayRecording",
+            Args : {
+                ChanId : prog.Channel.ChanId,
+                StartTime : prog.Recording.StartTs
+            }
+        };
     } else if (args.hasOwnProperty("VideoId") && mythtv.byVideoId[args.VideoId]) {
         message = "play file myth://Videos/" + mythtv.byVideoId[args.VideoId].FileName.toString("utf8").replace(/ /g, "%20");
+        request = {
+            Command : "PlayVideo",
+            Args : {
+                Id : args.VideoId,
+                UseBookmark : true
+            }
+        };
     }
+
+    // if (request) {
+    //     console.log("Request: ", request);
+    //     SendRequest(args.Host, request, args.SenderCookie);
+    // }
+
     if (message.length > 0) {
+        console.log("Message: " + message);
         SendMessage(args.Host, message, args.SenderCookie);
     }
 }
