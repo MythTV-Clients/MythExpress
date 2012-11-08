@@ -173,21 +173,38 @@ app.get("/streams", MX, function(req, res) {
 
                 if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
 
-                    var isQueued = reply.LiveStreamInfo.StatusStr === "Queued";
+                    if (reply.hasOwnProperty("errorCode")) {
+                        // { errorCode: '401', errorDescription: 'Invalid Action' }
 
-                    mythtv.blast({
-                        Stream  : req.query.VideoCookie,
-                        Message : isQueued ? "Queued…" : "Buffering…"
-                    }, req.cookies.mythexpress);
+                        res.render("stream/error", { error : reply },
+                                   function(err,html) {
+                                       if (err) console.log(err);
+                                       else {
+                                           mythtv.blast({
+                                               Stream  : req.query.VideoCookie,
+                                               Error   : html
+                                           }, req.cookies.mythexpress);
+                                       }
+                                   });
 
-                    setTimeout(function () {
-                        broadcastStreamProgress({
-                            streamId : reply.LiveStreamInfo.Id,
-                            mxCookie : req.cookies.mythexpress,
-                            videoCookie : req.query.VideoCookie,
-                            isQueued : isQueued
-                        });
-                    }, 2000);
+                    } else {
+
+                        var isQueued = reply.LiveStreamInfo.StatusStr === "Queued";
+
+                        mythtv.blast({
+                            Stream  : req.query.VideoCookie,
+                            Message : isQueued ? "Queued…" : "Buffering…"
+                        }, req.cookies.mythexpress);
+
+                        setTimeout(function () {
+                            broadcastStreamProgress({
+                                streamId : reply.LiveStreamInfo.Id,
+                                mxCookie : req.cookies.mythexpress,
+                                videoCookie : req.query.VideoCookie,
+                                isQueued : isQueued
+                            });
+                        }, 2000);
+                    }
 
                 }
             });
@@ -209,21 +226,38 @@ app.get("/streams", MX, function(req, res) {
 
                 if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
 
-                    var isQueued = reply.LiveStreamInfo.StatusStr === "Queued";
+                    if (reply.hasOwnProperty("errorCode")) {
+                        // { errorCode: '401', errorDescription: 'Invalid Action' }
 
-                    mythtv.blast({
-                        Stream  : req.query.VideoCookie,
-                        Message : isQueued ? "Queued…" : "Buffering…"
-                    }, req.cookies.mythexpress);
+                        res.render("stream/error", { error : reply },
+                                   function(err,html) {
+                                       if (err) console.log(err);
+                                       else {
+                                           mythtv.blast({
+                                               Stream  : req.query.VideoCookie,
+                                               Error   : html
+                                           }, req.cookies.mythexpress);
+                                       }
+                                   });
 
-                    setTimeout(function () {
-                        broadcastStreamProgress({
-                            streamId : reply.LiveStreamInfo.Id,
-                            mxCookie : req.cookies.mythexpress,
-                            videoCookie : req.query.VideoCookie,
-                            isQueued : isQueued
-                        });
-                    }, 2000);
+                    } else {
+
+                        var isQueued = reply.LiveStreamInfo.StatusStr === "Queued";
+
+                        mythtv.blast({
+                            Stream  : req.query.VideoCookie,
+                            Message : isQueued ? "Queued…" : "Buffering…"
+                        }, req.cookies.mythexpress);
+
+                        setTimeout(function () {
+                            broadcastStreamProgress({
+                                streamId : reply.LiveStreamInfo.Id,
+                                mxCookie : req.cookies.mythexpress,
+                                videoCookie : req.query.VideoCookie,
+                                isQueued : isQueued
+                            });
+                        }, 2000);
+                    }
 
                 }
 

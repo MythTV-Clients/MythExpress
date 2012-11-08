@@ -717,6 +717,9 @@ $(document).ready(function() {
                 if (event.hasOwnProperty("Message")) {
                     $("#Message").text(event.Message);
                 }
+                else if (event.hasOwnProperty("Error")) {
+                    $("#Content").html(event.Error);
+                }
                 else if (event.hasOwnProperty("StreamId")) {
                     console.log("play video " + videoCookie + " === " + event.Stream);
                     $.get("/streams", { StreamId : event.StreamId }, function (markup) {

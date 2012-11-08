@@ -1,0 +1,5 @@
+.mx-TextBubble.mx-MiddleColumn
+  h1 The stream was aborted due to an error:
+  h2= error.errorCode + " / " + error.errorDescription
+  p The failing request’s URL was&nbsp;
+    a(href=error.url,target="_new")= error.url

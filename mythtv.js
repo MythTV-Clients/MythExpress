@@ -152,15 +152,28 @@ module.exports = function(args) {
             });
 
             reply.on('end', function() {
+                response = response.replace(/[\r\n]/g, "");
+                var jsObject;
                 try {
-                    callback(JSON.parse(response.replace(/[\r\n]/g,'')));
+                    jsObject = JSON.parse(response);
                 } catch (err) {
-                    console.log("reqJSON error:");
-                    console.log(err);
-                    callback({ });
+                    console.log("reqJSON got an error reply: " + response);
+                    console.log(allOptions.path);
+                    if (response.length > 0) {
+                        // probably we got back an error xml, convert and
+                        // flatten. For some reason myth sends two copies of
+                        // the error so first reduce it back to one error
+                        var errXML = "<?" + response.split(/<[?]/)[1];
+                        jsObject = mxutils.xmlStringToObject(errXML).detail;
+                    } else {
+                        jsObject = {
+                            errorCode : "ServerError",
+                            errorDescription : "MythTV sent back an empty response"
+                        };
+                    }
+                    jsObject.url = "http://" + allOptions.host + ":" + allOptions.port + allOptions.path;
                 }
-                //callback(JSON.parse(response));
-                response = undefined;
+                callback(jsObject);
             })
         });
         req.end();
