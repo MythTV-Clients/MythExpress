@@ -462,7 +462,14 @@ module.exports = function(args) {
 
             ws.on("message", function (message) {
                 var msg = JSON.parse(message);
-                ws.mxCookie = msg.Cookie;
+                if (msg.hasOwnProperty("Cookie")) {
+                    ws.mxCookie = msg.Cookie;
+                    ws.mxPing = new Date();
+                }
+                else if (msg.hasOwnProperty("Pong")) {
+                    ws.mxPing = new Date();
+                    console.log("    Pong " + msg.Pong);
+                }
             });
 
             wssClients.push(ws);
@@ -490,9 +497,17 @@ module.exports = function(args) {
             console.log(error);
         });
 
-        var marcoPolo = setInterval(function() {
-            console.log("Sending out MarcoPolo to shake out dead websocket connections " + Date().toString());
-            blast({ Marco: "Polo" });
+        var webSocketReaper = setInterval(function() {
+            var blastTime = new Date();
+            blast({ Ping: Date().toString() });
+            // terminate non-responders after two minutes
+            setTimeout(function () {
+                wssClients.forEach(function (webSocket, idx) {
+                    if (webSocket.mxPing.getTime() < blastTime.getTime()) {
+                        webSocket.terminate();
+                    }
+                });
+            }, 180 * 1000);
         }, 3600 * 1000);
 
         return changeAPI;

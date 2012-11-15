@@ -772,9 +772,14 @@ $(document).ready(function() {
                     }
                     ws.send(JSON.stringify({ Cookie : mxCookie }));
                 }
-                ws.onmessage = function (msg) {
-                    console.log(msg.data);
-                    applyUpdate($.parseJSON(msg.data));
+                ws.onmessage = function (message) {
+                    console.log(message.data);
+                    var msg = $.parseJSON(message.data);
+                    if (msg.hasOwnProperty("Ping")) {
+                        ws.send(JSON.stringify({ Pong : window.navigator.userAgent }));
+                    } else {
+                        applyUpdate(msg);
+                    }
                     webSocket.showingOffline = false;
                 };
                 ws.onerror = function (event) {
