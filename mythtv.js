@@ -121,6 +121,7 @@ module.exports = function(args) {
     var groupNames = [ ];
     var traitNames = [ ];
     var fileHasStream = { };
+    var streamToFilename = { };
 
     var byVideoFolder = { };
     var byVideoId = [ ];
@@ -489,6 +490,11 @@ module.exports = function(args) {
             console.log(error);
         });
 
+        var marcoPolo = setInterval(function() {
+            console.log("Sending out MarcoPolo to shake out dead websocket connections " + Date().toString());
+            blast({ Marco: "Polo" });
+        }, 3600 * 1000);
+
         return changeAPI;
 
     })();
@@ -509,6 +515,7 @@ module.exports = function(args) {
             var fileName = stream.SourceFile.split("/").pop();
             fileHasStream[fileName] = true;
             fileHasStream[stream.SourceFile] = true;
+            streamToFilename[stream.Id] = { FileName : fileName, SourceFile : stream.SourceFile };
         });
         console.log("Stream flags updated");
     }
@@ -1313,6 +1320,10 @@ module.exports = function(args) {
                     path : "/Content/RemoveLiveStream?Id=" + streamId
                 },
                 function (reply) {
+                    process.nextTick(function() {
+                        reqJSON({ path : "/Content/GetLiveStreamList" },
+                                function (reply) { updateStreamExistence(reply.LiveStreamInfoList); });
+                    });
                     callback(reply);
                 }
             );
