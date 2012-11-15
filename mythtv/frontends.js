@@ -75,17 +75,11 @@ function SendMessage(host, message, senderCookie) {
 }
 
 function SendRequest(host, req, senderCookie) {
-    console.log({
-        hostName : frontends.byName[frontends.byHost[host].fullname].ipv4,
-        path     : "/Frontend/" + req.Command + "?" + querystring.stringify(req.Args),
-        port     : 6547,
-        method   : 'GET'
-    });
     var req = http.request({
-        hostName : frontends.byName[frontends.byHost[host].fullname].ipv4,
-        path     : "/Frontend/" + req.Command + "?" + querystring.stringify(req.Args),
-        port     : 6547,
-        method   : 'GET'
+        host   : frontends.byName[frontends.byHost[host].fullname].ipv4,
+        path   : "/Frontend/" + req.Command + "?" + querystring.stringify(req.Args),
+        port   : 6547,
+        method : 'GET'
     }, function (reply) {
         // so far none of the play commands send back any info
     });
@@ -95,10 +89,11 @@ function SendRequest(host, req, senderCookie) {
 function SendToFrontend (args, mythtv) {
     var message;
     var request;
+
     if (args.hasOwnProperty("FileName") && mythtv.byFilename.hasOwnProperty(args.FileName)) {
         var prog = mythtv.byFilename[args.FileName];
         // should be a UTC -> local transform for protocols < 75
-        message = "play program " + prog.Channel.ChanId + " " + prog.Recording.StartTs + " resume";
+        message = "play program " + prog.Channel.ChanId + " " + prog.Recording.StartTs.slice(0,-1) + " resume";
         request = {
             Command : "PlayRecording",
             Args : {
@@ -106,7 +101,9 @@ function SendToFrontend (args, mythtv) {
                 StartTime : prog.Recording.StartTs
             }
         };
-    } else if (args.hasOwnProperty("VideoId") && mythtv.byVideoId[args.VideoId]) {
+    }
+
+    else if (args.hasOwnProperty("VideoId") && mythtv.byVideoId[args.VideoId]) {
         message = "play file myth://Videos/" + mythtv.byVideoId[args.VideoId].FileName.toString("utf8").replace(/ /g, "%20");
         request = {
             Command : "PlayVideo",
