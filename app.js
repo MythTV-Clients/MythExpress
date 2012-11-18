@@ -111,7 +111,7 @@ app.configure("production", function() {
 app.sendHeaders = function (req, res) {
     var context = res.locals.Context;
     for (var key in context)
-        res.header("X-MX-" + key, context[key]);
+        res.header("X-MX-" + key, encodeURIComponent(context[key]));
     res.header("Cache-Control", "no-cache");
 };
 
