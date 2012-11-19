@@ -116,7 +116,7 @@ $(document).ready(function() {
         headers.split(/[\r\n]/).forEach(function (header) {
             var half = header.split(/[:][ ]/);
             if (half[0].substr(0,5) === "X-MX-") {
-                data[half[0].substr(5)] = decodeURIComponent(escape(half[1]));
+                data[half[0].substr(5)] = decodeURIComponent(escape(half[1])).replace(/%20/g," ");
             }
         });
         return data;
