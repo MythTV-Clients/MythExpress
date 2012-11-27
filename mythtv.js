@@ -498,16 +498,18 @@ module.exports = function(args) {
         });
 
         var webSocketReaper = setInterval(function() {
-            var blastTime = new Date();
-            blast({ Ping: Date().toString() });
-            // terminate non-responders after two minutes
-            setTimeout(function () {
-                wssClients.forEach(function (webSocket, idx) {
-                    if (webSocket.mxPing.getTime() < blastTime.getTime()) {
-                        webSocket.terminate();
-                    }
-                });
-            }, 180 * 1000);
+            if (wssClients.length > 0) {
+                var blastTime = new Date();
+                blast({ Ping: Date().toString() });
+                // terminate non-responders after two minutes
+                setTimeout(function () {
+                    wssClients.forEach(function (webSocket, idx) {
+                        if (webSocket.mxPing.getTime() < blastTime.getTime()) {
+                            webSocket.terminate();
+                        }
+                    });
+                }, 180 * 1000);
+            }
         }, 3600 * 1000);
 
         return changeAPI;
