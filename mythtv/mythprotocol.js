@@ -119,6 +119,9 @@ module.exports = function () {
             program.Season = message.shift();
             program.Episode = message.shift();
         }
+        if (backend.protocolVersion >= "76") {
+            program.SyndicatedEpisode = message.shift();
+        }
         program.Category = message.shift();
         program.Channel = { };
         program.Channel.ChanId = message.shift();
@@ -163,6 +166,11 @@ module.exports = function () {
         program.VideoProps = message.shift();
         program.SubProps = message.shift();
         program.Year = message.shift();
+
+        if (backend.protocolVersion >= "76") {
+            program.PartNumber = message.shift();
+            program.PartTotal = message.shift();
+        }
 
         return program;
     };
