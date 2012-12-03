@@ -25,6 +25,8 @@ var events = require("events");
 var mythsocket = require("./mythsocket");
 
 
+// watch libs/libmythbase/mythversion.h
+
 var protocolTokens = {
     "64" : "8675309J",
     "65" : "D2BB94C2",
@@ -38,7 +40,8 @@ var protocolTokens = {
     "73" : "D7FE8D6F",
     "74" : "SingingPotato",
     "75" : "SweetRock",
-    "Latest" : "75"
+    "76" : "FireWilde",
+    "Latest" : "76"
 };
 
 var reconnectInterval = 6;
