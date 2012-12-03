@@ -539,7 +539,8 @@ $(document).ready(function() {
     $("#Content")
         .on("click", ".mx-Clickable", function (event) {
             var target = $(this);
-            var isTopHalf = (event.offsetY * 2) < target.height();
+            var verticalOffset = event.pageY - target.offset().top;
+            var isTopHalf = (verticalOffset * 2) < target.height();
 
             if (target.hasClass("mx-Folder")) {
                 var showTitle = target.dataText(["Title"]).Title;
