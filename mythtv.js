@@ -887,7 +887,13 @@ module.exports = function(args) {
             });
     }
 
+    var initializingModel = false;
+
     function initModel () {
+        if (initializingModel)
+            return;
+        initializingModel = true;
+
         async.auto({
 
             alertClients : function (finished) {
@@ -897,6 +903,7 @@ module.exports = function(args) {
             },
 
             getServerPort : function (finished) {
+                finished(null);
             },
 
             resetStructures : [
@@ -974,6 +981,7 @@ module.exports = function(args) {
                     eventSocket.resettingRecordings(false);
                     eventSocket.alertConnected();
                     eventSocket.sendChanges();
+                    initializingModel = false;
                     finished(null);
                 }
             ]
