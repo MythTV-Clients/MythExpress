@@ -26,6 +26,7 @@ var mythsocket = require("./mythsocket");
 
 
 // watch libs/libmythbase/mythversion.h
+//    or https://github.com/MythTV/mythtv/blame/master/mythtv/libs/libmythbase/mythversion.h
 
 var protocolTokens = {
     "64" : "8675309J",
@@ -41,7 +42,8 @@ var protocolTokens = {
     "74" : "SingingPotato",
     "75" : "SweetRock",
     "76" : "FireWilde",
-    "Latest" : "76"
+    "77" : "WindMark",
+    "Latest" : "77"
 };
 
 var reconnectInterval = 6;
