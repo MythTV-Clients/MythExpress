@@ -7,6 +7,6 @@
 cd $RUNDIR
 
 . $NVMDIR/nvm.sh
-nvm use 0.8
+nvm use 0.10
 
 exec node $APPDIR/app.js --no-deprecation --logfile $LOGDIR/mythexpress.$(date +"%F-%H-%M-%S").log
