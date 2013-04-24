@@ -24,7 +24,9 @@ Node’s Bonjour browser rejects the service name used by myth so the first patc
 
 It’s typical to run MythExpress on the same host as MythTV but it can go anywhere on your network so long as it has visibility to your myth server(s).
 
-NodeJS is required of course, MythExpress needs the 0.8 series as it’s dependant on ExpressJS v3. Should your platform lack v0.8 node packages you can streamline the install process with Node Version Manager which is found at http://github.com/creationix/nvm.
+NodeJS is required of course, MythExpress is developed and tested with version 0.10 and but in a pinch you can fall back to the 0.8 series but no further the app is dependant on ExpressJS v3. The Node Bonjour package for Linux currently has some issues starting up so you’ll have to manually apply the fix at https://github.com/agnat/node_mdns/pull/67/files to the source in the node_packages folder.
+
+Should your platform lack current node packages you can streamline the install process with Node Version Manager which is found at http://github.com/creationix/nvm.
 
 Here’s a quickie nvm-based install using debian names for the prerequisite packages:
 
@@ -34,7 +36,7 @@ Here’s a quickie nvm-based install using debian names for the prerequisite pac
 
     git clone git://github.com/creationix/nvm.git ~/.nvm
     . ~/.nvm/nvm.sh
-    nvm install v0.8.11     # or whatever is current
+    nvm install v0.10.5     # or whatever is current
 
     git clone https://github.com/MythTV-Clients/MythExpress
     cd MythExpress
