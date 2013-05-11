@@ -9,6 +9,7 @@ var mxutils = require("./mxutils");
 var mythprotocol = require("./mythtv/mythprotocol");
 var frontends = new (require("./mythtv/frontends"));
 
+var log; // set from arguments
 
 // ////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -65,6 +66,8 @@ function stringCompare (g1,g2) {
 var backends = [ ];
 
 module.exports = function(args) {
+
+    log = args.log;
 
     var myth = {
         isUp : false,               // true = BE has announced itself on bonjour
@@ -158,8 +161,8 @@ module.exports = function(args) {
                 try {
                     jsObject = JSON.parse(response);
                 } catch (err) {
-                    console.log("reqJSON got an error reply: " + response);
-                    console.log(allOptions.path);
+                    log.info("reqJSON got an error reply: " + response);
+                    log.info(allOptions.path);
                     if (response.length > 0) {
                         // probably we got back an error xml, convert and
                         // flatten. For some reason myth sends two copies of
@@ -236,14 +239,14 @@ module.exports = function(args) {
                     mode       : backend.events.Playback,
                     eventMode  : backend.events.NoEvents
                 });
-                console.log("Backend locked");
+                log.info("Backend locked");
             }
         }
 
         var unlockBackend = function () {
             if (backend.lock.isConnected()) {
                 backend.lock.disconnect();
-                console.log("Backend unlocked");
+                log.info("Backend unlocked");
             }
         }
 
@@ -292,8 +295,8 @@ module.exports = function(args) {
             var byIndex = typeof(client) === "number";
             var byCookie = typeof(client) === "string";
 
-            if (allClients) console.log('blast ' + msgStr);
-            else console.log('blast ' + msgStr + " (" + client + ")");
+            if (allClients) log.info('blast ' + msgStr);
+            else log.info('blast ' + msgStr + " (" + client + ")");
 
             var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
@@ -452,12 +455,12 @@ module.exports = function(args) {
                 if (!clientsRemaining)
                     backendLock.noClientsLeft();
 
-                console.log('ws client closed');
+                log.info('ws client closed');
             });
 
             ws.on("error", function (error) {
-                console.log("WebSocket error:");
-                console.log(error);
+                log.info("WebSocket error:");
+                log.info(error);
             });
 
             ws.on("message", function (message) {
@@ -468,12 +471,12 @@ module.exports = function(args) {
                 }
                 else if (msg.hasOwnProperty("Pong")) {
                     ws.mxPing = new Date();
-                    console.log("    Pong " + msg.Pong);
+                    log.info("    Pong " + msg.Pong);
                 }
             });
 
             wssClients.push(ws);
-            console.log('new client (' + wssClients.length + ')');
+            log.info('new client (' + wssClients.length + ')');
 
             backendLock.clientConnect();
 
@@ -493,8 +496,8 @@ module.exports = function(args) {
         });
 
         wss.on("error", function (error) {
-            console.log("WebSocketServer error:");
-            console.log(error);
+            log.info("WebSocketServer error:");
+            log.info(error);
         });
 
         var webSocketReaper = setInterval(function() {
@@ -534,7 +537,7 @@ module.exports = function(args) {
             fileHasStream[stream.SourceFile] = true;
             streamToFilename[stream.Id] = { FileName : fileName, SourceFile : stream.SourceFile };
         });
-        console.log("Stream flags updated");
+        log.info("Stream flags updated");
     }
 
     function addRecordingToRecGroup (recording, recGroup) {
@@ -569,10 +572,10 @@ module.exports = function(args) {
                 if (episodes.length < 2) {
                     eventSocket.recordingChange({ group : recGroup });
                     if (episodes.length == 0) {
-                        console.log('that was the last episode');
+                        log.info('that was the last episode');
                         delete byRecGroup[recGroup][recording.Title];
                         if (Object.keys(byRecGroup[recGroup]).length == 0) {
-                            console.log('delete rec group ' + recGroup);
+                            log.info('delete rec group ' + recGroup);
                             delete byRecGroup[recGroup];
                             eventSocket.recGroupChange(recGroup);
                         }
@@ -632,7 +635,7 @@ module.exports = function(args) {
             oldProg = emptyProgram();
             byFilename[newProg.FileName] = newProg;
             byChanId[getChanKey(newProg)] = newProg.FileName;
-            //console.log(getChanKey(newProg) + " = " + newProg.Title + " / " + newProg.SubTitle);
+            //log.info(getChanKey(newProg) + " = " + newProg.Title + " / " + newProg.SubTitle);
         }
 
         assignProperties(newProg);
@@ -647,33 +650,33 @@ module.exports = function(args) {
         if (oldProg.Title != newProg.Title) {
             // remove from all groups under the old title and
             // readd under the new title
-            if (doLog) console.log('  title change ' + oldProg.title + " => " + newProg.Title
+            if (doLog) log.info('  title change ' + oldProg.title + " => " + newProg.Title
                                    + " (" + newProg.FileName + ")");
             if (isExistingProgram) {
                 oldGroups.forEach(function (group) {
-                    if (doLog) console.log('  del from ' + group);
+                    if (doLog) log.info('  del from ' + group);
                     delRecordingFromRecGroup(oldProg, group);
                 });
             }
             newGroups.forEach(function (group) {
-                if (doLog) console.log('  add from ' + group);
+                if (doLog) log.info('  add from ' + group);
                 addRecordingToRecGroup(newProg, group);
             });
         } else {
             // remove from groups not appearing in the new and
             // add to groups that weren't in the old list
-            //console.log("old groups / new groups for existing prog? " + isExistingProgram);
-            //console.log(oldGroups);
-            //console.log(newGroups);
+            //log.info("old groups / new groups for existing prog? " + isExistingProgram);
+            //log.info(oldGroups);
+            //log.info(newGroups);
             oldGroups.forEach(function (group) {
                 if (!newMap.hasOwnProperty(group)) {
-                    if (doLog) console.log('  del from ' + group);
+                    if (doLog) log.info('  del from ' + group);
                     delRecordingFromRecGroup(oldProg, group);
                 }
             });
             newGroups.forEach(function (group) {
                 if (!oldMap.hasOwnProperty(group)) {
-                    if (doLog) console.log('  add from ' + group);
+                    if (doLog) log.info('  add from ' + group);
                     addRecordingToRecGroup(newProg, group);
                 }
             });
@@ -691,42 +694,42 @@ module.exports = function(args) {
             applyProgramUpdate(recording);
             doLog = false;
             delete pendingRetrieves[chanKey];
-        } else console.log("    ignored due to pending retrieve");
+        } else log.info("    ignored due to pending retrieve");
     }
 
     function retrieveAndAddRecording (chanId, startTs) {
         var chanKey = getChanKey(chanId, startTs);
         if (!pendingRetrieves.hasOwnProperty(chanKey)) {
             pendingRetrieves[chanKey] = true;
-            console.log('retrieveAndAddRecording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
+            log.info('retrieveAndAddRecording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
             reqJSON(
                 {
                     path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
                 },
                 function (response) {
-                    //console.log('retrieveAndAddRecording');
-                    //console.log(response);
+                    //log.info('retrieveAndAddRecording');
+                    //log.info(response);
                     takeAndAddRecording(response.Program, true);
                 });
-        } else console.log("    ignored due to pending retrieve");
+        } else log.info("    ignored due to pending retrieve");
     };
 
     function deleteByChanId (chanKey) {
         if (byChanId.hasOwnProperty(chanKey)) {
             var fileName = byChanId[chanKey];
-            console.log("  chanKey " + chanKey + " maps to " + fileName);
+            log.info("  chanKey " + chanKey + " maps to " + fileName);
 
             if (byFilename.hasOwnProperty(fileName)) {
                 var prog = byFilename[fileName];
-                console.log("deleted dangling program " + prog.Title + " " + prog.StartTime);
+                log.info("deleted dangling program " + prog.Title + " " + prog.StartTime);
                 if (prog.hasOwnProperty("mx")) {
                     for (var group in prog.mx.recGroups) {
-                        if (doLog) console.log('  del from ' + group);
+                        if (doLog) log.info('  del from ' + group);
                         delRecordingFromRecGroup(prog, group);
                     };
                     for (var flag in prog.mx.ProgramFlags_) {
                         if (prog.mx.ProgramFlags_[flag]) {
-                            if (doLog) console.log('  del from ' + group);
+                            if (doLog) log.info('  del from ' + group);
                             delRecordingFromRecGroup(prog, group);
                         }
                     };
@@ -745,7 +748,7 @@ module.exports = function(args) {
             reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName },
                     function (reply) {
                         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
-                            console.log("remove stream " + stream.Id);
+                            log.info("remove stream " + stream.Id);
                             reqJSON({ path : "/Content/RemoveLiveStream?Id=" + stream.Id },
                                     function (reply) { }
                                    );
@@ -756,10 +759,10 @@ module.exports = function(args) {
             delete byChanId[chanKey];
         }
         // else {
-        //     console.log("no entry for " + chanKey + " but");
+        //     log.info("no entry for " + chanKey + " but");
         //     Object.keys(byChanId).forEach(function (chKey) {
         //         if (chKey.substr(0,4) === chanKey.substr(0,4))
-        //             console.log("    " + chKey);
+        //             log.info("    " + chKey);
         //     });
         // }
     }
@@ -957,7 +960,7 @@ module.exports = function(args) {
                                 Object.keys(byRecGroup[group]).forEach(function (title) {
                                     byRecGroup[group][title].sort(episodeCompare);
                                 });
-                                console.log(group + ' ' + Object.keys(byRecGroup[group]).length);
+                                log.info(group + ' ' + Object.keys(byRecGroup[group]).length);
                             });
 
                             finished(null);
@@ -997,9 +1000,9 @@ module.exports = function(args) {
                 var change = message.shift().substring(22).split(/[ ]/);
                 var changeType = change[0];
                 var program = pullProgramInfo(message);
-                console.log("RECORDING_LIST_CHANGE " + changeType);
-                //console.log(change);
-                //console.log(program);
+                log.info("RECORDING_LIST_CHANGE " + changeType);
+                //log.info(change);
+                //log.info(program);
                 recordingListChange(change,program);
             }
 
@@ -1027,8 +1030,8 @@ module.exports = function(args) {
 
 
             else {
-                console.log('Non system event:');
-                console.log(message);
+                log.info('Non system event:');
+                log.info(message);
             }
         }
     }
@@ -1061,13 +1064,13 @@ module.exports = function(args) {
     backend.events.on("RECORDING_LIST_CHANGE", function (event, program) {
 
         if (event.changeType === "ADD") {
-            console.log("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.StartTs);
+            log.info("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.StartTs);
             retrieveAndAddRecording(event.ChanId, event.StartTs)
         }
 
         else if (event.changeType === "UPDATE") {
-            console.log("RECORDING_LIST_CHANGE update " + program.Title + " " + program.StartTime + " " + program.SubTitle);
-            //console.log(program);
+            log.info("RECORDING_LIST_CHANGE update " + program.Title + " " + program.StartTime + " " + program.SubTitle);
+            //log.info(program);
             takeAndAddRecording(program);
         }
 
@@ -1075,13 +1078,13 @@ module.exports = function(args) {
             // deletes are typically handled with update's
             // change to recgroup = Deleted but here we handle
             // other delete paths such as expiry.
-            console.log("RECORDING_LIST_CHANGE delete " + event.ChanId + " / " + event.StartTs);
+            log.info("RECORDING_LIST_CHANGE delete " + event.ChanId + " / " + event.StartTs);
             deleteByChanId(getChanKey(event.ChanId, event.StartTs));
         }
 
         else {
-            console.log('unhandled program change: ' + event.changeType);
-            console.log(program);
+            log.info('unhandled program change: ' + event.changeType);
+            log.info(program);
         }
 
         updateModelAndPublish();
@@ -1089,7 +1092,7 @@ module.exports = function(args) {
     });
 
     backend.events.on("REC_EXPIRED", function (event) {
-        console.log(event);
+        log.info(event);
         deleteByChanId(getChanKey(event.chanid, event.starttime));
         updateModelAndPublish();
     });
@@ -1118,7 +1121,7 @@ module.exports = function(args) {
         var backendBrowser = mdns.createBrowser(mdns.tcp('mythbackend'));
 
         backendBrowser.on("serviceUp", function(service) {
-            console.log("serviceUp: ", service.name);
+            log.info("serviceUp: ", service.name);
             if (!backend.events.isConnected()) {
                 if (myth.affinity && myth.affinity !== service.host)
                     return;
@@ -1129,7 +1132,7 @@ module.exports = function(args) {
                     myth.up = true;
                     backend.host = addr[0];
                     backend.port = service.port;
-                    console.log(service.name + ': ' + backend.host);
+                    log.info(service.name + ': ' + backend.host);
                     async.auto({
                         getBackendHostName : function (finished) {
                             reqJSON(
@@ -1176,7 +1179,7 @@ module.exports = function(args) {
         });
 
         backendBrowser.on("serviceDown", function(service) {
-            console.log("serviceDown: ", service.name);
+            log.info("serviceDown: ", service.name);
             if (backend.events.isConnected()) {
                 if (service.name === myth.bonjour.name)
                     myth.isUp = false;
@@ -1245,8 +1248,8 @@ module.exports = function(args) {
         StreamRecording : function (fileName, encoding, callback) {
             var recording = byFilename[fileName];
 
-            console.log('Stream Recording');
-            console.log(encoding);
+            log.info('Stream Recording');
+            log.info(encoding);
 
             reqJSON(
                 {
@@ -1274,9 +1277,9 @@ module.exports = function(args) {
         StreamVideo : function (videoId, encoding, callback) {
             var video = byVideoId[videoId];
 
-            console.log('Stream Video');
-            console.log("/Content/AddVideoLiveStream?Id=" + video.Id);
-            console.log(encoding);
+            log.info('Stream Video');
+            log.info("/Content/AddVideoLiveStream?Id=" + video.Id);
+            log.info(encoding);
 
             reqJSON(
                 {
@@ -1295,7 +1298,7 @@ module.exports = function(args) {
                     path : "/Content/StopLiveStream?Id=" + StreamId
                 },
                 function (reply) {
-                    console.log(reply);
+                    log.info(reply);
                 }
             );
         },

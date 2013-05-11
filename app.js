@@ -14,6 +14,9 @@ var path = require("path");
 var mdns = require("mdns");
 var ws = require("ws");
 
+var winston = require("winston");
+var log;
+
 // Array Remove - By John Resig (MIT Licensed)
 // http://ejohn.org/blog/javascript-array-remove/
 Array.prototype.remove = function(from, to) {
@@ -21,6 +24,7 @@ Array.prototype.remove = function(from, to) {
   this.length = from < 0 ? this.length + from : from;
   return this.push.apply(this, rest);
 };
+
 
 // Command line arguments
 
@@ -30,9 +34,27 @@ var knownOpts = { "logfile" : path };
 var parsed = nopt(knownOpts, { }, process.argv, 2)
 
 if (parsed.hasOwnProperty("logfile")) {
-    var logfile = fs.createWriteStream(parsed.logfile, { "flags": "a", "encoding": "utf8" });
-    process.__defineGetter__("stdout", function() { return logfile; });
-    console.log("Started log");
+    log = new winston.Logger({
+        transports: [
+            new (winston.transports.File)({
+                filename : parsed.logfile,
+                handleExceptions : true,
+                exitOnError : false,
+                timestamp : false,
+                colorize : false,
+                json : false
+            })
+        ]
+    });
+} else {
+    log = new winston.Logger({
+        transports: [
+            new (winston.transports.Console)({
+                colorize : false,
+                json : false
+            })
+        ]
+    });
 }
 
 // Configuration
@@ -130,13 +152,14 @@ require("./boot")({ app       : app,
                     __dirname : __dirname,
                     MX        : require("./frontpage"),
                     frontends : new (require("./mythtv/frontends.js")),
-                    mxutils   : require("./mxutils")
+                    mxutils   : require("./mxutils"),
+                    log       : log
                   });
 
 if (app.settings.env === "development") {
     app.post("/log", function (req, res) {
         if (req.body.hasOwnProperty("msg"))
-            console.log("Client: " + req.body.msg);
+            log.info("Client: " + req.body.msg);
         res.send(200);
     });
 }
@@ -150,11 +173,11 @@ var websocket;
 var webserver = http.createServer(app)
     .listen(process.env["MX_LISTEN"] || 6565,
             function () {
-                console.log("create a socket server on:");
-                console.log(webserver.address());
+                log.info("create a socket server on:");
+                log.info(webserver.address());
                 websocket = new ws.Server({ server : webserver });
 
-                console.log("MythTV Express server listening on port %d in %s mode",
+                log.info("MythTV Express server listening on port %d in %s mode",
                             webserver.address().port, app.get("env") || "development");
 
                 // MythTV model
@@ -162,7 +185,8 @@ var webserver = http.createServer(app)
                 var mythArgs = {
                     app : app,
                     websocket : websocket,
-                    ws : ws
+                    ws : ws,
+                    log : log
                 };
                 if (process.env["MX_AFFINITY"]) {
                     mythArgs.affinity = process.env["MX_AFFINITY"];

@@ -3,8 +3,8 @@ var slashPattern = /[/]/g;
 
 app.get("/videos", MX, function (req, res) {
 
-    console.log("/videos");
-    console.log(req.query);
+    log.info("/videos");
+    log.info(req.query);
 
     var mythtv = app.mythtv;
 
@@ -33,7 +33,7 @@ app.get("/videos", MX, function (req, res) {
 
 
 app.get("/videoinfo", function (req, res) {
-    console.log("/videoinfo " + req.query.VideoId);
+    log.info("/videoinfo " + req.query.VideoId);
     var mythtv = app.mythtv;
     res.render("info/video", {
         mythtv      : mythtv,

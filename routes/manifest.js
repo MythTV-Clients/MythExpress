@@ -16,18 +16,18 @@ var whitelist3 = ["NETWORK:","*",
                  "ui/buttons","ui/views","videos","videoinfo","watch"];
 
 function deepScan(directory) {
-    // console.log("Scan " + directory);
+    // log.info("Scan " + directory);
     var lastModification = 0;
     var list = [ ];
     fs.readdirSync(directory).forEach(function(file) {
         if (!file.match(filesToIgnore)) {
             var fullPath = directory + '/' + file;
-            // console.log(file);
+            // log.info(file);
             var stats = fs.statSync(fullPath);
-            // console.log(stats);
+            // log.info(stats);
             if (stats.isFile()) {
-                //console.log("stat " + fullPath);
-                //console.log("    file.match(/(^.)|([#~]$)/) " + !!file.match(/^[.]|[#~]$/));
+                //log.info("stat " + fullPath);
+                //log.info("    file.match(/(^.)|([#~]$)/) " + !!file.match(/^[.]|[#~]$/));
                 var modTime = stats.mtime.getTime();
                 if (modTime > lastModification) {
                     lastModification = modTime;
@@ -80,7 +80,7 @@ function buildManifest(req) {
         Browser : manifestLines.concat([cssPath + "browser.css"].concat(whitelist)).join("\n")
     };
 
-    console.log("manifest built with last time @ " + scan.lastModification);
+    log.info("manifest built with last time @ " + scan.lastModification);
 }
 
 
@@ -91,12 +91,12 @@ app.get("/mythexpress.appcache", MX, function (req, res) {
     res.header("Content-Type", "text/cache-manifest");
     res.header("Cache-Control", "no-cache");
     res.send(res.locals.isWebApp ? manifest.WebApp : manifest.Browser);
-    console.log("sent manifest to " + req.headers["user-agent"]);
+    log.info("sent manifest to " + req.headers["user-agent"]);
 });
 
 
 function watchEvent (event, filename) {
-    console.log("watchEvent: " + event + " " + filename);
+    log.info("watchEvent: " + event + " " + filename);
     // on OS/X filename isn't coming through so just reload on any change
     manifest = false;
 }
@@ -107,7 +107,7 @@ function scanAndWatch(directory) {
         var stats = fs.statSync(fullPath);
         if (file.match(/[.](js|css)$/)) {
             fs.watch(fullPath, function (event, filename) {
-                console.log("WatchEvent " + event + " on " + file);
+                log.info("WatchEvent " + event + " on " + file);
                 manifest = false;
             });
         } else {

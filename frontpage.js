@@ -25,14 +25,14 @@ module.exports = function (req, res, next) {
     };
 
     if (!req.xhr) {
-        //console.log("all request cookies:");
-        //console.log(req.cookies);
+        //log.info("all request cookies:");
+        //log.info(req.cookies);
         if (!req.cookies.mythexpress) {
             res.cookie("mythexpress", cookieTicker++, { expires: null, path : "/" });
         }
     }
-    //console.log(req.url);
-    //console.log(req.headers);
+    //log.info(req.url);
+    //log.info(req.headers);
 
     next();
 }

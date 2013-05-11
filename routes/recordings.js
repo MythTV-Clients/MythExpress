@@ -1,7 +1,7 @@
 
 function doRender(req, res, headerData) {
 
-    console.log(req.query);
+    log.info(req.query);
 
     var mythtv = app.mythtv;
 
@@ -38,9 +38,9 @@ function doRender(req, res, headerData) {
 
     }
 
-    // console.log("dorender with locals() and locals:");
-    // console.log(res._locals);
-    // console.log(locals);
+    // log.info("dorender with locals() and locals:");
+    // log.info(res._locals);
+    // log.info(locals);
 
     app.sendHeaders(req, res);
     res.render(req.xhr ? jadeFile : "layout", locals);
@@ -76,8 +76,8 @@ app.get("/properties", MX, function (req, res) {
 
 app.get("/deleterecording", function (req, res) {
     app.mythtv.RemoveRecording(req.query.ChanId, req.query.StartTs, function (reply) {
-        console.log("Reply from /Dvr/RemoveRecorded?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs);
-        console.log(reply);
+        log.info("Reply from /Dvr/RemoveRecorded?ChanId=" + req.query.ChanId + "&StartTime=" + req.query.StartTs);
+        log.info(reply);
         if (!reply.bool) {
             app.mythtv.blast({
                 Alert : true,
@@ -126,8 +126,8 @@ app.get("/recordingedit", function (req, res) {
 
 
 app.post("/recordingedit", function (req, res) {
-    console.log("/recordingedit:");
-    console.log(req.body);
+    log.info("/recordingedit:");
+    log.info(req.body);
 
     var updates = { };
     if (!!req.body.Title)
@@ -142,7 +142,7 @@ app.post("/recordingedit", function (req, res) {
     mxutils.copyProperties(current, updated);
     mxutils.copyProperties(updates, updated);
 
-    console.log(updated);
+    log.info(updated);
     app.mythtv.FillProgramInfo(updated);
 
     res.writeHead(200);

@@ -1,7 +1,7 @@
 
 app.get("/about", MX, function (req, res) {
 
-    console.log(req.query);
+    log.info(req.query);
 
     var group = req.query.hasOwnProperty("Group") ? req.query.Group : "overview";
 

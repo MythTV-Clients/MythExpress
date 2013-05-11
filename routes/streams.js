@@ -97,8 +97,8 @@ function broadcastStreamProgress (parms) {
 
 app.get("/streams", MX, function(req, res) {
 
-    console.log("/streams");
-    console.log(req.query);
+    log.info("/streams");
+    log.info(req.query);
 
     var mythtv = app.mythtv;
 
@@ -160,13 +160,13 @@ app.get("/streams", MX, function(req, res) {
             //     }
             // }
 
-            // console.log('encoding parameters from props ' + recording.VideoProps);
-            // console.log(props);
-            // console.log(encoding);
+            // log.info('encoding parameters from props ' + recording.VideoProps);
+            // log.info(props);
+            // log.info(encoding);
 
             mythtv.StreamRecording(req.query.FileName, encoding, function(reply) {
-                console.log('Streaming reply:');
-                console.log(reply);
+                log.info('Streaming reply:');
+                log.info(reply);
 
                 // force an update to update the list of programs with streams
                 mythtv.StreamList(function(reply) { });
@@ -178,7 +178,7 @@ app.get("/streams", MX, function(req, res) {
 
                         res.render("stream/error", { error : reply },
                                    function(err,html) {
-                                       if (err) console.log(err);
+                                       if (err) log.info(err);
                                        else {
                                            mythtv.blast({
                                                Stream  : req.query.VideoCookie,
@@ -221,8 +221,8 @@ app.get("/streams", MX, function(req, res) {
             var encoding = { Width:  640, Bitrate: 1240000 };
 
             mythtv.StreamVideo(video.Id, encoding, function(reply) {
-                console.log('Streaming reply:');
-                console.log(reply);
+                log.info('Streaming reply:');
+                log.info(reply);
 
                 if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
 
@@ -231,7 +231,7 @@ app.get("/streams", MX, function(req, res) {
 
                         res.render("stream/error", { error : reply },
                                    function(err,html) {
-                                       if (err) console.log(err);
+                                       if (err) log.info(err);
                                        else {
                                            mythtv.blast({
                                                Stream  : req.query.VideoCookie,
@@ -313,7 +313,7 @@ app.get("/streamstatus", function(req, res) {
             normalizeMetadata(req, stream);
             res.render("stream", { stream : stream, MythBackend : backend },
                        function(err,html) {
-                           if (err) console.log(err);
+                           if (err) log.info(err);
                            else streams.push(html);
                        });
         });
@@ -335,9 +335,9 @@ app.get("/seconds", function(req, res) {
 
 
 app.get("/streaminfo", function(req, res) {
-    console.log("/streaminfo " + req.query.StreamId);
+    log.info("/streaminfo " + req.query.StreamId);
     app.mythtv.GetLiveStream(req.query.StreamId, function(reply) {
-        console.log(reply);
+        log.info(reply);
         var stream = reply.LiveStreamInfo;
         normalizeMetadata(req, stream);
         res.render("stream/description", { stream : stream });

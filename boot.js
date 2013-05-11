@@ -11,7 +11,7 @@ module.exports = function (context) {
     // grab a list of our route files
     fs.readdirSync(dir).forEach(function(file) {
         if (file.substr(-3) === ".js" && file >= "0") {
-            console.log('    Boot ' + file);
+            context.log.info('    Boot ' + file);
             var str = fs.readFileSync(dir + '/' + file, 'utf8');
             // inject some pseudo globals by evaluating the file
             // with vm.runInNewContext() instead of loading it with

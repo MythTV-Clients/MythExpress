@@ -2,8 +2,8 @@
 app.get("/ui/buttons", function(req, res) {
     if (!req.query.hasOwnProperty("View"))
         req.query.View = "Programs";
-    console.log("buttons for " + req.query.View);
-    console.log(req.query)
+    log.info("buttons for " + req.query.View);
+    log.info(req.query)
     res.render("ui/buttons", {
         buttons : app.mythtv.viewButtons[req.query.View] || [ ]
     });
