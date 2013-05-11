@@ -107,7 +107,7 @@ module.exports = function () {
 
     this.write = function (commandArguments, listArguments) {
         if (commandArguments[0] === "FILL_PROGRAM_INFO")
-            console.log(mythCommand(commandArguments,listArguments).toString("utf8"));
+            log.info(mythCommand(commandArguments,listArguments).toString("utf8"));
         socket.write(mythCommand(commandArguments,listArguments));
     };
 

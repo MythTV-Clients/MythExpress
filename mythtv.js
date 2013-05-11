@@ -9,8 +9,6 @@ var mxutils = require("./mxutils");
 var mythprotocol = require("./mythtv/mythprotocol");
 var frontends = new (require("./mythtv/frontends"));
 
-var log; // set from arguments
-
 // ////////////////////////////////////////////////////////////////////////
 // Helpers
 // ////////////////////////////////////////////////////////////////////////
@@ -66,8 +64,6 @@ function stringCompare (g1,g2) {
 var backends = [ ];
 
 module.exports = function(args) {
-
-    log = args.log;
 
     var myth = {
         isUp : false,               // true = BE has announced itself on bonjour

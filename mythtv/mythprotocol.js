@@ -235,7 +235,7 @@ module.exports = function () {
     // ////////////////////////////////////////////////
 
     function makeConnection() {
-        console.log("open myth protocol connection " + backend.host + " " + backend.lastConnect.toString());
+        log.info("open myth protocol connection " + backend.host + " " + backend.lastConnect.toString());
         socket.connect(backend.port, backend.host);
         backend.lastConnect = new Date();
     }
@@ -253,7 +253,7 @@ module.exports = function () {
         backend.connectionPending = false;
         backend.connected = true;
 
-        console.log("myth protocol socket connected for " + backend.clientName);
+        log.info("myth protocol socket connected for " + backend.clientName);
         socket.write(["MYTH_PROTO_VERSION", backend.protocolVersion, protocolTokens[backend.protocolVersion]]);
     });
 
@@ -262,19 +262,19 @@ module.exports = function () {
         backend.connected = backend.connectionPending = false;
         if (wasConnected)
             emitDisconnect();
-        console.log("socket closed (withError: " + hadError + ")");
+        log.info("socket closed (withError: " + hadError + ")");
         doConnect();
     });
 
     socket.on("end", function () {
         backend.connected = backend.connectionPending = false;
-        console.log("myth event socket end()");
+        log.info("myth event socket end()");
         emitDisconnect();
     });
 
     socket.on("error", function (error) {
-        console.log("myth event socket error");
-        console.log(error);
+        log.info("myth event socket error");
+        log.info(error);
         if (error.code === "ETIMEDOUT" || error.code === "ECONNREFUSED") {
             // probably the myth host is down
             backend.connected = backend.connectionPending = false;
@@ -318,14 +318,14 @@ module.exports = function () {
                          event.name === "REC_STARTED" ||
                          event.name === "REC_FINISHED" ||
                          event.name === "REC_DELETED") {
-                    console.log('Ignored System event:');
-                    console.log(event);
+                    log.info('Ignored System event:');
+                    log.info(event);
                     // do nothing
                 }
 
                 else {
-                    console.log('System event:');
-                    console.log(event);
+                    log.info('System event:');
+                    log.info(event);
                 }
             }
 
@@ -376,8 +376,8 @@ module.exports = function () {
                 }
 
                 else {
-                    console.log('Non system event:');
-                    console.log(message);
+                    log.info("Non system event:");
+                    log.info(message);
                 }
             }
         }
@@ -398,7 +398,7 @@ module.exports = function () {
                 });
             } else {
                 backend.keepOpen = false;
-                console.log("Unknown protocol version '" + backend.protocolVersion + "'");
+                log.info("Unknown protocol version '" + backend.protocolVersion + "'");
             }
         }
 

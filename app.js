@@ -57,6 +57,8 @@ if (parsed.hasOwnProperty("logfile")) {
     });
 }
 
+global.log = log;      // too much trouble to pass this around everywhere
+
 // Configuration
 
 app.configure(function() {

@@ -20,7 +20,7 @@ var frontendBrowser = mdns.createBrowser(mdns.tcp('mythfrontend'));
 var frontendEvents = new events.EventEmitter();
 
 frontendBrowser.on('serviceUp', function(service) {
-    //console.log("frontend up: ", service);
+    //log.info("frontend up: ", service);
     var addr = mxutils.filterIPv4(service.addresses);
     if (addr.length > 0) {
         service.ipv4 = addr[0];
@@ -32,7 +32,7 @@ frontendBrowser.on('serviceUp', function(service) {
 });
 
 frontendBrowser.on('serviceDown', function(service) {
-    //console.log("frontend down: ", service);
+    //log.info("frontend down: ", service);
     if (frontends.byName.hasOwnProperty(service.name)) {
         var serv = frontends.byName[service.name];
         delete frontends.byHost[serv.shortHost];
@@ -56,8 +56,8 @@ function SendMessage(host, message, senderCookie) {
                 if (reply.match(/OK/)) {
                     socket.end("exit\n");
                 } else if (reply.match(/ERROR/)) {
-                    console.log(message);
-                    console.log(reply);
+                    log.info(message);
+                    log.info(reply);
                     var lines = reply.split(/\n/);
                     frontendEvents.emit("senderror", { Host: host, SenderCookie : senderCookie, Error : lines[0] });
                     socket.end("exit\n");
@@ -115,12 +115,12 @@ function SendToFrontend (args, mythtv) {
     }
 
     // if (request) {
-    //     console.log("Request: ", request);
+    //     log.info("Request: ", request);
     //     SendRequest(args.Host, request, args.SenderCookie);
     // }
 
     if (message.length > 0) {
-        console.log("Message: " + message);
+        log.info("Message: " + message);
         SendMessage(args.Host, message, args.SenderCookie);
     }
 }
