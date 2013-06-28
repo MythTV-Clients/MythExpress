@@ -18,9 +18,8 @@ First off, a couple of patches are required for your MythTV system:
 
     http://code.mythtv.org/trac/ticket/10773
     http://code.mythtv.org/trac/ticket/10825
-    http://code.mythtv.org/trac/ticket/11032
 
-Node’s Bonjour browser rejects the service name used by myth so the first patch is essential (should you have another client which depends on myth’s stock bonjour name you can modify the patch to advertise under both names). The second patch guards against a backend crash when two MythExpress instances exist on the same network. The third corrects a problem where bookmarks are ignored on recordings started through the frontend’s network control interface.
+Node’s Bonjour browser rejects the service name used by myth so the first patch is essential (should you have another client which depends on myth’s stock bonjour name you can modify the patch to advertise under both names). The second patch guards against a backend crash when two MythExpress instances exist on the same network.
 
 It’s typical to run MythExpress on the same host as MythTV but it can go anywhere on your network so long as it has visibility to your myth server(s).
 
