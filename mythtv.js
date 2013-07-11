@@ -5,6 +5,7 @@ var net = require('net');
 var fs = require('fs');
 var mdns = require('mdns');
 var async = require('async');
+var xml2js = require('xml2js');
 var mxutils = require("./mxutils");
 var mythprotocol = require("./mythtv/mythprotocol");
 var frontends = new (require("./mythtv/frontends"));
@@ -85,7 +86,9 @@ module.exports = function(args) {
         method : 'GET',
         headers : { 'content-type': 'text/plain',
                     'connection': 'keep-alive',
-                    'accept': 'application/json' }
+                    'accept': 'application/json' },
+        // for adapting to service api changes
+        ContentAPI : 1.32
     };
 
     var viewButtons = {
@@ -135,7 +138,7 @@ module.exports = function(args) {
     }
 
 
-    function reqJSON (options, callback) {
+    function serviceRequest(options, callback) {
         var allOptions = { };
         Object.keys(backend).forEach(function (option) {
             allOptions[option] = backend[option];
@@ -151,32 +154,55 @@ module.exports = function(args) {
                 //response += chunk.substr(0, chunk.length-2);
             });
 
-            reply.on('end', function() {
-                response = response.replace(/[\r\n]/g, "");
-                var jsObject;
-                try {
-                    jsObject = JSON.parse(response);
-                } catch (err) {
-                    log.info("reqJSON got an error reply: " + response);
-                    log.info(allOptions.path);
-                    if (response.length > 0) {
-                        // probably we got back an error xml, convert and
-                        // flatten. For some reason myth sends two copies of
-                        // the error so first reduce it back to one error
-                        var errXML = "<?" + response.split(/<[?]/)[1];
-                        jsObject = mxutils.xmlStringToObject(errXML).detail;
-                    } else {
-                        jsObject = {
-                            errorCode : "ServerError",
-                            errorDescription : "MythTV sent back an empty response"
-                        };
-                    }
-                    jsObject.url = "http://" + allOptions.host + ":" + allOptions.port + allOptions.path;
-                }
-                callback(jsObject);
-            })
+            reply.on('end', function () {
+                callback(response);
+            });
         });
         req.end();
+    }
+
+    function reqJSON (options, callback) {
+        serviceRequest(options, function (reply) {
+            response = reply.replace(/[\r\n]/g, "");
+            var jsObject;
+            try {
+                jsObject = JSON.parse(response);
+            } catch (err) {
+                log.info("reqJSON got an error reply: " + response);
+                log.info(options.path);
+                if (response.length > 0) {
+                    // probably we got back an error xml, convert and
+                    // flatten. For some reason myth sends two copies of
+                    // the error so first reduce it back to one error
+                    var errXML = "<?" + response.split(/<[?]/)[1];
+                    jsObject = mxutils.xmlStringToObject(errXML).detail;
+                } else {
+                    jsObject = {
+                        errorCode : "ServerError",
+                        errorDescription : "MythTV sent back an empty response"
+                    };
+                }
+                jsObject.url = "http://" + options.host + ":" + options.port + allOptions.path;
+            }
+            callback(jsObject);
+        })
+    }
+
+    function reqXML (options, callback) {
+        // some services are XML only (&*^&%&^%$^%$%$#@@!@)
+        serviceRequest(options, function (reply) {
+            response = reply.replace(/[\r\n]/g, "");
+            var jsObject;
+            try {
+                var parser = new xml2js.Parser();
+                parser.parseString(response, function (err, jsObject) {
+                    callback(jsObject);
+                });
+            } catch (err) {
+                log.info("reqXML got an error reply");
+                log.info(jsObject);
+            }
+        })
     }
 
 
@@ -741,8 +767,11 @@ module.exports = function(args) {
             }
 
             // get rid of stranded streams here until the BE does it
-            reqJSON({ path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName },
+            var operation = backend.ContentAPI < 1.33 ? "GetFilteredLiveStreamList" : "GetLiveStreamList";
+            reqJSON({ path : "/Content/" + operation + "?FileName=" + fileName },
                     function (reply) {
+                        console.log("/Content/" + operation + "?FileName=" + fileName);
+                        console.log(reply);
                         reply.LiveStreamInfoList.LiveStreamInfos.forEach(function (stream) {
                             log.info("remove stream " + stream.Id);
                             reqJSON({ path : "/Content/RemoveLiveStream?Id=" + stream.Id },
@@ -1156,8 +1185,20 @@ module.exports = function(args) {
                                 );
                             }
                         ],
+                        getContentServicesVersion : function (finished) {
+                            reqXML(
+                                {
+                                    path : "/Content/wsdl"
+                                },
+                                function (reply) {
+                                    backend.ContentAPI = reply.definitions.service[0].documentation[0].split(/ /)[2] + 0.0;
+                                    console.log("Content API version : " + backend.ContentVersion);
+                                    finished(null);
+                                }
+                            );
+                        },
                         connectToBackend : [
-                            "getProtocolPort",
+                            "getProtocolPort", "getContentServicesVersion",
                             function (finished) {
                                 backend.events.connect({
                                     host       : backend.host,
@@ -1315,9 +1356,10 @@ module.exports = function(args) {
         },
 
         FilteredStreamList : function (fileName, callback) {
+            var operation = backend.ContentAPI < 1.33 ? "GetFilteredLiveStreamList" : "GetLiveStreamList";
             reqJSON(
                 {
-                    path : "/Content/GetFilteredLiveStreamList?FileName=" + fileName
+                    path : "/Content/" + operation + "?FileName=" + fileName
                 },
                 function (reply) {
                     callback(reply);
