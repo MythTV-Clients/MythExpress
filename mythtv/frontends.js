@@ -93,7 +93,7 @@ function SendToFrontend (args, mythtv) {
     if (args.hasOwnProperty("FileName") && mythtv.byFilename.hasOwnProperty(args.FileName)) {
         var prog = mythtv.byFilename[args.FileName];
         // should be a UTC -> local transform for protocols < 75
-        message = "play program " + prog.Channel.ChanId + " " + prog.Recording.StartTs.slice(0,-1) + " resume";
+        message = "play program " + prog.Channel.ChanId + " " + prog.Recording.StartTs.split("Z")[0] + " resume";
         request = {
             Command : "PlayRecording",
             Args : {
