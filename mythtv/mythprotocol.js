@@ -43,7 +43,9 @@ var protocolTokens = {
     "75" : "SweetRock",
     "76" : "FireWilde",
     "77" : "WindMark",
-    "Latest" : "77"
+    "78" : "IceBurns",
+    "79" : "SeaBird",
+    "Latest" : "78"
 };
 
 var reconnectInterval = 6;
@@ -121,6 +123,9 @@ module.exports = function () {
             program.Season = message.shift();
             program.Episode = message.shift();
         }
+        if (backend.protocolVersion >= "78") {
+            var totalEpisodes = message.shift();
+        }
         if (backend.protocolVersion >= "76") {
             program.SyndicatedEpisode = message.shift();
         }
@@ -172,6 +177,10 @@ module.exports = function () {
         if (backend.protocolVersion >= "76") {
             program.PartNumber = message.shift();
             program.PartTotal = message.shift();
+        }
+
+        if (backend.protocolVersion >= "79") {
+            var recInput = message.shift();
         }
 
         return program;
