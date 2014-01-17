@@ -91,7 +91,7 @@ app.configure("production", function() {
             "dataType" : "javascript",
             "stale" : true,
             "files" : [
-                "jquery-2.0.0.js",
+                "jquery-2.0.3.js",
                 "jquery-ui-1.10.2.custom.js",
                 "json2.js",
                 "history.options.js",
