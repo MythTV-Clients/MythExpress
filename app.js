@@ -79,7 +79,6 @@ app.configure("development", function() {
 app.configure("production", function() {
     app.use(express.errorHandler());
     app.use(express.compress());
-    app.use(express.staticCache());
     app.use(express.static(__dirname + '/public', {maxAge: 18 * 24 * 60 * 60 }));
 
     // we only minify in production
