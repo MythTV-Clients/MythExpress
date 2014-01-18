@@ -14,9 +14,6 @@ var path = require("path");
 var mdns = require("mdns2");
 var ws = require("ws");
 
-var winston = require("winston");
-var log;
-
 // Array Remove - By John Resig (MIT Licensed)
 // http://ejohn.org/blog/javascript-array-remove/
 Array.prototype.remove = function(from, to) {
@@ -33,29 +30,12 @@ var nopt = require("nopt");
 var knownOpts = { "logfile" : path };
 var parsed = nopt(knownOpts, { }, process.argv, 2)
 
-if (parsed.hasOwnProperty("logfile")) {
-    log = new winston.Logger({
-        transports: [
-            new (winston.transports.File)({
-                filename : parsed.logfile,
-                handleExceptions : true,
-                exitOnError : false,
-                timestamp : false,
-                colorize : false,
-                json : false
-            })
-        ]
-    });
-} else {
-    log = new winston.Logger({
-        transports: [
-            new (winston.transports.Console)({
-                colorize : false,
-                json : false
-            })
-        ]
-    });
-}
+
+var Log = require("log");
+var log = new Log("debug",
+                  parsed.hasOwnProperty("logfile")
+                  ? fs.createWriteStream(parsed.logfile)
+                  : process.stderr);
 
 global.log = log;      // too much trouble to pass this around everywhere
 
