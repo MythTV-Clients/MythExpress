@@ -1,7 +1,7 @@
 if recording.length == 1
-  episode = recording[0]
-  ShowTitle = true
-  include episode
+  - ShowTitle = true
+  each episode in recording
+    include episode
 else
   .mx-Clickable.mx-Folder.mx-Data
     img.Folder(src="img/folder.png",width=128,height=92,alt=recording[0].Title)
