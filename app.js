@@ -64,7 +64,8 @@ global.log = log;      // too much trouble to pass this around everywhere
 app.configure(function() {
     app.set("views", __dirname + "/views");
     app.set("view engine", "jade");
-    app.use(express.bodyParser());
+    app.use(express.urlencoded());
+    app.use(express.json());
     app.use(express.methodOverride());
     app.use(express.cookieParser());
 });
