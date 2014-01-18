@@ -1,4 +1,5 @@
 
+var _ = require("underscore");
 var http = require('http');
 var path = require('path');
 var net = require('net');
@@ -320,18 +321,16 @@ module.exports = function(args) {
             if (allClients) log.info('blast ' + msgStr);
             else log.info('blast ' + msgStr + " (" + client + ")");
 
-            var closed = [ ];
             wssClients.forEach(function (webSocket, idx) {
                 if (webSocket.readyState === args.ws.OPEN) {
                     if (allClients) webSocket.send(msgStr);
                     if (byIndex && idx == client) webSocket.send(msgStr);
                     if (byCookie && webSocket.mxCookie === client) webSocket.send(msgStr);
-                } else if (webSocket.readyState === args.ws.CLOSED) {
-                    closed.unshift(idx);
                 }
             });
-            closed.forEach(function (clientIdx) {
-                wssClients.remove(clientIdx);
+
+            wssClients = _.filter(wssClients, function (client) {
+                return client.readyState != args.ws.CLOSED;
             });
         }
 
@@ -578,15 +577,13 @@ module.exports = function(args) {
 
     function delRecordingFromRecGroup (recording, recGroup) {
         if (byRecGroup.hasOwnProperty(recGroup) && byRecGroup[recGroup].hasOwnProperty(recording.Title)) {
-            var episodes = byRecGroup[recGroup][recording.Title];
-
             var found = false
-            for (i = 0; !found && i < episodes.length; i++) {
-                if (episodes[i].FileName === recording.FileName) {
-                    found = true;
-                    episodes.remove(i);
-                }
-            }
+
+            var episodes = _.filter(byRecGroup[recGroup][recording.Title], function (episode) {
+                var match = episode.FileName === recording.FileName;
+                found |= match;
+                return !match;
+            });
 
             if (found) {
                 eventSocket.recordingChange({ group : recGroup, title : recording.Title});
