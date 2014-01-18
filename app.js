@@ -11,7 +11,7 @@ var app = module.exports = express();
 var http = require("http");
 var url = require("url");
 var path = require("path");
-var mdns = require("mdns");
+var mdns = require("mdns2");
 var ws = require("ws");
 
 var winston = require("winston");
