@@ -585,6 +585,8 @@ module.exports = function(args) {
                 return !match;
             });
 
+            byRecGroup[recGroup][recording.Title] = episodes;
+
             if (found) {
                 eventSocket.recordingChange({ group : recGroup, title : recording.Title});
 
