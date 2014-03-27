@@ -45,7 +45,8 @@ var protocolTokens = {
     "77" : "WindMark",
     "78" : "IceBurns",
     "79" : "BasaltGiant",
-    "80" : "SeaBird",
+    "80" : "TaDah!",
+    "81" : "SeaBird",
     "Latest" : "78"
 };
 
@@ -184,7 +185,7 @@ module.exports = function () {
             var categoryType = message.shift();
         }
 
-        if (backend.protocolVersion >= "80") {
+        if (backend.protocolVersion >= "81") {
             var recInput = message.shift();
         }
 
