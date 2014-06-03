@@ -46,8 +46,10 @@ var protocolTokens = {
     "78" : "IceBurns",
     "79" : "BasaltGiant",
     "80" : "TaDah!",
-    "81" : "SeaBird",
-    "Latest" : "78"
+    "81" : "MultiRecDos",
+    "82" : "IdIdO",
+    "83" : "SeaBird",
+    "Latest" : "82"
 };
 
 var reconnectInterval = 6;
@@ -185,7 +187,11 @@ module.exports = function () {
             var categoryType = message.shift();
         }
 
-        if (backend.protocolVersion >= "81") {
+        if (backend.protocolVersion >= "82") {
+            program.Recording.RecordedId = message.shift();
+        }
+
+        if (backend.protocolVersion >= "83") {
             var recInput = message.shift();
         }
 
@@ -241,6 +247,14 @@ module.exports = function () {
         message.push(program.VideoProps);
         message.push(program.SubProps);
         message.push(program.Year);
+
+        if (backend.protocolVersion >= "82") {
+            message.push(program.Recording.RecordedId);
+        }
+
+        if (backend.protocolVersion >= "83") {
+            message.push(""); // recInput
+        }
 
         return message;
     };
