@@ -48,7 +48,6 @@ var protocolTokens = {
     "80" : "TaDah!",
     "81" : "MultiRecDos",
     "82" : "IdIdO",
-    "83" : "SeaBird",
     "Latest" : "82"
 };
 
@@ -191,10 +190,6 @@ module.exports = function () {
             program.Recording.RecordedId = message.shift();
         }
 
-        if (backend.protocolVersion >= "83") {
-            var recInput = message.shift();
-        }
-
         return program;
     };
 
@@ -250,10 +245,6 @@ module.exports = function () {
 
         if (backend.protocolVersion >= "82") {
             message.push(program.Recording.RecordedId);
-        }
-
-        if (backend.protocolVersion >= "83") {
-            message.push(""); // recInput
         }
 
         return message;
