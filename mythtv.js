@@ -1301,7 +1301,8 @@ module.exports = function(args) {
         RemoveRecording : function (ChanId, StartTs, callback) {
             reqJSON(
                 {
-                    path : "/Dvr/RemoveRecorded?ChanId=" + ChanId + "&StartTime=" + StartTs
+                    path   : "/Dvr/RemoveRecorded?ChanId=" + ChanId + "&StartTime=" + StartTs,
+                    method : backendProtocol >= "82" ? "POST" : "GET"
                 },
                 function (reply) {
                     callback(reply);
