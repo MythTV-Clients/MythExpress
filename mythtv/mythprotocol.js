@@ -48,7 +48,8 @@ var protocolTokens = {
     "80" : "TaDah!",
     "81" : "MultiRecDos",
     "82" : "IdIdO",
-    "Latest" : "82"
+    "83" : "BreakingGlass",
+    "Latest" : "83"
 };
 
 var reconnectInterval = 6;
