@@ -171,7 +171,7 @@ app.get("/streams", MX, function(req, res) {
                 // force an update to update the list of programs with streams
                 mythtv.StreamList(function(reply) { });
 
-                if (req.cookies.hasOwnProperty("mythexpress") && req.query.hasOwnProperty("VideoCookie")) {
+                if ("mythexpress" in req.cookies && "VideoCookie" in req.query) {
 
                     if (reply.hasOwnProperty("errorCode")) {
                         // { errorCode: '401', errorDescription: 'Invalid Action' }
