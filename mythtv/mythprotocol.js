@@ -393,6 +393,7 @@ module.exports = function () {
                          msgType === "ASK_RECORDING" ||
                          msgType === "COMMFLAG_START" ||
                          msgType === "COMMFLAG_UPDATE" ||
+                         msgType === "FILE_WRITTEN" ||
                          msgType === "SCHEDULE_CHANGE") {
                 }
 
