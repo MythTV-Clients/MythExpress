@@ -7,12 +7,14 @@ var os = require("os");
 var fs = require("fs");
 var util = require("util");
 var express = require("express");
+var jade = require("jade");
 var app = module.exports = express();
 var http = require("http");
 var url = require("url");
 var path = require("path");
 var mdns = require("mdns2");
 var ws = require("ws");
+var _ = require("underscore");
 
 
 // Command line arguments
@@ -120,6 +122,7 @@ app.sendHeaders = function (req, res) {
 // Routes
 
 require("./boot")({ app       : app,
+                    jade      : jade,
                     url       : url,
                     os        : os,
                     fs        : fs,
@@ -127,6 +130,7 @@ require("./boot")({ app       : app,
                     __dirname : __dirname,
                     MX        : require("./frontpage"),
                     frontends : new (require("./mythtv/frontends.js")),
+                    "_"       : _,
                     mxutils   : require("./mxutils"),
                     log       : log
                   });
