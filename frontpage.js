@@ -1,4 +1,6 @@
 
+var _ = require("underscore");
+
 var cookieTicker = +new Date();
 
 module.exports = function (req, res, next) {
@@ -24,15 +26,19 @@ module.exports = function (req, res, next) {
         Group : req.query.Group || "Default"
     };
 
-    if (!req.xhr) {
+    log.info(req.url);
+    log.info(req.headers);
+
+    if (req.xhr || _.contains(["/mythexpress.appcache", "/js/templates.js", "/js/runtime.js"], req.url)) {
+        next();
+    } else {
+        log.info("Rendering main page");
         //log.info("all request cookies:");
         //log.info(req.cookies);
         if (!req.cookies.mythexpress) {
             res.cookie("mythexpress", cookieTicker++, { expires: null, path : "/" });
         }
+        res.render("layout");
     }
-    //log.info(req.url);
-    //log.info(req.headers);
 
-    next();
 }

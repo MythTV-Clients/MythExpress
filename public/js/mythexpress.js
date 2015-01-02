@@ -125,8 +125,8 @@ $(document).ready(function() {
     var updateButtons;  // this is a forward reference for the function
 
     function loadCurrentView(State) {
-        //console.log("get " + State.url);
-        //console.log(State);
+        console.log("get " + State.url);
+        console.log(State);
         if (State.url.substr(-8) === "/streams" && State.data.hasOwnProperty("VideoCookie")) {
             $("#Content").html(requestingMessage);
             $("#VideoCookie").text(State.data.VideoCookie);
@@ -154,26 +154,31 @@ $(document).ready(function() {
 
                 checkCookie($.cookie("mythexpress"));
 
+                var headers;
+                if (headers = getDataFromHeaders(jqXHR.getAllResponseHeaders())) {
+                    var newTitle = document.title;
+                    if (headers.hasOwnProperty("Title")) {
+                        document.title = newTitle = headers.Title;
+                    }
+                }
+                console.log(headers);
+
+                if (jqXHR.hasOwnProperty("responseJSON")) {
+                    console.log(jqXHR.responseJSON);
+                    var r = jqXHR.responseJSON;
+                    markup = document.templates[r.Template](r);
+                }
+
                 $("#Content")
                     .css("display","block")
                     .html(markup);
 
-                //console.log(jqXHR.getAllResponseHeaders());
                 //console.log("MX cookie: " + $.cookie("mythexpress"));
-
-                var newState;
-                if (newState = getDataFromHeaders(jqXHR.getAllResponseHeaders())) {
-                    var newTitle = document.title;
-                    if (newState.hasOwnProperty("Title")) {
-                        document.title = newTitle = newState.Title;
-                    }
-                }
-                //console.log(newState);
 
                 $("#Title").text(document.title);
 
-                if (newState.hasOwnProperty("View") && newState.View !== $("#Buttons").attr("data-View")) {
-                    updateButtons(newState.View);
+                if (headers.hasOwnProperty("View") && headers.View !== $("#Buttons").attr("data-View")) {
+                    updateButtons(headers.View);
                 }
 
                 if (markup.match(/mx-StreamList/)) {
@@ -571,6 +576,8 @@ $(document).ready(function() {
                         .dialog("open");
                     $.get("/recordinginfo", target.dataAttrs(["FileName"]),
                           function (info, textStatus, jqXHR) {
+                              var r = jqXHR.responseJSON;
+                              info = document.templates[r.Template](r);
                               $("#InfoDialogContent").html(info);
                           });
                 }
@@ -595,6 +602,8 @@ $(document).ready(function() {
                         .dialog("open");
                     $.get("/videoinfo", target.dataAttrs(["VideoId"]),
                           function (info, textStatus, jqXHR) {
+                              var r = jqXHR.responseJSON;
+                              info = document.templates[r.Template](r);
                               $("#InfoDialogContent").html(info);
                           });
                 }
@@ -881,7 +890,7 @@ $(document).ready(function() {
     (function () {
         var context = $("#Context");
         if (context.length > 0) {
-            context = JSON.parse(context.html());
+            context = { }; //JSON.parse(context.html());
             var newTitle = document.title;
             if (context.hasOwnProperty("Title")) {
                 newTitle = context.Title;

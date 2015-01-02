@@ -73,6 +73,8 @@ app.configure("production", function() {
                 "history.adapter.jquery.js",
                 "jquery.cookie.js",
                 "lightbox.js",
+                "runtime.js",
+                "templates.js",
                 "mythexpress.js"
             ]
         },
@@ -115,8 +117,8 @@ app.sendHeaders = function (req, res) {
 };
 
 
-//var frontPage = require("./frontpage");
-//app.use(frontPage);
+var frontPage = require("./frontpage");
+app.use(frontPage);
 
 
 // Routes
@@ -128,7 +130,7 @@ require("./boot")({ app       : app,
                     fs        : fs,
                     util      : util,
                     __dirname : __dirname,
-                    MX        : require("./frontpage"),
+                    MX        : function (req, res, next) { next(); },
                     frontends : new (require("./mythtv/frontends.js")),
                     "_"       : _,
                     mxutils   : require("./mxutils"),

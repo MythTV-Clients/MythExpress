@@ -58,6 +58,15 @@ function stringCompare (g1,g2) {
     return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1;
 }
 
+function FormatAirdate(airdate) {
+    var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));
+    return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]
+        + ", "
+        + ["January","February","March","April","May","June","July",
+           "August","September","October","November","December"][d.getMonth()]
+        + " " + d.getDate() + ", " + d.getFullYear();
+}
+
 
 // ////////////////////////////////////////////////////////////////////////
 // Globals
@@ -628,6 +637,8 @@ module.exports = function(args) {
 
         program.ProgramFlags_ = flags;
         program.mx = mx;
+
+        program.AirdateFormatted = program.Airdate ? FormatAirdate(program.Airdate) : "";
     }
 
     function emptyProgram (fileName) {
@@ -886,6 +897,7 @@ module.exports = function(args) {
             { path : '/Video/GetVideoList' },
             function (videos) {
                 videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
+                    video.ReleaseDateFormatted = video.ReleaseDate ? FormatAirdate(video.ReleaseDate) : "";
                     byVideoId[video.Id] = video;
                     byFilename[video.FileName] = video;
                     var curPath = "";
@@ -1265,15 +1277,6 @@ module.exports = function(args) {
         fileHasStream : fileHasStream,
 
         blast : eventSocket.blast,
-
-        FormatAirdate : function(airdate) {
-            var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));
-            return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]
-                + ", "
-                + ["January","February","March","April","May","June","July",
-                   "August","September","October","November","December"][d.getMonth()]
-                + " " + d.getDate() + ", " + d.getFullYear();
-        },
 
 
         GetRecordingRecord : function (chanId, startTs) {
