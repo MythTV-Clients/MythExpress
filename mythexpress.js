@@ -12,7 +12,7 @@ var app = module.exports = express();
 var http = require("http");
 var url = require("url");
 var path = require("path");
-var mdns = require("mdns2");
+var mdns = require("mdns");
 var ws = require("ws");
 var _ = require("underscore");
 
