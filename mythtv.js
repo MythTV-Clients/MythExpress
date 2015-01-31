@@ -729,21 +729,17 @@ module.exports = function(args) {
         } else log.info("    ignored due to pending retrieve");
     }
 
-    function retrieveAndAddRecording (chanId, startTs) {
-        var chanKey = getChanKey(chanId, startTs);
-        if (!pendingRetrieves.hasOwnProperty(chanKey)) {
-            pendingRetrieves[chanKey] = true;
-            log.info('retrieveAndAddRecording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
-            reqJSON(
-                {
-                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
-                },
-                function (response) {
-                    //log.info('retrieveAndAddRecording');
-                    //log.info(response);
-                    takeAndAddRecording(response.Program, true);
-                });
-        } else log.info("    ignored due to pending retrieve");
+    function retrieveAndAddRecording (recordedId) {
+        log.info('retrieveAndAddRecording /Dvr/GetRecorded?RecordedId=' + recordedId);
+        reqJSON(
+            {
+                path : '/Dvr/GetRecorded?RecordedId=' + recordedId
+            },
+            function (response) {
+                //log.info('retrieveAndAddRecording');
+                //log.info(response);
+                takeAndAddRecording(response.Program, true);
+            });
     };
 
     function deleteByChanId (chanKey) {
@@ -1100,8 +1096,8 @@ module.exports = function(args) {
     backend.events.on("RECORDING_LIST_CHANGE", function (event, program) {
 
         if (event.changeType === "ADD") {
-            log.info("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.StartTs);
-            retrieveAndAddRecording(event.ChanId, event.StartTs)
+            log.info("RECORDING_LIST_CHANGE add " + event.RecordedId);
+            retrieveAndAddRecording(event.RecordedId)
         }
 
         else if (event.changeType === "UPDATE") {

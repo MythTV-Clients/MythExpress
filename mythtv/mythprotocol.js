@@ -49,7 +49,8 @@ var protocolTokens = {
     "81" : "MultiRecDos",
     "82" : "IdIdO",
     "83" : "BreakingGlass",
-    "Latest" : "83"
+    "84" : "CanaryCoalmine",
+    "Latest" : "84"
 };
 
 var reconnectInterval = 6;
@@ -363,8 +364,7 @@ module.exports = function () {
                         changeType : change[0]
                     };
                     if (event.changeType === "ADD" || event.changeType === "DELETE") {
-                        event.ChanId = change[1];
-                        event.StartTs = change[2];
+                        event.RecordedId = change[1];
                     }
                     process.nextTick(function () {
                         This.emit("RECORDING_LIST_CHANGE", event, program);
