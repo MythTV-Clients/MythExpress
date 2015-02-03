@@ -838,8 +838,7 @@ $(document).ready(function() {
     }, false);
 
     window.applicationCache.addEventListener("updateready",  function() {
-        applyUpdate({ Alert : true, Category : "Cache", Class : "Alert",
-                      Message : "Please reload MythExpress to enable the updates" });
+        location.reload();
     }, false);
 
     window.applicationCache.addEventListener("obsolete",  function() {
