@@ -15,7 +15,7 @@ var path = require("path");
 var mdns = require("mdns");
 var ws = require("ws");
 var _ = require("underscore");
-
+var mxutils = require("./mxutils");
 
 // Command line arguments
 
@@ -76,7 +76,21 @@ app.configure("production", function() {
                 "runtime.js",
                 "templates.js",
                 "mythexpress.js"
-            ]
+            ],
+            "preManipulate" : {
+                "^" : [
+                    function (file, path, index, isLast, callback) {
+                        // runtime and templates are dynamically generated
+                        if (path.substr(-13) == "js/runtime.js") {
+                            callback(mxutils.jadeRuntime());
+                        } else if (path.substr(-15) == "js/templates.js") {
+                            callback(mxutils.clientSideTemplates());
+                        } else {
+                            callback(file);
+                        }
+                    }
+                ]
+            },
         },
         "browser" : {
             "route" : new RegExp("/css/dark-hive/browser.css"),
@@ -133,7 +147,7 @@ require("./boot")({ app       : app,
                     MX        : function (req, res, next) { next(); },
                     frontends : new (require("./mythtv/frontends.js")),
                     "_"       : _,
-                    mxutils   : require("./mxutils"),
+                    mxutils   : mxutils,
                     log       : log
                   });
 

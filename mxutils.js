@@ -1,4 +1,9 @@
 
+var fs = require("fs");
+var jade = require("jade");
+var _ = require("underscore");
+
+
 // these two functions take a simple xml string like:
 // <?xml version="1.0" encoding="utf-8"?><detail><errorCode>401</errorCode><errorDescription>Invalid Action</errorDescription></detail>
 // and break it into an array like:
@@ -57,3 +62,55 @@ exports.copyProperties = function (src, dst) {
     });
     return dst;
 };
+
+
+// prepare jade files in the views directory for client-side use
+
+
+var compileOptions = {
+    client: true,
+    compileDebug: false,
+    pretty: false
+};
+
+function scanFolder(folder, paths) {
+    
+    fs.readdirSync(folder).forEach(function(file) {
+        var fullName = folder + "/" + file;
+        if (file.substr(-5) === ".jade" && file >= "0") {
+            var src = fs.readFileSync(fullName, { encoding: "utf8" });
+            compileOptions.filename = fullName;
+            paths[fullName] = jade.compileClient(src, compileOptions);
+        } else {
+            var stats = fs.statSync(fullName);
+            if (stats.isDirectory()) {
+                scanFolder(fullName, paths);
+            }
+        }
+    });
+
+    return paths;
+
+}
+
+exports.clientSideTemplates = function() {
+
+    var dir = __dirname + "/views";
+
+    var fullPaths = scanFolder(dir, { });
+
+    var body = "document.templates = {" +
+        _.map(fullPaths, function (val, key) {
+            var newKey = key.substr(dir.length+1).replace(".jade","");
+            return '"' + newKey + '" : ' + fullPaths[key];
+        }).join(",") +
+        "};";
+
+    return body;
+}
+
+exports.jadeRuntime = function() {
+
+    return fs.readFileSync(__dirname + "/node_modules/jade/runtime.js", "utf8")
+
+}
