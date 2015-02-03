@@ -192,7 +192,7 @@ module.exports = function(args) {
                         errorDescription : "MythTV sent back an empty response"
                     };
                 }
-                jsObject.url = "http://" + options.host + ":" + options.port + allOptions.path;
+                jsObject.url = "http://" + options.host + ":" + options.port + options.path;
             }
             callback(jsObject);
         })
