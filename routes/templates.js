@@ -7,7 +7,7 @@ app.get("/js/templates.js", function (req, res) {
     res.set("Content-Type", "text/javascript");
     res.status(200);
 
-    res.send(mxutls.clientSideTemplates());
+    res.send(mxutils.clientSideTemplates());
 
     res.end();
 

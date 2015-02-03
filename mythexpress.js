@@ -73,17 +73,17 @@ app.configure("production", function() {
                 "history.adapter.jquery.js",
                 "jquery.cookie.js",
                 "lightbox.js",
-                "runtime.js",
-                "templates.js",
+                "dummy-runtime.js",
+                "dummy-templates.js",
                 "mythexpress.js"
             ],
             "preManipulate" : {
                 "^" : [
                     function (file, path, index, isLast, callback) {
                         // runtime and templates are dynamically generated
-                        if (path.substr(-13) == "js/runtime.js") {
+                        if (path.substr(-19) == "js/dummy-runtime.js") {
                             callback(mxutils.jadeRuntime());
-                        } else if (path.substr(-15) == "js/templates.js") {
+                        } else if (path.substr(-21) == "js/dummy-templates.js") {
                             callback(mxutils.clientSideTemplates());
                         } else {
                             callback(file);
