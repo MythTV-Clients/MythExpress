@@ -50,7 +50,8 @@ var protocolTokens = {
     "82" : "IdIdO",
     "83" : "BreakingGlass",
     "84" : "CanaryCoalmine",
-    "Latest" : "84"
+    "85" : "BluePool"
+    "Latest" : "85"
 };
 
 var reconnectInterval = 6;
