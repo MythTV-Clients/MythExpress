@@ -50,7 +50,7 @@ var protocolTokens = {
     "82" : "IdIdO",
     "83" : "BreakingGlass",
     "84" : "CanaryCoalmine",
-    "85" : "BluePool"
+    "85" : "BluePool",
     "Latest" : "85"
 };
 
