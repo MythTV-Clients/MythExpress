@@ -1186,7 +1186,10 @@ module.exports = function(args) {
                                             "HostName=" + backend.hostName
                                     },
                                     function (reply) {
-                                        backend.protocolPort = reply.SettingList.Settings.BackendServerPort;
+                                        // this changed between 0.27 and 0.28
+                                        backend.protocolPort = reply.hasOwnProperty("String")
+					    ? reply.String
+					    : reply.SettingList.Settings.BackendServerPort;
                                         finished(null);
                                     }
                                 );
