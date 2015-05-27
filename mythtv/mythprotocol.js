@@ -51,7 +51,8 @@ var protocolTokens = {
     "83" : "BreakingGlass",
     "84" : "CanaryCoalmine",
     "85" : "BluePool",
-    "Latest" : "85"
+    "86" : "(ノಠ益ಠ)ノ彡┻━┻",
+    "Latest" : "86"
 };
 
 var reconnectInterval = 6;
@@ -191,6 +192,11 @@ module.exports = function () {
 
         if (backend.protocolVersion >= "82") {
             program.Recording.RecordedId = message.shift();
+        }
+
+        if (backend.protocolVersion >= "86") {
+            program.CatType = message.shift();
+            program.BookmarkUpdate = message.shift();
         }
 
         return program;
