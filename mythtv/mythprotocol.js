@@ -52,7 +52,8 @@ var protocolTokens = {
     "84" : "CanaryCoalmine",
     "85" : "BluePool",
     "86" : "(ノಠ益ಠ)ノ彡┻━┻",
-    "Latest" : "86"
+    "87" : "(ノಠ益ಠ)ノ彡┻━┻_No_entiendo!)",
+    "Latest" : "87"
 };
 
 var reconnectInterval = 6;
