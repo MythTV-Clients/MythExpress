@@ -53,6 +53,7 @@ var protocolTokens = {
     "85" : "BluePool",
     "86" : "(ノಠ益ಠ)ノ彡┻━┻",
     "87" : "(ノಠ益ಠ)ノ彡┻━┻_No_entiendo!)",
+    "88" : "XmasGift",
     "Latest" : "87"
 };
 
