@@ -38,12 +38,11 @@ function doRender(req, res, headerData) {
 
     }
 
-    // log.info("dorender with locals() and locals:");
-    // log.info(res._locals);
-    // log.info(locals);
+    locals.Template = jadeFile;
 
     app.sendHeaders(req, res);
-    res.render(req.xhr ? jadeFile : "layout", locals);
+
+    res.json(locals);
 
 }
 
@@ -105,7 +104,8 @@ app.get("/recordinginfo", function (req, res) {
         });
     }
 
-    res.render("info/recording", {
+    res.json({
+        Template    : "info/recording",
         mythtv      : app.mythtv,
         MythBackend : app.mythtv.MythServiceHost(req),
         recording   : program,

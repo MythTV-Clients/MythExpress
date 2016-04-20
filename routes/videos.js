@@ -22,20 +22,23 @@ app.get("/videos", MX, function (req, res) {
 
     app.sendHeaders(req, res);
 
-    res.render(req.xhr ? "videos" : "layout", {
-        url : url,
-        MythBackend : mythtv.MythServiceHost(req),
-        Title : res.locals.Context.Title,
-        Videos : videoFolder.List,
+    res.json({
+        Template      : "videos",
+        url           : url,
+        MythBackend   : mythtv.MythServiceHost(req),
+        Title         : res.locals.Context.Title,
+        Videos        : videoFolder.List,
         fileHasStream : mythtv.fileHasStream
     });
+
 });
 
 
 app.get("/videoinfo", function (req, res) {
     log.info("/videoinfo " + req.query.VideoId);
     var mythtv = app.mythtv;
-    res.render("info/video", {
+    res.json({
+        Template    : "info/video",
         mythtv      : mythtv,
         MythBackend : mythtv.MythServiceHost(req),
         video       : mythtv.byVideoId[req.query.VideoId]

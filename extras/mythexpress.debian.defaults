@@ -14,7 +14,7 @@ export APP_ROOT=/var/lib/mythtv
 
 export NVMDIR=$APP_ROOT/.nvm
 
-# where app.js is located
+# where mythexpress.js is located
 export APPDIR=$APP_ROOT/MythExpress
 
 export LOGDIR=/var/log/mythtv

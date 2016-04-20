@@ -49,7 +49,11 @@ var protocolTokens = {
     "81" : "MultiRecDos",
     "82" : "IdIdO",
     "83" : "BreakingGlass",
-    "Latest" : "83"
+    "84" : "CanaryCoalmine",
+    "85" : "BluePool",
+    "86" : "(ノಠ益ಠ)ノ彡┻━┻",
+    "87" : "(ノಠ益ಠ)ノ彡┻━┻_No_entiendo!)",
+    "Latest" : "87"
 };
 
 var reconnectInterval = 6;
@@ -189,6 +193,11 @@ module.exports = function () {
 
         if (backend.protocolVersion >= "82") {
             program.Recording.RecordedId = message.shift();
+        }
+
+        if (backend.protocolVersion >= "86") {
+            program.CatType = message.shift();
+            program.BookmarkUpdate = message.shift();
         }
 
         return program;
@@ -363,8 +372,7 @@ module.exports = function () {
                         changeType : change[0]
                     };
                     if (event.changeType === "ADD" || event.changeType === "DELETE") {
-                        event.ChanId = change[1];
-                        event.StartTs = change[2];
+                        event.RecordedId = change[1];
                     }
                     process.nextTick(function () {
                         This.emit("RECORDING_LIST_CHANGE", event, program);

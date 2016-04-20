@@ -58,6 +58,15 @@ function stringCompare (g1,g2) {
     return g1.toLowerCase() > g2.toLowerCase() ? 1 : -1;
 }
 
+function FormatAirdate(airdate) {
+    var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));
+    return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]
+        + ", "
+        + ["January","February","March","April","May","June","July",
+           "August","September","October","November","December"][d.getMonth()]
+        + " " + d.getDate() + ", " + d.getFullYear();
+}
+
 
 // ////////////////////////////////////////////////////////////////////////
 // Globals
@@ -183,7 +192,7 @@ module.exports = function(args) {
                         errorDescription : "MythTV sent back an empty response"
                     };
                 }
-                jsObject.url = "http://" + options.host + ":" + options.port + allOptions.path;
+                jsObject.url = "http://" + options.host + ":" + options.port + options.path;
             }
             callback(jsObject);
         })
@@ -628,6 +637,8 @@ module.exports = function(args) {
 
         program.ProgramFlags_ = flags;
         program.mx = mx;
+
+        program.AirdateFormatted = program.Airdate ? FormatAirdate(program.Airdate) : "";
     }
 
     function emptyProgram (fileName) {
@@ -718,21 +729,17 @@ module.exports = function(args) {
         } else log.info("    ignored due to pending retrieve");
     }
 
-    function retrieveAndAddRecording (chanId, startTs) {
-        var chanKey = getChanKey(chanId, startTs);
-        if (!pendingRetrieves.hasOwnProperty(chanKey)) {
-            pendingRetrieves[chanKey] = true;
-            log.info('retrieveAndAddRecording /Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs);
-            reqJSON(
-                {
-                    path : '/Dvr/GetRecorded?ChanId=' + chanId + "&StartTime=" + startTs
-                },
-                function (response) {
-                    //log.info('retrieveAndAddRecording');
-                    //log.info(response);
-                    takeAndAddRecording(response.Program, true);
-                });
-        } else log.info("    ignored due to pending retrieve");
+    function retrieveAndAddRecording (recordedId) {
+        log.info('retrieveAndAddRecording /Dvr/GetRecorded?RecordedId=' + recordedId);
+        reqJSON(
+            {
+                path : '/Dvr/GetRecorded?RecordedId=' + recordedId
+            },
+            function (response) {
+                //log.info('retrieveAndAddRecording');
+                //log.info(response);
+                takeAndAddRecording(response.Program, true);
+            });
     };
 
     function deleteByChanId (chanKey) {
@@ -886,6 +893,7 @@ module.exports = function(args) {
             { path : '/Video/GetVideoList' },
             function (videos) {
                 videos.VideoMetadataInfoList.VideoMetadataInfos.forEach(function (video) {
+                    video.ReleaseDateFormatted = video.ReleaseDate ? FormatAirdate(video.ReleaseDate) : "";
                     byVideoId[video.Id] = video;
                     byFilename[video.FileName] = video;
                     var curPath = "";
@@ -1088,8 +1096,8 @@ module.exports = function(args) {
     backend.events.on("RECORDING_LIST_CHANGE", function (event, program) {
 
         if (event.changeType === "ADD") {
-            log.info("RECORDING_LIST_CHANGE add " + event.ChanId + " / " + event.StartTs);
-            retrieveAndAddRecording(event.ChanId, event.StartTs)
+            log.info("RECORDING_LIST_CHANGE add " + event.RecordedId);
+            retrieveAndAddRecording(event.RecordedId)
         }
 
         else if (event.changeType === "UPDATE") {
@@ -1178,7 +1186,10 @@ module.exports = function(args) {
                                             "HostName=" + backend.hostName
                                     },
                                     function (reply) {
-                                        backend.protocolPort = reply.SettingList.Settings.BackendServerPort;
+                                        // this changed between 0.27 and 0.28
+                                        backend.protocolPort = reply.hasOwnProperty("String")
+					    ? reply.String
+					    : reply.SettingList.Settings.BackendServerPort;
                                         finished(null);
                                     }
                                 );
@@ -1265,15 +1276,6 @@ module.exports = function(args) {
         fileHasStream : fileHasStream,
 
         blast : eventSocket.blast,
-
-        FormatAirdate : function(airdate) {
-            var d = new Date(airdate.substr(0,4), airdate.substr(5,2)-1, airdate.substr(8,2));
-            return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]
-                + ", "
-                + ["January","February","March","April","May","June","July",
-                   "August","September","October","November","December"][d.getMonth()]
-                + " " + d.getDate() + ", " + d.getFullYear();
-        },
 
 
         GetRecordingRecord : function (chanId, startTs) {

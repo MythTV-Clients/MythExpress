@@ -7,13 +7,15 @@ var os = require("os");
 var fs = require("fs");
 var util = require("util");
 var express = require("express");
+var jade = require("jade");
 var app = module.exports = express();
 var http = require("http");
 var url = require("url");
 var path = require("path");
-var mdns = require("mdns2");
+var mdns = require("mdns");
 var ws = require("ws");
-
+var _ = require("underscore");
+var mxutils = require("./mxutils");
 
 // Command line arguments
 
@@ -71,8 +73,24 @@ app.configure("production", function() {
                 "history.adapter.jquery.js",
                 "jquery.cookie.js",
                 "lightbox.js",
+                "dummy-runtime.js",
+                "dummy-templates.js",
                 "mythexpress.js"
-            ]
+            ],
+            "preManipulate" : {
+                "^" : [
+                    function (file, path, index, isLast, callback) {
+                        // runtime and templates are dynamically generated
+                        if (path.substr(-19) == "js/dummy-runtime.js") {
+                            callback(mxutils.jadeRuntime());
+                        } else if (path.substr(-21) == "js/dummy-templates.js") {
+                            callback(mxutils.clientSideTemplates());
+                        } else {
+                            callback(file);
+                        }
+                    }
+                ]
+            },
         },
         "browser" : {
             "route" : new RegExp("/css/dark-hive/browser.css"),
@@ -113,21 +131,23 @@ app.sendHeaders = function (req, res) {
 };
 
 
-//var frontPage = require("./frontpage");
-//app.use(frontPage);
+var frontPage = require("./frontpage");
+app.use(frontPage);
 
 
 // Routes
 
 require("./boot")({ app       : app,
+                    jade      : jade,
                     url       : url,
                     os        : os,
                     fs        : fs,
                     util      : util,
                     __dirname : __dirname,
-                    MX        : require("./frontpage"),
+                    MX        : function (req, res, next) { next(); },
                     frontends : new (require("./mythtv/frontends.js")),
-                    mxutils   : require("./mxutils"),
+                    "_"       : _,
+                    mxutils   : mxutils,
                     log       : log
                   });
 

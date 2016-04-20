@@ -54,11 +54,19 @@ function buildManifest(req) {
     var homeLen = (__dirname + "/public/").length;
     var relativePaths = scan.list.map(function (fullPath) { return fullPath.substr(homeLen); });
 
+    // scan views to synthesize mod time of js/templates.js
+    var viewsScan = deepScan(__dirname + "/views");
+
     var manifestLines = ["CACHE MANIFEST"].concat(relativePaths);
-    manifestLines.push("# " + scan.lastModification);
+    manifestLines.push("# " + (scan.lastModification > viewsScan.lastModification
+                               ? scan.lastModification
+                               : viewsScan.lastModification));
 
     if (isProduction) {
         manifestLines.push("js/all.js");
+    } else {
+        manifestLines.push("js/runtime.js");
+        manifestLines.push("js/templates.js");
     }
 
     var paths = { };

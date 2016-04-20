@@ -16,6 +16,9 @@ app.get("/about", MX, function (req, res) {
     };
 
     app.sendHeaders(req, res);
-    res.render(req.xhr ? "about/" + group : "layout");
+
+    res.json({
+        Template : "about/" + group
+    });
 
 });
