@@ -5,9 +5,7 @@ MythExpress is a browser-based interface to MythTV’s HTTP streaming capability
 
 MythExpress consists of two pieces: a nodejs server which talks to your MythTV backend and a web application which communicates with the node server and manages the “one page” web interface. The web application tries to work in regular desktop browsers and also as an iOS full screen web app (add an icon to the home screen for this).
 
-My environment is Apple-centric so everything is known to work on current versions of desktop and mobile Safari. FireFox and Chrome run the webapp OK but seem to choke on myth’s stream files. I suspect it’s an issue with myth’s URLs and ought to sort itself out by the time MythTV 0.27 comes out. Internet Explorer doesn’t seem to like my markup although FireFox on Windows does. In either case HTTP Streaming on Windows doesn’t seem to be possible. I don’t have an Android device to test against.
-
-MythTV 0.25 or later is supported. With 0.25 a local/UTC bug prevents it from recognizing new recordings on the fly but other than that it works identically to 0.26.
+My environment is Apple-centric so everything is known to work on current versions of desktop and mobile Safari. MythTV 0.25 or later is supported. With 0.25 a local/UTC bug prevents it from recognizing new recordings on the fly but other than that it works identically to 0.26.
 
 MythExpress is 100% Open Source software licensed under terms of the GPLv3. The text of the license is available within the web app.
 
@@ -16,9 +14,7 @@ MythExpress is 100% Open Source software licensed under terms of the GPLv3. The 
 
 It’s typical to run MythExpress on the same host as MythTV but it can go anywhere on your network so long as it has visibility to your myth server(s).
 
-NodeJS is required of course, MythExpress is developed and tested with version 0.10 and but in a pinch you can fall back to the 0.8 series but no further the app is dependant on ExpressJS v3. The Node Bonjour package for Linux currently has some issues starting up so you’ll have to manually apply the fix at https://github.com/agnat/node_mdns/pull/67/files to the source in the node_packages folder.
-
-Should your platform lack current node packages you can streamline the install process with Node Version Manager which is found at http://github.com/creationix/nvm.
+NodeJS is required of course, MythExpress is developed and tested against whatever is currently stable. Should your platform lack current node packages you can streamline the install process with Node Version Manager which is found at http://github.com/creationix/nvm.
 
 Here’s a quickie nvm-based install using debian names for the prerequisite packages:
 
