@@ -54,7 +54,8 @@ var protocolTokens = {
     "86" : "(ノಠ益ಠ)ノ彡┻━┻",
     "87" : "(ノಠ益ಠ)ノ彡┻━┻_No_entiendo!)",
     "88" : "XmasGift",
-    "Latest" : "87"
+    "89" : "BuzzKill",
+    "Latest" : "89"
 };
 
 var reconnectInterval = 6;
