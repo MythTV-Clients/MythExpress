@@ -654,8 +654,8 @@ $(document).ready(function() {
             else if (target.hasClass("mx-Max")) {
                 var box = getVideoParameters();
                 if (box.baseW) {
-                    var ratio = document.width / box.baseW;
-                    box.vid.attr("width", document.width);
+                    var ratio = window.innerWidth / box.baseW;
+                    box.vid.attr("width", window.innerWidth);
                     box.vid.attr("height", box.baseH * ratio);
                 }
             }
